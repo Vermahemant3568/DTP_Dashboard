@@ -1,15 +1,13 @@
 <script>
 /* ================================================================
-   ScriptDashboard.html — Dashboard rendering
+   ScriptDashboard.html
 ================================================================ */
-
-let _dashLoading = false;
+var _dashLoading = false;
 
 function refreshDashboardStats() {
   if (_dashLoading) return;
   _dashLoading = true;
-
-  let _all = null, _monthly = null;
+  var _all = null, _monthly = null;
 
   function _tryRender() {
     if (_all === null || _monthly === null) return;
@@ -19,157 +17,154 @@ function refreshDashboardStats() {
   }
 
   google.script.run
-    .withFailureHandler(function(e) { console.error(e); _all = { projects:[], tasks:[], revisions:[], vendors:[], team:[] }; _tryRender(); })
-    .withSuccessHandler(function(d) { _all = d || { projects:[], tasks:[], revisions:[], vendors:[], team:[] }; _tryRender(); })
+    .withFailureHandler(function(e){ console.error(e); _all={projects:[],tasks:[],revisions:[],vendors:[],team:[]}; _tryRender(); })
+    .withSuccessHandler(function(d){ _all=d||{projects:[],tasks:[],revisions:[],vendors:[],team:[]}; _tryRender(); })
     .getAllData();
 
   google.script.run
-    .withFailureHandler(function(e) { console.error(e); _monthly = {}; _tryRender(); })
-    .withSuccessHandler(function(d) { _monthly = d || {}; _tryRender(); })
+    .withFailureHandler(function(e){ console.error(e); _monthly={}; _tryRender(); })
+    .withSuccessHandler(function(d){ _monthly=d||{}; _tryRender(); })
     .getMonthlySummary();
 }
 
 function _renderDashboard(all, m) {
-  const tasks     = all.tasks     || [];
-  const revisions = all.revisions || [];
-  const projects  = all.projects  || [];
-  const bt        = m.byTaskType  || {};
+  var tasks    =all.tasks    ||[];
+  var revisions=all.revisions||[];
+  var projects =all.projects ||[];
+  var bt       =m.byTaskType ||{};
 
-  /* month label */
-  _set("dash_monthLabel", "Live production metrics — " + (m.month || ""));
-  _set("dash_monthName",  m.month || "Current Month");
+  _set("dash_monthLabel","Live production metrics — "+(m.month||""));
+  _set("dash_monthName", m.month||"Current Month");
 
-  /* task type cards */
-  function _card(key, totalId, ihId, vdId) {
-    const d = bt[key] || { total:0, inHouse:0, vendor:0 };
-    _set(totalId, d.total.toLocaleString());
-    _set(ihId,    d.inHouse.toLocaleString());
-    _set(vdId,    d.vendor.toLocaleString());
+  function _card(key,totalId,ihId,vdId){
+    var d=bt[key]||{total:0,inHouse:0,vendor:0};
+    _set(totalId,d.total.toLocaleString());
+    _set(ihId,   d.inHouse.toLocaleString());
+    _set(vdId,   d.vendor.toLocaleString());
   }
-  _card("mainDTP",     "dash_dtpTotal",   "dash_dtpIH",   "dash_dtpVD");
-  _card("extraction",  "dash_extTotal",   "dash_extIH",   "dash_extVD");
-  _card("corrections", "dash_corrTotal",  "dash_corrIH",  "dash_corrVD");
-  _card("bilingual",   "dash_bilingTotal","dash_bilingIH","dash_bilingVD");
+  _card("mainDTP",    "dash_dtpTotal",   "dash_dtpIH",   "dash_dtpVD");
+  _card("extraction", "dash_extTotal",   "dash_extIH",   "dash_extVD");
+  _card("corrections","dash_corrTotal",  "dash_corrIH",  "dash_corrVD");
+  _card("bilingual",  "dash_bilingTotal","dash_bilingIH","dash_bilingVD");
 
-  /* status counts */
-  const inProg = tasks.filter(r => r[12] === "In Progress");
-  const sumPages = function(arr, col) { return arr.reduce(function(s,r){ return s+(Number(r[col])||0); }, 0); };
+  var inProg=tasks.filter(function(r){ return r[12]==="In Progress"; });
+  function sumPages(arr,col){ return arr.reduce(function(s,r){ return s+(Number(r[col])||0); },0); }
 
-  _set("dash_totalProjects",   projects.length);
-  _set("dash_totalTasks",      tasks.length);
-  _set("dash_totalTaskPages",  sumPages(tasks, 10).toLocaleString() + " total pages");
-  _set("dash_inProgress",      inProg.length);
-  _set("dash_inProgressPages", sumPages(inProg, 10).toLocaleString() + " pages active");
-  _set("dash_totalRevisions",  revisions.length);
-  _set("dash_totalRevPages",   sumPages(revisions, 7).toLocaleString() + " revision pages");
-  _set("dash_grandTotal",      (m.grandTotal || 0).toLocaleString());
+  _set("dash_totalProjects",  projects.length);
+  _set("dash_totalTasks",     tasks.length);
+  _set("dash_totalTaskPages", sumPages(tasks,10).toLocaleString()+" total pages");
+  _set("dash_inProgress",     inProg.length);
+  _set("dash_inProgressPages",sumPages(inProg,10).toLocaleString()+" pages active");
+  _set("dash_totalRevisions", revisions.length);
+  _set("dash_totalRevPages",  sumPages(revisions,7).toLocaleString()+" revision pages");
+  _set("dash_grandTotal",     (m.grandTotal||0).toLocaleString());
 
   _renderTaskBars(m);
   _renderWorkBars(m);
   _renderTopTasks(tasks);
   _renderRecentRevisions(revisions);
-  _renderTopEmployees(m.byEmployee || []);
-  _renderTopVendors(m.byVendor || []);
+  _renderTopEmployees(m.byEmployee||[]);
+  _renderTopVendors(m.byVendor||[]);
 }
 
 function _renderTaskBars(m) {
-  const el = document.getElementById("dash_taskBars");
+  var el=document.getElementById("dash_taskBars");
   if (!el) return;
-  const bt = m.byTaskType || {};
-  const items = [
-    { label:"Main DTP",    val: (bt.mainDTP    || {total:0}).total, color:"bg-blue-500"   },
-    { label:"Extraction",  val: (bt.extraction  || {total:0}).total, color:"bg-teal-500"   },
-    { label:"Corrections", val: (bt.corrections || {total:0}).total, color:"bg-orange-500" },
-    { label:"Bilingual",   val: (bt.bilingual   || {total:0}).total, color:"bg-violet-500" },
-    { label:"Revisions",   val: (bt.revisions   || {total:0}).total, color:"bg-purple-500" }
+  var bt=m.byTaskType||{};
+  var items=[
+    {label:"Main DTP",   val:(bt.mainDTP    ||{total:0}).total,color:"bg-blue-500"},
+    {label:"Extraction", val:(bt.extraction  ||{total:0}).total,color:"bg-teal-500"},
+    {label:"Corrections",val:(bt.corrections ||{total:0}).total,color:"bg-orange-500"},
+    {label:"Bilingual",  val:(bt.bilingual   ||{total:0}).total,color:"bg-violet-500"},
+    {label:"Revisions",  val:(bt.revisions   ||{total:0}).total,color:"bg-purple-500"}
   ];
-  const max = Math.max.apply(null, items.map(i => i.val)) || 1;
-  el.innerHTML = items.map(i => buildBar(i.label, i.val, max, i.color, "pages")).join("");
+  var max=Math.max.apply(null,items.map(function(i){ return i.val; }))||1;
+  el.innerHTML=items.map(function(i){ return buildBar(i.label,i.val,max,i.color,"pages"); }).join("<div class='mt-3'></div>");
 }
 
 function _renderWorkBars(m) {
-  const el = document.getElementById("dash_workBars");
+  var el=document.getElementById("dash_workBars");
   if (!el) return;
-  const ih    = m.totalInHouse || 0;
-  const vd    = m.totalVendor  || 0;
-  const grand = (ih + vd) || 1;
-  el.innerHTML =
-    `<div class="flex rounded-full overflow-hidden h-4 mb-4">
-       <div class="bg-sky-500 h-4 transition-all duration-700" style="width:${Math.round(ih/grand*100)}%" title="In-House: ${ih.toLocaleString()}"></div>
-       <div class="bg-amber-400 h-4 transition-all duration-700" style="width:${Math.round(vd/grand*100)}%" title="Vendor: ${vd.toLocaleString()}"></div>
-     </div>` +
-    buildBar("In-House", ih, grand, "bg-sky-500", "pages (" + Math.round(ih/grand*100) + "%)") +
-    "<div class='mt-3'></div>" +
-    buildBar("Vendor",   vd, grand, "bg-amber-400", "pages (" + Math.round(vd/grand*100) + "%)") +
-    `<p class="text-xs text-slate-400 text-right mt-3">Total: <span class="font-bold text-slate-600">${grand.toLocaleString()} pages</span></p>`;
+  var ih=m.totalInHouse||0;
+  var vd=m.totalVendor ||0;
+  var grand=(ih+vd)||1;
+  el.innerHTML=
+    '<div class="flex rounded-full overflow-hidden h-4 mb-4">'+
+      '<div class="bg-sky-500 h-4 transition-all duration-700" style="width:'+Math.round(ih/grand*100)+'%"></div>'+
+      '<div class="bg-amber-400 h-4 transition-all duration-700" style="width:'+Math.round(vd/grand*100)+'%"></div>'+
+    '</div>'+
+    buildBar("In-House",ih,grand,"bg-sky-500","pages ("+Math.round(ih/grand*100)+"%)")+
+    "<div class='mt-3'></div>"+
+    buildBar("Vendor",  vd,grand,"bg-amber-400","pages ("+Math.round(vd/grand*100)+"%)")+
+    '<p class="text-xs text-slate-400 text-right mt-3">Total: <span class="font-bold text-slate-600">'+grand.toLocaleString()+' pages</span></p>';
 }
 
 function _renderTopTasks(tasks) {
-  const el = document.getElementById("dash_topTasks");
+  var el=document.getElementById("dash_topTasks");
   if (!el) return;
-  if (!tasks.length) { el.innerHTML = '<p class="p-6 text-center text-slate-300 text-sm">No tasks yet.</p>'; return; }
-  const top = tasks.slice().sort((a,b) => (Number(b[10])||0) - (Number(a[10])||0)).slice(0,6);
-  const max = Number(top[0][10]) || 1;
-  el.innerHTML = top.map(function(r) {
-    const pages = Number(r[10]) || 0;
-    const sc    = getStatusClass(r[12] || "Pending");
-    const tc    = getTaskClass(r[4] || "Main DTP");
-    return `<div class="px-5 py-3 hover:bg-slate-50 transition-colors">
-      <div class="flex items-center justify-between mb-1">
-        <div class="flex items-center gap-2 min-w-0">
-          <span class="text-sm font-semibold text-slate-700 truncate max-w-[140px]" title="${r[3]||''}">${r[3]||"—"}</span>
-          <span class="badge ${tc}">${r[4]||"—"}</span>
-        </div>
-        <span class="text-sm font-black text-sky-600 ml-2 shrink-0">${pages.toLocaleString()}</span>
-      </div>
-      <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-        <div class="bg-sky-400 h-1.5 rounded-full" style="width:${Math.round(pages/max*100)}%"></div>
-      </div>
-      <p class="text-[10px] text-slate-400 mt-0.5">${r[2]||"—"} · ${r[8]||"—"} · <span class="badge ${sc} text-[9px]">${r[12]||"Pending"}</span></p>
-    </div>`;
+  if (!tasks.length){ el.innerHTML='<p class="p-6 text-center text-slate-300 text-sm">No tasks yet.</p>'; return; }
+  var top=tasks.slice().sort(function(a,b){ return (Number(b[10])||0)-(Number(a[10])||0); }).slice(0,6);
+  var max=Number(top[0][10])||1;
+  el.innerHTML=top.map(function(r){
+    var pages=Number(r[10])||0;
+    var sc=getStatusClass(r[12]||"Pending");
+    var tc=getTaskClass(r[4]||"Main DTP");
+    return '<div class="px-5 py-3 hover:bg-slate-50 transition-colors">'+
+      '<div class="flex items-center justify-between mb-1">'+
+        '<div class="flex items-center gap-2 min-w-0">'+
+          '<span class="text-sm font-semibold text-slate-700 truncate max-w-[140px]">'+(r[3]||"—")+'</span>'+
+          '<span class="badge '+tc+'">'+(r[4]||"—")+'</span>'+
+        '</div>'+
+        '<span class="text-sm font-black text-sky-600 ml-2 shrink-0">'+pages.toLocaleString()+'</span>'+
+      '</div>'+
+      '<div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">'+
+        '<div class="bg-sky-400 h-1.5 rounded-full" style="width:'+Math.round(pages/max*100)+'%"></div>'+
+      '</div>'+
+      '<p class="text-[10px] text-slate-400 mt-0.5">'+(r[2]||"—")+' · '+(r[8]||"—")+' · <span class="badge '+sc+' text-[9px]">'+(r[12]||"Pending")+'</span></p>'+
+    '</div>';
   }).join("");
 }
 
 function _renderRecentRevisions(revisions) {
-  const el = document.getElementById("dash_recentRevisions");
+  var el=document.getElementById("dash_recentRevisions");
   if (!el) return;
-  if (!revisions.length) { el.innerHTML = '<p class="p-6 text-center text-slate-300 text-sm">No revisions yet.</p>'; return; }
-  const recent = revisions.slice(-6).reverse();
-  el.innerHTML = recent.map(function(r) {
-    const sc = getStatusClass(r[11] || "Pending");
-    return `<div class="px-5 py-3 hover:bg-slate-50 transition-colors flex items-center justify-between gap-3">
-      <div class="min-w-0">
-        <p class="text-sm font-semibold text-slate-700 truncate">${r[3]||r[1]||"—"}</p>
-        <p class="text-xs text-slate-400">
-          <span class="badge bg-purple-100 text-purple-700 mr-1">${r[6]||"—"}</span>
-          ${r[4]||""} · ${r[12]||"—"}
-        </p>
-      </div>
-      <div class="text-right shrink-0">
-        <p class="text-sm font-black text-purple-600">${(Number(r[7])||0)} pg</p>
-        <span class="badge ${sc}">${r[11]||"Pending"}</span>
-      </div>
-    </div>`;
+  if (!revisions.length){ el.innerHTML='<p class="p-6 text-center text-slate-300 text-sm">No revisions yet.</p>'; return; }
+  var recent=revisions.slice(-6).reverse();
+  el.innerHTML=recent.map(function(r){
+    var sc=getStatusClass(r[11]||"Pending");
+    return '<div class="px-5 py-3 hover:bg-slate-50 transition-colors flex items-center justify-between gap-3">'+
+      '<div class="min-w-0">'+
+        '<p class="text-sm font-semibold text-slate-700 truncate">'+(r[3]||r[1]||"—")+'</p>'+
+        '<p class="text-xs text-slate-400">'+
+          '<span class="badge bg-purple-100 text-purple-700 mr-1">'+(r[6]||"—")+'</span>'+
+          (r[4]||"")+" · "+(r[12]||"—")+
+        '</p>'+
+      '</div>'+
+      '<div class="text-right shrink-0">'+
+        '<p class="text-sm font-black text-purple-600">'+(Number(r[7])||0)+' pg</p>'+
+        '<span class="badge '+sc+'">'+(r[11]||"Pending")+'</span>'+
+      '</div>'+
+    '</div>';
   }).join("");
 }
 
 function _renderTopEmployees(employees) {
-  const el = document.getElementById("dash_topEmployees");
+  var el=document.getElementById("dash_topEmployees");
   if (!el) return;
-  if (!employees.length) { el.innerHTML = '<p class="text-sm text-slate-400 text-center py-4">No data this month.</p>'; return; }
-  const max = employees[0].pages || 1;
-  el.innerHTML = employees.slice(0,6).map(function(e) {
-    return buildBar(e.name, e.pages, max, "bg-sky-500", "pages (" + e.tasks + " tasks)");
+  if (!employees.length){ el.innerHTML='<p class="text-sm text-slate-400 text-center py-4">No data this month.</p>'; return; }
+  var max=employees[0].pages||1;
+  el.innerHTML=employees.slice(0,6).map(function(e){
+    return buildBar(e.name,e.pages,max,"bg-sky-500","pages ("+e.tasks+" tasks)");
   }).join("<div class='mt-3'></div>");
 }
 
 function _renderTopVendors(vendors) {
-  const el = document.getElementById("dash_topVendors");
+  var el=document.getElementById("dash_topVendors");
   if (!el) return;
-  if (!vendors.length) { el.innerHTML = '<p class="text-sm text-slate-400 text-center py-4">No vendor work this month.</p>'; return; }
-  const max = vendors[0].pages || 1;
-  el.innerHTML = vendors.slice(0,6).map(function(v) {
-    return buildBar(v.name, v.pages, max, "bg-amber-400", "pages (" + v.tasks + " tasks)");
+  if (!vendors.length){ el.innerHTML='<p class="text-sm text-slate-400 text-center py-4">No vendor work this month.</p>'; return; }
+  var max=vendors[0].pages||1;
+  el.innerHTML=vendors.slice(0,6).map(function(v){
+    return buildBar(v.name,v.pages,max,"bg-amber-400","pages ("+v.tasks+" tasks)");
   }).join("<div class='mt-3'></div>");
 }
 </script>

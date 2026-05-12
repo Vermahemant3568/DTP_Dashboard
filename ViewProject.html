@@ -20,13 +20,13 @@
         class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-xl hover:bg-amber-100 transition-colors">
         ✏️ Edit
       </button>
-      <button onclick="loadPage('addTask', { projectId: document.getElementById('vp_projectId').innerText.replace('ID: ','') })"
+      <button onclick="loadPage('addTask',{projectId:_vpCurrentId})"
         class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-blue-700 bg-blue-50 border border-blue-200 rounded-xl hover:bg-blue-100 transition-colors">
-        ✅ Add Task
+        Add Task
       </button>
-      <button onclick="loadPage('addRevision', { projectId: document.getElementById('vp_projectId').innerText.replace('ID: ','') })"
+      <button onclick="loadPage('addRevision',{projectId:_vpCurrentId})"
         class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-purple-700 bg-purple-50 border border-purple-200 rounded-xl hover:bg-purple-100 transition-colors">
-        🔁 Add Revision
+        Add Revision
       </button>
     </div>
   </div>
@@ -91,7 +91,7 @@
       </div>
       <div class="flex items-center gap-3">
         <span id="vp_taskPageTotal" class="text-xs font-bold text-sky-600 bg-sky-50 px-3 py-1 rounded-full border border-sky-100">0 pages</span>
-        <button onclick="loadPage('addTask', { projectId: _vpCurrentId })"
+        <button onclick="loadPage('addTask',{projectId:_vpCurrentId})"
           class="text-xs font-semibold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors">
           + Add Task
         </button>
@@ -128,7 +128,7 @@
       </div>
       <div class="flex items-center gap-3">
         <span id="vp_revPageTotal" class="text-xs font-bold text-purple-600 bg-purple-50 px-3 py-1 rounded-full border border-purple-100">0 pages</span>
-        <button onclick="loadPage('addRevision', { projectId: _vpCurrentId })"
+        <button onclick="loadPage('addRevision',{projectId:_vpCurrentId})"
           class="text-xs font-semibold text-purple-600 hover:text-purple-800 bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg transition-colors">
           + Add Revision
         </button>

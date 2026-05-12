@@ -1,12 +1,11 @@
 <script>
 /* ================================================================
-   ScriptProjects.html — Projects list, CRUD, quick edit
+   ScriptProjects.html
 ================================================================ */
-
 var ALL_PROJECTS = [];
 
 function loadProjects() {
-  showLoader("Loading projects\u2026");
+  showLoader("Loading projects...");
   google.script.run
     .withFailureHandler(function(e) { hideLoader(); showToast("Could not load projects: " + e.message, "error"); })
     .withSuccessHandler(function(data) {
@@ -21,7 +20,7 @@ function _renderProjectsTable(data) {
   var tbody = document.getElementById("projectsTable");
   if (!tbody) return;
   if (!data.length) {
-    tbody.innerHTML = '<tr><td colspan="9" class="py-16 text-center text-slate-400 text-sm">No projects found. <button onclick="loadPage(\'addProject\')" class="text-blue-600 hover:underline font-semibold">Add one \u2192</button></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" class="py-16 text-center text-slate-400 text-sm">No projects found.</td></tr>';
     return;
   }
   tbody.innerHTML = data.map(function(r) {
@@ -31,30 +30,20 @@ function _renderProjectsTable(data) {
              r[9] === "Low"    ? "bg-gray-100 text-gray-500" : "bg-blue-100 text-blue-700";
     return '<tr>' +
       '<td class="font-mono text-[11px] text-gray-400">' + r[0] + '</td>' +
-      '<td>' +
-        '<div class="font-semibold text-gray-900 text-sm">' + (r[1] || "\u2014") + '</div>' +
-        '<div class="text-xs text-gray-500 mt-0.5">' + (r[2] || "\u2014") + '</div>' +
-      '</td>' +
-      '<td class="text-xs text-gray-600">' +
-        '<div>' + (r[4] || "\u2014") + ' \u2192 <span class="text-blue-600 font-medium">' + (r[5] || "\u2014") + '</span></div>' +
-        '<div class="text-gray-400">' + (r[6] || 0) + ' languages</div>' +
-      '</td>' +
-      '<td class="text-sm text-gray-600">' + (r[3] || "\u2014") + '</td>' +
+      '<td><div class="font-semibold text-gray-900 text-sm">' + (r[1] || "—") + '</div>' +
+          '<div class="text-xs text-gray-500">' + (r[2] || "—") + '</div></td>' +
+      '<td class="text-xs text-gray-600">' + (r[4] || "—") + ' / ' + (r[5] || "—") +
+          '<div class="text-gray-400">' + (r[6] || 0) + ' langs</div></td>' +
+      '<td class="text-sm text-gray-600">' + (r[3] || "—") + '</td>' +
       '<td><span class="badge ' + pc + '">' + (r[9] || "Medium") + '</span></td>' +
       '<td><span class="badge ' + sc + '">' + (r[10] || "Active") + '</span></td>' +
       '<td class="text-center text-sm font-semibold text-gray-700">' + (r[7] || 0) + '</td>' +
-      '<td class="text-xs text-gray-500">' + (r[11] || "\u2014") + '</td>' +
+      '<td class="text-xs text-gray-500">' + (r[11] || "—") + '</td>' +
       '<td class="text-right">' +
         '<div class="flex justify-end gap-1">' +
-          '<button onclick="viewProjectById(\'' + r[0] + '\')" title="View" class="p-1.5 text-blue-500 hover:bg-blue-50 rounded-lg transition-all">' +
-            '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>' +
-          '</button>' +
-          '<button onclick="openProjectQuickEdit(\'' + r[0] + '\')" title="Edit status" class="p-1.5 text-amber-500 hover:bg-amber-50 rounded-lg transition-all">' +
-            '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>' +
-          '</button>' +
-          '<button onclick="deleteProjectById(\'' + r[0] + '\')" title="Delete" class="p-1.5 text-red-400 hover:bg-red-50 rounded-lg transition-all">' +
-            '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>' +
-          '</button>' +
+          btnView(r[0], "viewProjectById") +
+          btnStatus(r[0], "openProjectQuickEdit") +
+          btnDelete(r[0], "deleteProjectById") +
         '</div>' +
       '</td>' +
     '</tr>';
@@ -62,11 +51,11 @@ function _renderProjectsTable(data) {
 }
 
 function filterProjects() {
-  var q  = (_val("proj_search")         || "").toLowerCase();
-  var st = _val("proj_statusFilter")    || "";
-  var pr = _val("proj_priorityFilter")  || "";
+  var q  = (_val("proj_search")        || "").toLowerCase();
+  var st = _val("proj_statusFilter")   || "";
+  var pr = _val("proj_priorityFilter") || "";
   var filtered = ALL_PROJECTS.filter(function(r) {
-    var mq = !q  || [r[0], r[1], r[2]].some(function(v) { return String(v).toLowerCase().includes(q); });
+    var mq = !q  || [r[0],r[1],r[2]].some(function(v){ return String(v).toLowerCase().includes(q); });
     var ms = !st || r[10] === st;
     var mp = !pr || r[9]  === pr;
     return mq && ms && mp;
@@ -75,9 +64,9 @@ function filterProjects() {
 }
 
 function viewProjectById(id) {
-  showLoader("Loading project\u2026");
+  showLoader("Loading project...");
   google.script.run
-    .withFailureHandler(function(e) { hideLoader(); showToast("Could not load project: " + e.message, "error"); })
+    .withFailureHandler(function(e) { hideLoader(); showToast("Could not load: " + e.message, "error"); })
     .withSuccessHandler(function(data) {
       if (!data) { hideLoader(); showToast("Project not found.", "error"); return; }
       loadPage("viewProject", data);
@@ -86,10 +75,10 @@ function viewProjectById(id) {
 }
 
 function openProjectQuickEdit(id) {
-  var proj = ALL_PROJECTS.find(function(r) { return r[0] === id; });
+  var proj = ALL_PROJECTS.find(function(r){ return r[0] === id; });
   if (!proj) { showToast("Project not found.", "error"); return; }
   document.getElementById("m_itemId").innerText   = id;
-  document.getElementById("m_itemName").innerText = proj[2] || "\u2014";
+  document.getElementById("m_itemName").innerText = proj[2] || "—";
   document.getElementById("m_status").value       = proj[10] || "Active";
   document.getElementById("m_deliveryDate").value = "";
   document.getElementById("editModal").dataset.editType = "project";
@@ -98,10 +87,10 @@ function openProjectQuickEdit(id) {
 
 function deleteProjectById(id) {
   customConfirm("Permanently delete project " + id + "? This cannot be undone.", function() {
-    showLoader("Deleting\u2026");
+    showLoader("Deleting...");
     google.script.run
-      .withFailureHandler(function(e) { hideLoader(); showToast("Delete failed: " + e.message, "error"); })
-      .withSuccessHandler(function() { hideLoader(); showToast("Project deleted.", "warning"); loadProjects(); })
+      .withFailureHandler(function(e){ hideLoader(); showToast("Delete failed: " + e.message, "error"); })
+      .withSuccessHandler(function(){ hideLoader(); showToast("Project deleted.", "warning"); loadProjects(); })
       .deleteProject(id);
   }, true);
 }
@@ -130,17 +119,17 @@ function deleteProjectById(id) {
     var btn   = document.getElementById("projSubmitBtn");
     var lblEl = document.getElementById("projSubmitLabel");
     btn.disabled = true;
-    if (lblEl) lblEl.innerText = editId ? "Updating\u2026" : "Saving\u2026";
-    showLoader(editId ? "Updating project\u2026" : "Creating project\u2026");
+    if (lblEl) lblEl.innerText = "Saving...";
+    showLoader(editId ? "Updating project..." : "Creating project...");
     if (editId) {
       google.script.run
-        .withFailureHandler(function(er) { hideLoader(); btn.disabled = false; if (lblEl) lblEl.innerText = "Update Project"; showToast("Error: " + er.message, "error"); })
-        .withSuccessHandler(function() { hideLoader(); showToast("Project updated!", "success"); loadPage("projects"); })
+        .withFailureHandler(function(er){ hideLoader(); btn.disabled=false; if(lblEl) lblEl.innerText="Update Project"; showToast("Error: "+er.message,"error"); })
+        .withSuccessHandler(function(){ hideLoader(); showToast("Project updated!","success"); loadPage("projects"); })
         .updateProject(editId, d);
     } else {
       google.script.run
-        .withFailureHandler(function(er) { hideLoader(); btn.disabled = false; if (lblEl) lblEl.innerText = "Register Project"; showToast("Error: " + er.message, "error"); })
-        .withSuccessHandler(function() { hideLoader(); showToast("Project registered!", "success"); loadPage("projects"); })
+        .withFailureHandler(function(er){ hideLoader(); btn.disabled=false; if(lblEl) lblEl.innerText="Register Project"; showToast("Error: "+er.message,"error"); })
+        .withSuccessHandler(function(){ hideLoader(); showToast("Project registered!","success"); loadPage("projects"); })
         .addProject(d);
     }
   });

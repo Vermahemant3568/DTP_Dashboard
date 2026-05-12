@@ -1,16 +1,14 @@
 <script>
 /* ================================================================
-   ScriptTasks.html — Tasks list, CRUD, form, page calc, quick edit
+   ScriptTasks.html
 ================================================================ */
-
 var ALL_TASKS = [];
 
-/* ── LOAD ── */
 function loadTasks() {
-  showLoader("Loading tasks\u2026");
+  showLoader("Loading tasks...");
   google.script.run
-    .withFailureHandler(function(e) { hideLoader(); showToast("Could not load tasks: " + e.message, "error"); })
-    .withSuccessHandler(function(data) {
+    .withFailureHandler(function(e){ hideLoader(); showToast("Could not load tasks: "+e.message,"error"); })
+    .withSuccessHandler(function(data){
       ALL_TASKS = data || [];
       _renderTaskStats(ALL_TASKS);
       _renderTasksTable(ALL_TASKS);
@@ -20,9 +18,9 @@ function loadTasks() {
 }
 
 function _renderTaskStats(data) {
-  var pages  = data.reduce(function(s, r) { return s + (Number(r[10]) || 0); }, 0);
-  var inProg = data.filter(function(r) { return r[12] === "In Progress"; }).length;
-  var done   = data.filter(function(r) { return r[12] === "Completed"; }).length;
+  var pages  = data.reduce(function(s,r){ return s+(Number(r[10])||0); },0);
+  var inProg = data.filter(function(r){ return r[12]==="In Progress"; }).length;
+  var done   = data.filter(function(r){ return r[12]==="Completed"; }).length;
   _set("task_stat_total",  data.length);
   _set("task_stat_pages",  pages.toLocaleString());
   _set("task_stat_inprog", inProg);
@@ -33,36 +31,28 @@ function _renderTasksTable(data) {
   var tbody = document.getElementById("tasksTable");
   if (!tbody) return;
   if (!data.length) {
-    tbody.innerHTML = '<tr><td colspan="9" class="py-16 text-center text-slate-400 text-sm">No tasks found. <button onclick="loadPage(\'addTask\')" class="text-blue-600 hover:underline font-semibold">Add one \u2192</button></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" class="py-16 text-center text-slate-400 text-sm">No tasks found.</td></tr>';
     return;
   }
   tbody.innerHTML = data.map(function(r) {
     var sc  = getStatusClass(r[12] || "Pending");
     var tc  = getTaskClass(r[4]   || "Main DTP");
-    var who = r[5] === "Vendor" ? (r[7] || r[6] || "\u2014") : (r[6] || "\u2014");
+    var who = r[5]==="Vendor" ? (r[7]||r[6]||"—") : (r[6]||"—");
     return '<tr>' +
       '<td class="font-mono text-[11px] text-gray-400">' + r[0] + '</td>' +
-      '<td>' +
-        '<div class="font-semibold text-gray-900 text-sm truncate max-w-[160px]" title="' + (r[3] || "") + '">' + (r[3] || "\u2014") + '</div>' +
-        '<div class="text-xs text-gray-500">' + (r[2] || "\u2014") + '</div>' +
-      '</td>' +
-      '<td><span class="badge ' + tc + '">' + (r[4] || "\u2014") + '</span></td>' +
-      '<td class="text-sm text-gray-600">' + (r[8] || "\u2014") + '</td>' +
+      '<td><div class="font-semibold text-gray-900 text-sm">' + (r[3]||"—") + '</div>' +
+          '<div class="text-xs text-gray-500">' + (r[2]||"—") + '</div></td>' +
+      '<td><span class="badge ' + tc + '">' + (r[4]||"—") + '</span></td>' +
+      '<td class="text-sm text-gray-600">' + (r[8]||"—") + '</td>' +
       '<td class="text-sm text-gray-600">' + who + '</td>' +
-      '<td><span class="badge ' + sc + '">' + (r[12] || "Pending") + '</span></td>' +
-      '<td class="text-center font-bold text-blue-600 text-sm">' + (Number(r[10]) || 0) + '</td>' +
-      '<td class="text-xs text-gray-500">' + (r[15] || "\u2014") + '</td>' +
+      '<td><span class="badge ' + sc + '">' + (r[12]||"Pending") + '</span></td>' +
+      '<td class="text-center font-bold text-blue-600 text-sm">' + (Number(r[10])||0) + '</td>' +
+      '<td class="text-xs text-gray-500">' + (r[15]||"—") + '</td>' +
       '<td class="text-right">' +
         '<div class="flex justify-end gap-1">' +
-          '<button onclick="openTaskQuickEdit(\'' + r[0] + '\')" title="Quick edit" class="p-1.5 text-amber-500 hover:bg-amber-50 rounded-lg transition-all">' +
-            '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>' +
-          '</button>' +
-          '<button onclick="editTaskFull(\'' + r[0] + '\')" title="Full edit" class="p-1.5 text-blue-500 hover:bg-blue-50 rounded-lg transition-all">' +
-            '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>' +
-          '</button>' +
-          '<button onclick="deleteTaskById(\'' + r[0] + '\')" title="Delete" class="p-1.5 text-red-400 hover:bg-red-50 rounded-lg transition-all">' +
-            '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>' +
-          '</button>' +
+          btnStatus(r[0], "openTaskQuickEdit") +
+          btnEdit(r[0],   "editTaskFull") +
+          btnDelete(r[0], "deleteTaskById") +
         '</div>' +
       '</td>' +
     '</tr>';
@@ -70,217 +60,201 @@ function _renderTasksTable(data) {
 }
 
 function filterTasks() {
-  var q  = (_val("task_search")      || "").toLowerCase();
-  var st = _val("task_statusFilter") || "";
-  var tt = _val("task_typeFilter")   || "";
-  var wt = _val("task_workFilter")   || "";
-  var filtered = ALL_TASKS.filter(function(r) {
-    var mq = !q  || [r[0], r[1], r[2], r[3], r[8]].some(function(v) { return String(v).toLowerCase().includes(q); });
-    var ms = !st || r[12] === st;
-    var mt = !tt || r[4]  === tt;
-    var mw = !wt || r[5]  === wt;
-    return mq && ms && mt && mw;
+  var q  = (_val("task_search")      ||"").toLowerCase();
+  var st = _val("task_statusFilter") ||"";
+  var tt = _val("task_typeFilter")   ||"";
+  var wt = _val("task_workFilter")   ||"";
+  var filtered = ALL_TASKS.filter(function(r){
+    var mq = !q  || [r[0],r[1],r[2],r[3],r[8]].some(function(v){ return String(v).toLowerCase().includes(q); });
+    var ms = !st || r[12]===st;
+    var mt = !tt || r[4] ===tt;
+    var mw = !wt || r[5] ===wt;
+    return mq&&ms&&mt&&mw;
   });
   _renderTasksTable(filtered);
 }
 
-/* ── QUICK EDIT ── */
 function openTaskQuickEdit(id) {
-  var task = ALL_TASKS.find(function(r) { return r[0] === id; });
-  if (!task) { showToast("Task not found.", "error"); return; }
+  var task = ALL_TASKS.find(function(r){ return r[0]===id; });
+  if (!task) { showToast("Task not found.","error"); return; }
   document.getElementById("m_itemId").innerText   = id;
-  document.getElementById("m_itemName").innerText = task[3] || task[4] || "\u2014";
-  document.getElementById("m_status").value       = task[12] || "Pending";
+  document.getElementById("m_itemName").innerText = task[3]||task[4]||"—";
+  document.getElementById("m_status").value       = task[12]||"Pending";
   document.getElementById("m_deliveryDate").value = formatForInput(task[15]);
   document.getElementById("editModal").dataset.editType = "task";
   document.getElementById("editModal").style.display    = "flex";
 }
 
-/* ── FULL EDIT ── */
-function editTaskFull(id) {
-  loadPage("addTask", { editId: id });
-}
+function editTaskFull(id) { loadPage("addTask",{editId:id}); }
 
 function loadTaskForEdit(id) {
-  showLoader("Loading task\u2026");
+  showLoader("Loading task...");
   google.script.run
-    .withFailureHandler(function(e) { hideLoader(); showToast("Could not load task: " + e.message, "error"); })
-    .withSuccessHandler(function(res) {
+    .withFailureHandler(function(e){ hideLoader(); showToast("Could not load task: "+e.message,"error"); })
+    .withSuccessHandler(function(res){
       hideLoader();
-      if (!res || !res.task) { showToast("Task not found.", "error"); return; }
-      var t = res.task;
-      var titleEl = document.getElementById("addTaskTitle");
-      var lblEl   = document.getElementById("taskSubmitLabel");
-      if (titleEl) titleEl.innerText = "Edit Task";
-      if (lblEl)   lblEl.innerText   = "Update Task";
-      _setVal("task_projectId",       t[1]);
-      _setVal("task_taskType",        t[4]);
-      _setVal("task_language",        t[8]);
-      _setVal("task_sourcePages",     t[9]);
-      _setVal("task_langCount",       t[11]);
-      _setVal("task_finalPages",      t[10]);
-      _setVal("task_status",          t[12]);
-      _setVal("task_priority",        t[13]);
-      _setVal("task_startDate",       formatForInput(t[14]));
-      _setVal("task_deliveryDate",    formatForInput(t[15]));
-      _setVal("task_completedDate",   formatForInput(t[16]));
-      _setVal("task_sourceLink",      t[17]);
-      _setVal("task_deliverableLink", t[18]);
-      _setVal("task_notes",           t[19]);
-      var wt    = t[5] || "In-House";
-      var radio = document.querySelector('input[name="task_workType"][value="' + wt + '"]');
-      if (radio) { radio.checked = true; _updateWorkTypeBtns("task_workType", "wt_inhouse_btn", "wt_vendor_btn"); }
-      _setVal("task_assignedTo", t[6]);
-      _setVal("task_vendorName", t[7]);
-      if (typeof onTaskTypeChange === "function") onTaskTypeChange();
+      if (!res||!res.task){ showToast("Task not found.","error"); return; }
+      var t=res.task;
+      var titleEl=document.getElementById("addTaskTitle");
+      var lblEl  =document.getElementById("taskSubmitLabel");
+      if (titleEl) titleEl.innerText="Edit Task";
+      if (lblEl)   lblEl.innerText  ="Update Task";
+      _setVal("task_projectId",      t[1]);
+      _setVal("task_taskType",       t[4]);
+      _setVal("task_language",       t[8]);
+      _setVal("task_sourcePages",    t[9]);
+      _setVal("task_langCount",      t[11]);
+      _setVal("task_finalPages",     t[10]);
+      _setVal("task_status",         t[12]);
+      _setVal("task_priority",       t[13]);
+      _setVal("task_startDate",      formatForInput(t[14]));
+      _setVal("task_deliveryDate",   formatForInput(t[15]));
+      _setVal("task_completedDate",  formatForInput(t[16]));
+      _setVal("task_sourceLink",     t[17]);
+      _setVal("task_deliverableLink",t[18]);
+      _setVal("task_notes",          t[19]);
+      var wt=t[5]||"In-House";
+      var radio=document.querySelector('input[name="task_workType"][value="'+wt+'"]');
+      if (radio){ radio.checked=true; _updateWorkTypeBtns("task_workType","wt_inhouse_btn","wt_vendor_btn"); }
+      _setVal("task_assignedTo",t[6]);
+      _setVal("task_vendorName",t[7]);
+      if (typeof onTaskTypeChange==="function") onTaskTypeChange();
       lookupTaskProject();
     })
     .getTaskById(id);
 }
 
-/* ── DELETE ── */
 function deleteTaskById(id) {
-  customConfirm("Delete task " + id + "? This cannot be undone.", function() {
-    showLoader("Deleting\u2026");
+  customConfirm("Delete task "+id+"? This cannot be undone.", function(){
+    showLoader("Deleting...");
     google.script.run
-      .withFailureHandler(function(e) { hideLoader(); showToast("Delete failed: " + e.message, "error"); })
-      .withSuccessHandler(function() { hideLoader(); showToast("Task deleted.", "warning"); loadTasks(); })
+      .withFailureHandler(function(e){ hideLoader(); showToast("Delete failed: "+e.message,"error"); })
+      .withSuccessHandler(function(){ hideLoader(); showToast("Task deleted.","warning"); loadTasks(); })
       .deleteTask(id);
   }, true);
 }
 
-/* ── PROJECT LOOKUP ── */
 function lookupTaskProject() {
-  var id = _val("task_projectId");
-  if (!id) { showToast("Enter a Project ID first.", "warning"); return; }
-  showLoader("Looking up project\u2026");
+  var id=_val("task_projectId");
+  if (!id){ showToast("Enter a Project ID first.","warning"); return; }
+  showLoader("Looking up project...");
   google.script.run
-    .withFailureHandler(function(e) { hideLoader(); showToast("Lookup failed: " + e.message, "error"); })
-    .withSuccessHandler(function(res) {
+    .withFailureHandler(function(e){ hideLoader(); showToast("Lookup failed: "+e.message,"error"); })
+    .withSuccessHandler(function(res){
       hideLoader();
-      var prev = document.getElementById("task_projectPreview");
-      var notF = document.getElementById("task_projectNotFound");
-      if (!res || !res.project) {
-        if (prev) prev.style.display = "none";
-        if (notF) notF.style.display = "block";
+      var prev=document.getElementById("task_projectPreview");
+      var notF=document.getElementById("task_projectNotFound");
+      if (!res||!res.project){
+        if (prev) prev.style.display="none";
+        if (notF) notF.style.display="block";
         return;
       }
-      var p = res.project;
-      if (notF) notF.style.display = "none";
-      if (prev) prev.style.display = "block";
-      _set("task_preview_name",   p[2]);
-      _set("task_preview_client", "Client: " + (p[1] || "\u2014"));
-      _set("task_preview_langs",  "Languages: " + (p[5] || "\u2014"));
+      var p=res.project;
+      if (notF) notF.style.display="none";
+      if (prev) prev.style.display="block";
+      _set("task_preview_name",  p[2]);
+      _set("task_preview_client","Client: "+(p[1]||"—"));
+      _set("task_preview_langs", "Languages: "+(p[5]||"—"));
     })
     .getProjectById(id);
 }
 
-/* ── PAGE CALC ── */
 function initTaskPageCalc() {
-  var src   = document.getElementById("task_sourcePages");
-  var lang  = document.getElementById("task_langCount");
-  var final = document.getElementById("task_finalPages");
-  var mode  = document.getElementById("task_pagesMode");
-  if (!src || !lang || !final) return;
-  var manual = false;
-
-  function calc() {
-    if (manual) return;
-    var v = (parseFloat(src.value) || 0) * (parseFloat(lang.value) || 0);
-    final.value = v > 0 ? v : "";
-  }
-  function setMode(m) {
-    manual = m;
+  var src  =document.getElementById("task_sourcePages");
+  var lang =document.getElementById("task_langCount");
+  var fin  =document.getElementById("task_finalPages");
+  var mode =document.getElementById("task_pagesMode");
+  if (!src||!lang||!fin) return;
+  var manual=false;
+  function calc(){ if(manual) return; var v=(parseFloat(src.value)||0)*(parseFloat(lang.value)||0); fin.value=v>0?v:""; }
+  function setMode(m){
+    manual=m;
     if (!mode) return;
-    mode.innerText  = m ? "Manual" : "Auto";
-    mode.className  = "absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase px-2 py-0.5 rounded-full " +
-      (m ? "bg-blue-100 text-blue-600" : "bg-yellow-200 text-yellow-700");
+    mode.innerText=m?"Manual":"Auto";
+    mode.className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase px-2 py-0.5 rounded-full "+(m?"bg-blue-100 text-blue-600":"bg-yellow-200 text-yellow-700");
   }
-  final.addEventListener("input", function() { setMode(final.value !== ""); if (!final.value) calc(); });
-  src.addEventListener("input",   calc);
-  lang.addEventListener("input",  calc);
+  fin.addEventListener("input",function(){ setMode(fin.value!==""); if(!fin.value) calc(); });
+  src.addEventListener("input",calc);
+  lang.addEventListener("input",calc);
 }
 
-/* ── TASK TYPE CHANGE ── */
 function onTaskTypeChange() {
-  var type = _val("task_taskType");
-  var hint = document.getElementById("task_typeHint");
-  var cfg  = {
-    "Main DTP":              "\uD83D\uDCD0 Tracking DTP Pages \u2014 final layout after translation.",
-    "Content Extraction":    "\uD83D\uDCC4 Tracking Extracted Pages \u2014 initial content extraction phase.",
-    "Corrections/Additions": "\u270F\uFE0F Tracking Correction/Addition Pages \u2014 post-delivery changes.",
-    "Bilingual Creation":    "\uD83C\uDF10 Tracking Bilingual Pages \u2014 side-by-side layout task."
+  var type=_val("task_taskType");
+  var hint=document.getElementById("task_typeHint");
+  var cfg={
+    "Main DTP":              "Tracking DTP Pages — final layout after translation.",
+    "Content Extraction":    "Tracking Extracted Pages — initial content extraction phase.",
+    "Corrections/Additions": "Tracking Correction/Addition Pages — post-delivery changes.",
+    "Bilingual Creation":    "Tracking Bilingual Pages — side-by-side layout task."
   };
-  if (hint) {
-    if (cfg[type]) { hint.innerText = cfg[type]; hint.classList.remove("hidden"); }
-    else           { hint.classList.add("hidden"); }
+  if (hint){
+    if (cfg[type]){ hint.innerText=cfg[type]; hint.classList.remove("hidden"); }
+    else          { hint.classList.add("hidden"); }
   }
 }
 
-/* ── LOAD DROPDOWNS — accepts optional callback ── */
 function loadTaskDropdowns(cb) {
   google.script.run
-    .withFailureHandler(function() { if (typeof cb === "function") cb(); })
-    .withSuccessHandler(function(d) {
-      if (d) {
-        var teamOpts   = (d.team    || []).map(function(m) { return '<option value="' + m.name + '">' + m.name + (m.role ? " (" + m.role + ")" : "") + "</option>"; }).join("");
-        var vendorOpts = (d.vendors || []).map(function(v) { return '<option value="' + v.name + '">' + v.name + "</option>"; }).join("");
-        var assignEl   = document.getElementById("task_assignedTo");
-        var vendorEl   = document.getElementById("task_vendorName");
-        if (assignEl) assignEl.innerHTML = '<option value="">\u2014 Select Team Member \u2014</option>' + teamOpts;
-        if (vendorEl) vendorEl.innerHTML = '<option value="">\u2014 Select Vendor \u2014</option>' + vendorOpts;
+    .withFailureHandler(function(){ if(typeof cb==="function") cb(); })
+    .withSuccessHandler(function(d){
+      if (d){
+        var tOpts=(d.team   ||[]).map(function(m){ return '<option value="'+m.name+'">'+m.name+(m.role?" ("+m.role+")":"")+"</option>"; }).join("");
+        var vOpts=(d.vendors||[]).map(function(v){ return '<option value="'+v.name+'">'+v.name+"</option>"; }).join("");
+        var aEl=document.getElementById("task_assignedTo");
+        var vEl=document.getElementById("task_vendorName");
+        if (aEl) aEl.innerHTML='<option value="">— Select Team Member —</option>'+tOpts;
+        if (vEl) vEl.innerHTML='<option value="">— Select Vendor —</option>'+vOpts;
       }
-      if (typeof cb === "function") cb();
+      if (typeof cb==="function") cb();
     })
     .getDropdownData();
 }
 
-/* ── TASK FORM SUBMIT ── */
-(function() {
-  document.addEventListener("submit", function(e) {
-    if (!e.target || e.target.id !== "taskForm") return;
+(function(){
+  document.addEventListener("submit",function(e){
+    if (!e.target||e.target.id!=="taskForm") return;
     e.preventDefault();
-    var editId = document.getElementById("contentArea").dataset.editTaskId || "";
-    var projId = _val("task_projectId");
-    var prev   = document.getElementById("task_projectPreview");
-    if (!projId) { showToast("Project ID is required.", "error"); return; }
-    if (!prev || prev.style.display === "none") { showToast("Please lookup and verify the Project ID first.", "warning"); return; }
-    var wtEl = document.querySelector('input[name="task_workType"]:checked');
-    var wt   = wtEl ? wtEl.value : "In-House";
-    var d = {
-      projectId:       projId,
-      taskType:        _val("task_taskType"),
-      workType:        wt,
-      assignedTo:      _val("task_assignedTo"),
-      vendorName:      _val("task_vendorName"),
-      language:        _val("task_language"),
-      sourcePages:     _val("task_sourcePages"),
-      langCount:       _val("task_langCount"),
-      finalPages:      _val("task_finalPages"),
-      status:          _val("task_status"),
-      priority:        _val("task_priority"),
-      startDate:       _val("task_startDate"),
-      deliveryDate:    _val("task_deliveryDate"),
-      completedDate:   _val("task_completedDate"),
-      sourceLink:      _val("task_sourceLink"),
-      deliverableLink: _val("task_deliverableLink"),
-      notes:           _val("task_notes")
+    var editId=document.getElementById("contentArea").dataset.editTaskId||"";
+    var projId=_val("task_projectId");
+    var prev  =document.getElementById("task_projectPreview");
+    if (!projId){ showToast("Project ID is required.","error"); return; }
+    if (!prev||prev.style.display==="none"){ showToast("Please lookup and verify the Project ID first.","warning"); return; }
+    var wtEl=document.querySelector('input[name="task_workType"]:checked');
+    var wt  =wtEl?wtEl.value:"In-House";
+    var d={
+      projectId:      projId,
+      taskType:       _val("task_taskType"),
+      workType:       wt,
+      assignedTo:     _val("task_assignedTo"),
+      vendorName:     _val("task_vendorName"),
+      language:       _val("task_language"),
+      sourcePages:    _val("task_sourcePages"),
+      langCount:      _val("task_langCount"),
+      finalPages:     _val("task_finalPages"),
+      status:         _val("task_status"),
+      priority:       _val("task_priority"),
+      startDate:      _val("task_startDate"),
+      deliveryDate:   _val("task_deliveryDate"),
+      completedDate:  _val("task_completedDate"),
+      sourceLink:     _val("task_sourceLink"),
+      deliverableLink:_val("task_deliverableLink"),
+      notes:          _val("task_notes")
     };
-    if (!d.taskType) { showToast("Task Type is required.", "error"); return; }
-    var btn    = document.getElementById("taskSubmitBtn");
-    var lblEl  = document.getElementById("taskSubmitLabel");
-    btn.disabled = true;
-    if (lblEl) lblEl.innerText = "Saving\u2026";
-    showLoader(editId ? "Updating task\u2026" : "Saving task\u2026");
-    if (editId) {
+    if (!d.taskType){ showToast("Task Type is required.","error"); return; }
+    var btn  =document.getElementById("taskSubmitBtn");
+    var lblEl=document.getElementById("taskSubmitLabel");
+    btn.disabled=true;
+    if (lblEl) lblEl.innerText="Saving...";
+    showLoader(editId?"Updating task...":"Saving task...");
+    if (editId){
       google.script.run
-        .withFailureHandler(function(er) { hideLoader(); btn.disabled = false; if (lblEl) lblEl.innerText = "Update Task"; showToast("Error: " + er.message, "error"); })
-        .withSuccessHandler(function() { hideLoader(); showToast("Task updated!", "success"); loadPage("tasks"); })
-        .updateTask(editId, d);
+        .withFailureHandler(function(er){ hideLoader(); btn.disabled=false; if(lblEl) lblEl.innerText="Update Task"; showToast("Error: "+er.message,"error"); })
+        .withSuccessHandler(function(){ hideLoader(); showToast("Task updated!","success"); loadPage("tasks"); })
+        .updateTask(editId,d);
     } else {
       google.script.run
-        .withFailureHandler(function(er) { hideLoader(); btn.disabled = false; if (lblEl) lblEl.innerText = "Save Task"; showToast("Error: " + er.message, "error"); })
-        .withSuccessHandler(function() { hideLoader(); showToast("Task saved!", "success"); loadPage("tasks"); })
+        .withFailureHandler(function(er){ hideLoader(); btn.disabled=false; if(lblEl) lblEl.innerText="Save Task"; showToast("Error: "+er.message,"error"); })
+        .withSuccessHandler(function(){ hideLoader(); showToast("Task saved!","success"); loadPage("tasks"); })
         .addTask(d);
     }
   });

@@ -1,7 +1,7 @@
 /* ================================================================
    Code.gs — DTP Project Tracker
    Entry point, shared helpers, batch load, monthly summary.
-   All CRUD is in: Projects.gs | Tasks.gs | Revisions.gs | Vendors.gs
+   All CRUD is in: Projects.gs | Tasks.gs | Revisions_Service.gs | Vendors_Service.gs
 ================================================================ */
 
 const SS_ID           = "1-jcai8DeFYpHmfzWGjcYmA4Ehbt0ASO3Ue240P0HGM4";

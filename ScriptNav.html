@@ -3,7 +3,7 @@
    ScriptNav.html — Routing, sidebar, refresh, quick edit, init
 ================================================================ */
 
-const PAGE_MAP = {
+var PAGE_MAP = {
   dashboard:      "Dashboard",
   projects:       "ManageProjects",
   addProject:     "AddProject",
@@ -17,18 +17,17 @@ const PAGE_MAP = {
   team:           "Team"
 };
 
-let _isLoading  = false;
-let _activePage = "dashboard";
-let _pageCtx    = null;
+var _isLoading  = false;
+var _activePage = "dashboard";
+var _pageCtx    = null;
 
-/* ── MAIN ROUTER ── */
 function loadPage(page, ctx) {
   if (_isLoading) return;
   _isLoading  = true;
   _activePage = page;
   _pageCtx    = ctx || null;
 
-  showLoader("Loading\u2026");
+  showLoader("Loading...");
   _setActiveNav(page);
 
   google.script.run
@@ -38,7 +37,7 @@ function loadPage(page, ctx) {
       showToast("Failed to load page: " + (err.message || err), "error");
     })
     .withSuccessHandler(function(html) {
-      const area = document.getElementById("contentArea");
+      var area = document.getElementById("contentArea");
       area.innerHTML = html;
       area.className = "max-w-7xl mx-auto page-enter";
       _isLoading = false;
@@ -95,9 +94,7 @@ function _initPage(page, ctx) {
   }
 }
 
-/* ── PAGE INIT HELPERS ── */
 function _initAddTaskForm(ctx) {
-  /* load dropdowns first, then set context values */
   if (typeof loadTaskDropdowns === "function") {
     loadTaskDropdowns(function() {
       if (ctx && ctx.projectId) {
@@ -118,7 +115,7 @@ function _initAddTaskForm(ctx) {
 }
 
 function _initAddRevisionForm(ctx) {
-  const dateEl = document.getElementById("rev_revisionDate");
+  var dateEl = document.getElementById("rev_revisionDate");
   if (dateEl && !dateEl.value) dateEl.value = todayISO();
   if (typeof loadRevisionDropdowns === "function") {
     loadRevisionDropdowns(function() {
@@ -128,7 +125,6 @@ function _initAddRevisionForm(ctx) {
       }
       if (ctx && ctx.editId) {
         document.getElementById("contentArea").dataset.editRevId = ctx.editId;
-        if (typeof loadRevisionForEdit === "function") loadRevisionForEdit(ctx.editId);
       }
     });
   } else {
@@ -150,32 +146,30 @@ function _wireWorkTypeRadios(radioName, inhouseBtnId, vendorBtnId) {
 }
 
 function _updateWorkTypeBtns(radioName, inhouseBtnId, vendorBtnId) {
-  const checked = document.querySelector('input[name="' + radioName + '"]:checked');
-  const isIH    = checked && checked.value === "In-House";
-  const ihBtn   = document.getElementById(inhouseBtnId);
-  const vBtn    = document.getElementById(vendorBtnId);
-  const BASE    = "flex items-center justify-center gap-2 rounded-xl border-2 py-3 text-sm font-bold transition-all ";
+  var checked = document.querySelector('input[name="' + radioName + '"]:checked');
+  var isIH    = checked && checked.value === "In-House";
+  var ihBtn   = document.getElementById(inhouseBtnId);
+  var vBtn    = document.getElementById(vendorBtnId);
+  var BASE    = "flex items-center justify-center gap-2 rounded-xl border-2 py-3 text-sm font-bold transition-all ";
   if (ihBtn) ihBtn.className = BASE + (isIH  ? "border-sky-500 bg-sky-50 text-sky-700"       : "border-gray-200 bg-gray-50 text-gray-400");
   if (vBtn)  vBtn.className  = BASE + (!isIH ? "border-amber-500 bg-amber-50 text-amber-700" : "border-gray-200 bg-gray-50 text-gray-400");
 }
 
-/* ── ACTIVE NAV HIGHLIGHT ── */
 function _setActiveNav(page) {
   document.querySelectorAll("[data-nav]").forEach(function(el) {
-    const isActive = el.dataset.nav === page;
+    var isActive = el.dataset.nav === page;
     el.classList.toggle("bg-sky-500/15",  isActive);
     el.classList.toggle("text-sky-300",   isActive);
     el.classList.toggle("text-slate-300", !isActive);
   });
 }
 
-/* ── SIDEBAR TOGGLE ── */
 function toggleSidebar() {
-  const sidebar   = document.getElementById("sidebar");
-  const main      = document.getElementById("mainContent");
-  const labels    = document.querySelectorAll(".nav-label");
-  const brand     = document.getElementById("sidebarBrand");
-  const collapsed = sidebar.dataset.collapsed === "true";
+  var sidebar   = document.getElementById("sidebar");
+  var main      = document.getElementById("mainContent");
+  var labels    = document.querySelectorAll(".nav-label");
+  var brand     = document.getElementById("sidebarBrand");
+  var collapsed = sidebar.dataset.collapsed === "true";
 
   if (collapsed) {
     sidebar.classList.replace("w-20", "w-72");
@@ -192,7 +186,6 @@ function toggleSidebar() {
   }
 }
 
-/* ── GLOBAL QUICK EDIT MODAL ── */
 function closeEditModal() {
   document.getElementById("editModal").style.display = "none";
 }
@@ -204,13 +197,13 @@ function markCompleteNow() {
 }
 
 function saveQuickEdit() {
-  const id       = document.getElementById("m_itemId").innerText.trim();
-  const status   = document.getElementById("m_status").value;
-  const delivery = document.getElementById("m_deliveryDate").value;
-  const editType = document.getElementById("editModal").dataset.editType || "task";
+  var id       = document.getElementById("m_itemId").innerText.trim();
+  var status   = document.getElementById("m_status").value;
+  var delivery = document.getElementById("m_deliveryDate").value;
+  var editType = document.getElementById("editModal").dataset.editType || "task";
   if (!id) { showToast("No item selected.", "error"); return; }
 
-  showLoader("Saving\u2026");
+  showLoader("Saving...");
 
   if (editType === "project") {
     google.script.run
@@ -222,6 +215,16 @@ function saveQuickEdit() {
         if (typeof loadProjects === "function") loadProjects();
       })
       .updateProjectStatus(id, status);
+  } else if (editType === "revision") {
+    google.script.run
+      .withFailureHandler(function(e) { hideLoader(); showToast("Update failed: " + e.message, "error"); })
+      .withSuccessHandler(function() {
+        hideLoader();
+        closeEditModal();
+        showToast("Revision updated!", "success");
+        if (typeof loadRevisions === "function") loadRevisions();
+      })
+      .updateRevisionStatus(id, status, delivery);
   } else {
     google.script.run
       .withFailureHandler(function(e) { hideLoader(); showToast("Update failed: " + e.message, "error"); })
@@ -236,12 +239,11 @@ function saveQuickEdit() {
   }
 }
 
-/* ── REFRESH ── */
 function handleRefresh() {
-  const btn  = document.getElementById("refreshBtn");
-  const icon = document.getElementById("refreshIcon");
+  var btn  = document.getElementById("refreshBtn");
+  var icon = document.getElementById("refreshIcon");
   if (btn)  btn.disabled   = true;
-  if (icon) icon.innerText = "\u23F3";
+  if (icon) icon.innerText = "...";
 
   var refreshMap = {
     dashboard:  function() { refreshDashboardStats(); },
@@ -257,13 +259,12 @@ function handleRefresh() {
 
   setTimeout(function() {
     if (btn)  btn.disabled   = false;
-    if (icon) icon.innerText = "\uD83D\uDD04";
+    if (icon) icon.innerText = "Refresh";
     var el = document.getElementById("lastUpdated");
     if (el) el.innerText = new Date().toLocaleTimeString();
   }, 1500);
 }
 
-/* ── INIT ── */
 window.addEventListener("load", function() {
   var main = document.getElementById("mainContent");
   if (main) { main.classList.remove("ml-64"); main.classList.add("ml-72"); }

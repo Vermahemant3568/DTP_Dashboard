@@ -1,16 +1,15 @@
 <script>
 /* ================================================================
-   ScriptRevisions.html — Revisions list, CRUD, form
+   ScriptRevisions.html
 ================================================================ */
-
 var ALL_REVISIONS = [];
 
 function loadRevisions() {
-  showLoader("Loading revisions\u2026");
+  showLoader("Loading revisions...");
   google.script.run
-    .withFailureHandler(function(e) { hideLoader(); showToast("Could not load revisions: " + e.message, "error"); })
-    .withSuccessHandler(function(data) {
-      ALL_REVISIONS = data || [];
+    .withFailureHandler(function(e){ hideLoader(); showToast("Could not load revisions: "+e.message,"error"); })
+    .withSuccessHandler(function(data){
+      ALL_REVISIONS = data||[];
       _renderRevStats(ALL_REVISIONS);
       _renderRevisionsTable(ALL_REVISIONS);
       hideLoader();
@@ -19,180 +18,169 @@ function loadRevisions() {
 }
 
 function _renderRevStats(data) {
-  var pages   = data.reduce(function(s, r) { return s + (Number(r[7]) || 0); }, 0);
-  var pending = data.filter(function(r) { return r[11] === "Pending"; }).length;
-  var done    = data.filter(function(r) { return r[11] === "Completed"; }).length;
-  _set("rev_stat_total",   data.length);
-  _set("rev_stat_pages",   pages.toLocaleString());
-  _set("rev_stat_pending", pending);
-  _set("rev_stat_done",    done);
+  var pages  =data.reduce(function(s,r){ return s+(Number(r[7])||0); },0);
+  var pending=data.filter(function(r){ return r[11]==="Pending"; }).length;
+  var done   =data.filter(function(r){ return r[11]==="Completed"; }).length;
+  _set("rev_stat_total",  data.length);
+  _set("rev_stat_pages",  pages.toLocaleString());
+  _set("rev_stat_pending",pending);
+  _set("rev_stat_done",   done);
 }
 
 function _renderRevisionsTable(data) {
-  var tbody = document.getElementById("revisionsTable");
+  var tbody=document.getElementById("revisionsTable");
   if (!tbody) return;
-  if (!data.length) {
-    tbody.innerHTML = '<tr><td colspan="10" class="py-16 text-center text-slate-400 text-sm">No revisions found. <button onclick="loadPage(\'addRevision\')" class="text-purple-600 hover:underline font-semibold">Add one \u2192</button></td></tr>';
+  if (!data.length){
+    tbody.innerHTML='<tr><td colspan="10" class="py-16 text-center text-slate-400 text-sm">No revisions found.</td></tr>';
     return;
   }
-  tbody.innerHTML = data.map(function(r) {
-    var sc  = getStatusClass(r[11] || "Pending");
-    var wc  = getWorkClass(r[8]   || "In-House");
-    var who = r[8] === "Vendor" ? (r[10] || r[9] || "\u2014") : (r[9] || "\u2014");
-    return '<tr>' +
-      '<td class="font-mono text-[11px] text-gray-400">' + r[0] + '</td>' +
-      '<td>' +
-        '<div class="font-semibold text-gray-900 text-sm truncate max-w-[140px]" title="' + (r[3] || "") + '">' + (r[3] || r[1] || "\u2014") + '</div>' +
-        '<div class="font-mono text-[10px] text-gray-400">' + r[1] + '</div>' +
-      '</td>' +
-      '<td>' +
-        '<div class="text-sm font-semibold text-gray-700">' + (r[4] || "\u2014") + '</div>' +
-        '<div class="text-xs text-gray-400">' + (r[5] || "\u2014") + '</div>' +
-      '</td>' +
-      '<td><span class="badge bg-purple-100 text-purple-700">' + (r[6] || "\u2014") + '</span></td>' +
-      '<td class="text-sm text-gray-600">' + who + '</td>' +
-      '<td><span class="badge ' + wc + '">' + (r[8] || "In-House") + '</span></td>' +
-      '<td><span class="badge ' + sc + '">' + (r[11] || "Pending") + '</span></td>' +
-      '<td class="text-center font-bold text-purple-600 text-sm">' + (Number(r[7]) || 0) + '</td>' +
-      '<td class="text-xs text-gray-500">' + (r[12] || "\u2014") + '</td>' +
-      '<td class="text-right">' +
-        '<div class="flex justify-end gap-1">' +
-          '<button onclick="openRevisionQuickEdit(\'' + r[0] + '\')" title="Quick edit" class="p-1.5 text-amber-500 hover:bg-amber-50 rounded-lg transition-all">' +
-            '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>' +
-          '</button>' +
-          '<button onclick="deleteRevisionById(\'' + r[0] + '\')" title="Delete" class="p-1.5 text-red-400 hover:bg-red-50 rounded-lg transition-all">' +
-            '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>' +
-          '</button>' +
-        '</div>' +
-      '</td>' +
+  tbody.innerHTML=data.map(function(r){
+    var sc =getStatusClass(r[11]||"Pending");
+    var wc =getWorkClass(r[8]  ||"In-House");
+    var who=r[8]==="Vendor"?(r[10]||r[9]||"—"):(r[9]||"—");
+    return '<tr>'+
+      '<td class="font-mono text-[11px] text-gray-400">'+r[0]+'</td>'+
+      '<td><div class="font-semibold text-gray-900 text-sm">'+(r[3]||r[1]||"—")+'</div>'+
+          '<div class="font-mono text-[10px] text-gray-400">'+r[1]+'</div></td>'+
+      '<td><div class="text-sm font-semibold text-gray-700">'+(r[4]||"—")+'</div>'+
+          '<div class="text-xs text-gray-400">'+(r[5]||"—")+'</div></td>'+
+      '<td><span class="badge bg-purple-100 text-purple-700">'+(r[6]||"—")+'</span></td>'+
+      '<td class="text-sm text-gray-600">'+who+'</td>'+
+      '<td><span class="badge '+wc+'">'+(r[8]||"In-House")+'</span></td>'+
+      '<td><span class="badge '+sc+'">'+(r[11]||"Pending")+'</span></td>'+
+      '<td class="text-center font-bold text-purple-600 text-sm">'+(Number(r[7])||0)+'</td>'+
+      '<td class="text-xs text-gray-500">'+(r[12]||"—")+'</td>'+
+      '<td class="text-right">'+
+        '<div class="flex justify-end gap-1">'+
+          btnStatus(r[0],"openRevisionQuickEdit")+
+          btnDelete(r[0],"deleteRevisionById")+
+        '</div>'+
+      '</td>'+
     '</tr>';
   }).join("");
 }
 
 function filterRevisions() {
-  var q  = (_val("rev_search")       || "").toLowerCase();
-  var st = _val("rev_statusFilter")  || "";
-  var rt = _val("rev_typeFilter")    || "";
-  var wt = _val("rev_workFilter")    || "";
-  var filtered = ALL_REVISIONS.filter(function(r) {
-    var mq = !q  || [r[0], r[1], r[3], r[6]].some(function(v) { return String(v).toLowerCase().includes(q); });
-    var ms = !st || r[11] === st;
-    var mr = !rt || r[5]  === rt;
-    var mw = !wt || r[8]  === wt;
-    return mq && ms && mr && mw;
+  var q  =(_val("rev_search")      ||"").toLowerCase();
+  var st =_val("rev_statusFilter") ||"";
+  var rt =_val("rev_typeFilter")   ||"";
+  var wt =_val("rev_workFilter")   ||"";
+  var filtered=ALL_REVISIONS.filter(function(r){
+    var mq=!q  ||[r[0],r[1],r[3],r[6]].some(function(v){ return String(v).toLowerCase().includes(q); });
+    var ms=!st ||r[11]===st;
+    var mr=!rt ||r[5] ===rt;
+    var mw=!wt ||r[8] ===wt;
+    return mq&&ms&&mr&&mw;
   });
   _renderRevisionsTable(filtered);
 }
 
 function openRevisionQuickEdit(id) {
-  var rev = ALL_REVISIONS.find(function(r) { return r[0] === id; });
-  if (!rev) { showToast("Revision not found.", "error"); return; }
-  document.getElementById("m_itemId").innerText   = id;
-  document.getElementById("m_itemName").innerText = (rev[3] || rev[1] || "\u2014") + " \u00B7 " + (rev[6] || "");
-  document.getElementById("m_status").value       = rev[11] || "Pending";
-  document.getElementById("m_deliveryDate").value = formatForInput(rev[13]);
-  document.getElementById("editModal").dataset.editType = "revision";
-  document.getElementById("editModal").style.display    = "flex";
+  var rev=ALL_REVISIONS.find(function(r){ return r[0]===id; });
+  if (!rev){ showToast("Revision not found.","error"); return; }
+  document.getElementById("m_itemId").innerText   =id;
+  document.getElementById("m_itemName").innerText =(rev[3]||rev[1]||"—")+" · "+(rev[6]||"");
+  document.getElementById("m_status").value       =rev[11]||"Pending";
+  document.getElementById("m_deliveryDate").value =formatForInput(rev[13]);
+  document.getElementById("editModal").dataset.editType="revision";
+  document.getElementById("editModal").style.display   ="flex";
 }
 
 function deleteRevisionById(id) {
-  customConfirm("Delete revision " + id + "? This cannot be undone.", function() {
-    showLoader("Deleting\u2026");
+  customConfirm("Delete revision "+id+"? This cannot be undone.", function(){
+    showLoader("Deleting...");
     google.script.run
-      .withFailureHandler(function(e) { hideLoader(); showToast("Delete failed: " + e.message, "error"); })
-      .withSuccessHandler(function() { hideLoader(); showToast("Revision deleted.", "warning"); loadRevisions(); })
+      .withFailureHandler(function(e){ hideLoader(); showToast("Delete failed: "+e.message,"error"); })
+      .withSuccessHandler(function(){ hideLoader(); showToast("Revision deleted.","warning"); loadRevisions(); })
       .deleteRevision(id);
   }, true);
 }
 
-/* ── PROJECT LOOKUP ── */
 function lookupRevisionProject() {
-  var id = _val("rev_projectId");
-  if (!id) { showToast("Enter a Project ID first.", "warning"); return; }
-  showLoader("Looking up project\u2026");
+  var id=_val("rev_projectId");
+  if (!id){ showToast("Enter a Project ID first.","warning"); return; }
+  showLoader("Looking up project...");
   google.script.run
-    .withFailureHandler(function(e) { hideLoader(); showToast("Lookup failed: " + e.message, "error"); })
-    .withSuccessHandler(function(res) {
+    .withFailureHandler(function(e){ hideLoader(); showToast("Lookup failed: "+e.message,"error"); })
+    .withSuccessHandler(function(res){
       hideLoader();
-      var prev = document.getElementById("rev_projectPreview");
-      var notF = document.getElementById("rev_projectNotFound");
-      if (!res || !res.project) {
-        if (prev) prev.style.display = "none";
-        if (notF) notF.style.display = "block";
+      var prev=document.getElementById("rev_projectPreview");
+      var notF=document.getElementById("rev_projectNotFound");
+      if (!res||!res.project){
+        if (prev) prev.style.display="none";
+        if (notF) notF.style.display="block";
         return;
       }
-      var p = res.project;
-      if (notF) notF.style.display = "none";
-      if (prev) prev.style.display = "block";
-      _set("rev_preview_name",   p[2]);
-      _set("rev_preview_client", "Client: " + (p[1] || "\u2014"));
-      _set("rev_preview_langs",  "Languages: " + (p[5] || "\u2014"));
+      var p=res.project;
+      if (notF) notF.style.display="none";
+      if (prev) prev.style.display="block";
+      _set("rev_preview_name",  p[2]);
+      _set("rev_preview_client","Client: "+(p[1]||"—"));
+      _set("rev_preview_langs", "Languages: "+(p[5]||"—"));
     })
     .getProjectById(id);
 }
 
-/* ── LOAD DROPDOWNS — accepts optional callback ── */
 function loadRevisionDropdowns(cb) {
   google.script.run
-    .withFailureHandler(function() { if (typeof cb === "function") cb(); })
-    .withSuccessHandler(function(d) {
-      if (d) {
-        var teamOpts   = (d.team    || []).map(function(m) { return '<option value="' + m.name + '">' + m.name + "</option>"; }).join("");
-        var vendorOpts = (d.vendors || []).map(function(v) { return '<option value="' + v.name + '">' + v.name + "</option>"; }).join("");
-        var assignEl   = document.getElementById("rev_assignedTo");
-        var vendorEl   = document.getElementById("rev_vendorName");
-        if (assignEl) assignEl.innerHTML = '<option value="">\u2014 Select Team Member \u2014</option>' + teamOpts;
-        if (vendorEl) vendorEl.innerHTML = '<option value="">\u2014 Select Vendor \u2014</option>' + vendorOpts;
+    .withFailureHandler(function(){ if(typeof cb==="function") cb(); })
+    .withSuccessHandler(function(d){
+      if (d){
+        var tOpts=(d.team   ||[]).map(function(m){ return '<option value="'+m.name+'">'+m.name+"</option>"; }).join("");
+        var vOpts=(d.vendors||[]).map(function(v){ return '<option value="'+v.name+'">'+v.name+"</option>"; }).join("");
+        var aEl=document.getElementById("rev_assignedTo");
+        var vEl=document.getElementById("rev_vendorName");
+        if (aEl) aEl.innerHTML='<option value="">— Select Team Member —</option>'+tOpts;
+        if (vEl) vEl.innerHTML='<option value="">— Select Vendor —</option>'+vOpts;
       }
-      if (typeof cb === "function") cb();
+      if (typeof cb==="function") cb();
     })
     .getDropdownData();
 }
 
-/* ── REVISION FORM SUBMIT ── */
-(function() {
-  document.addEventListener("submit", function(e) {
-    if (!e.target || e.target.id !== "revisionForm") return;
+(function(){
+  document.addEventListener("submit",function(e){
+    if (!e.target||e.target.id!=="revisionForm") return;
     e.preventDefault();
-    var editId = document.getElementById("contentArea").dataset.editRevId || "";
-    var projId = _val("rev_projectId");
-    var prev   = document.getElementById("rev_projectPreview");
-    if (!projId) { showToast("Project ID is required.", "error"); return; }
-    if (!prev || prev.style.display === "none") { showToast("Please lookup and verify the Project ID first.", "warning"); return; }
-    var lang  = _val("rev_language");
-    var pages = _val("rev_pages");
-    if (!lang)  { showToast("Language is required.", "error"); return; }
-    if (!pages || Number(pages) <= 0) { showToast("Enter valid revision pages.", "error"); return; }
-    var wtEl = document.querySelector('input[name="rev_workType"]:checked');
-    var wt   = wtEl ? wtEl.value : "In-House";
-    var d = {
-      projectId:      projId,
-      revisionNumber: _val("rev_revisionNumber"),
-      revisionType:   _val("rev_revisionType"),
-      language:       lang,
-      revisionPages:  pages,
-      workType:       wt,
-      assignedTo:     _val("rev_assignedTo"),
-      vendorName:     _val("rev_vendorName"),
-      status:         _val("rev_status"),
-      revisionDate:   _val("rev_revisionDate"),
-      deliveryDate:   _val("rev_deliveryDate"),
-      notes:          _val("rev_notes")
+    var editId=document.getElementById("contentArea").dataset.editRevId||"";
+    var projId=_val("rev_projectId");
+    var prev  =document.getElementById("rev_projectPreview");
+    if (!projId){ showToast("Project ID is required.","error"); return; }
+    if (!prev||prev.style.display==="none"){ showToast("Please lookup and verify the Project ID first.","warning"); return; }
+    var lang =_val("rev_language");
+    var pages=_val("rev_pages");
+    if (!lang)                    { showToast("Language is required.","error"); return; }
+    if (!pages||Number(pages)<=0) { showToast("Enter valid revision pages.","error"); return; }
+    var wtEl=document.querySelector('input[name="rev_workType"]:checked');
+    var wt  =wtEl?wtEl.value:"In-House";
+    var d={
+      projectId:     projId,
+      revisionNumber:_val("rev_revisionNumber"),
+      revisionType:  _val("rev_revisionType"),
+      language:      lang,
+      revisionPages: pages,
+      workType:      wt,
+      assignedTo:    _val("rev_assignedTo"),
+      vendorName:    _val("rev_vendorName"),
+      status:        _val("rev_status"),
+      revisionDate:  _val("rev_revisionDate"),
+      deliveryDate:  _val("rev_deliveryDate"),
+      notes:         _val("rev_notes")
     };
-    var btn   = document.getElementById("revSubmitBtn");
-    var lblEl = document.getElementById("revSubmitLabel");
-    btn.disabled = true;
-    if (lblEl) lblEl.innerText = "Saving\u2026";
-    showLoader("Saving revision\u2026");
-    if (editId) {
+    var btn  =document.getElementById("revSubmitBtn");
+    var lblEl=document.getElementById("revSubmitLabel");
+    btn.disabled=true;
+    if (lblEl) lblEl.innerText="Saving...";
+    showLoader("Saving revision...");
+    if (editId){
       google.script.run
-        .withFailureHandler(function(er) { hideLoader(); btn.disabled = false; if (lblEl) lblEl.innerText = "Save Revision"; showToast("Error: " + er.message, "error"); })
-        .withSuccessHandler(function() { hideLoader(); showToast("Revision updated!", "success"); loadPage("revisions"); })
-        .updateRevision(editId, d);
+        .withFailureHandler(function(er){ hideLoader(); btn.disabled=false; if(lblEl) lblEl.innerText="Save Revision"; showToast("Error: "+er.message,"error"); })
+        .withSuccessHandler(function(){ hideLoader(); showToast("Revision updated!","success"); loadPage("revisions"); })
+        .updateRevision(editId,d);
     } else {
       google.script.run
-        .withFailureHandler(function(er) { hideLoader(); btn.disabled = false; if (lblEl) lblEl.innerText = "Save Revision"; showToast("Error: " + er.message, "error"); })
-        .withSuccessHandler(function() { hideLoader(); showToast("Revision saved!", "success"); loadPage("revisions"); })
+        .withFailureHandler(function(er){ hideLoader(); btn.disabled=false; if(lblEl) lblEl.innerText="Save Revision"; showToast("Error: "+er.message,"error"); })
+        .withSuccessHandler(function(){ hideLoader(); showToast("Revision saved!","success"); loadPage("revisions"); })
         .addRevision(d);
     }
   });
