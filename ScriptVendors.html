@@ -1,0 +1,113 @@
+<script>
+/* ================================================================
+   ScriptVendors.html — Vendors list and CRUD
+================================================================ */
+
+let ALL_VENDORS = [];
+let _editVendorId = "";
+
+function loadVendors() {
+  showLoader("Loading vendors…");
+  google.script.run
+    .withFailureHandler(function(e) { hideLoader(); showToast("Could not load vendors: " + e.message, "error"); })
+    .withSuccessHandler(function(data) {
+      ALL_VENDORS = data || [];
+      _renderVendorsTable(ALL_VENDORS);
+      hideLoader();
+    })
+    .getVendors();
+}
+
+function _renderVendorsTable(data) {
+  const tbody = document.getElementById("vendorsTable");
+  if (!tbody) return;
+  if (!data.length) {
+    tbody.innerHTML = '<tr><td colspan="9" class="py-16 text-center text-slate-400 text-sm">No vendors yet. <button onclick="openVendorModal()" class="text-emerald-600 hover:underline font-semibold">Add one →</button></td></tr>';
+    return;
+  }
+  tbody.innerHTML = data.map(function(r) {
+    const sc = r[9] === "Active" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500";
+    return `<tr>
+      <td class="font-mono text-[11px] text-gray-400">${r[0]}</td>
+      <td class="font-semibold text-gray-900 text-sm">${r[1]||"—"}</td>
+      <td class="text-sm text-gray-600">${r[2]||"—"}</td>
+      <td class="text-sm text-gray-600">${r[3]||"—"}</td>
+      <td class="text-sm text-gray-600">${r[5]||"—"}</td>
+      <td class="text-sm text-gray-600 max-w-[120px] truncate" title="${r[6]||''}">${r[6]||"—"}</td>
+      <td class="text-center text-sm font-semibold text-gray-700">${r[7]||0} ${r[8]||""}</td>
+      <td><span class="badge ${sc}">${r[9]||"Active"}</span></td>
+      <td class="text-right">
+        <div class="flex justify-end gap-1">
+          <button onclick="openVendorModal('${r[0]}')" title="Edit" class="p-1.5 text-amber-500 hover:bg-amber-50 rounded-lg transition-all">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+          </button>
+          <button onclick="deleteVendorById('${r[0]}')" title="Delete" class="p-1.5 text-red-400 hover:bg-red-50 rounded-lg transition-all">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+          </button>
+        </div>
+      </td>
+    </tr>`;
+  }).join("");
+}
+
+function openVendorModal(id) {
+  _editVendorId = id || "";
+  const modal = document.getElementById("vendorModal");
+  if (!modal) return;
+  document.getElementById("vendorModalTitle").innerText = id ? "Edit Vendor" : "Add Vendor";
+  if (id) {
+    const v = ALL_VENDORS.find(r => r[0] === id);
+    if (v) {
+      _setVal("vm_name",     v[1]); _setVal("vm_contact", v[2]);
+      _setVal("vm_email",    v[3]); _setVal("vm_phone",   v[4]);
+      _setVal("vm_spec",     v[5]); _setVal("vm_langs",   v[6]);
+      _setVal("vm_rate",     v[7]); _setVal("vm_currency",v[8]);
+      _setVal("vm_status",   v[9]); _setVal("vm_notes",   v[10]);
+    }
+  } else {
+    ["vm_name","vm_contact","vm_email","vm_phone","vm_spec","vm_langs","vm_rate","vm_notes"].forEach(function(id) { _setVal(id,""); });
+    _setVal("vm_currency","USD"); _setVal("vm_status","Active");
+  }
+  modal.style.display = "flex";
+}
+
+function closeVendorModal() {
+  const modal = document.getElementById("vendorModal");
+  if (modal) modal.style.display = "none";
+  _editVendorId = "";
+}
+
+function saveVendor() {
+  const name = _val("vm_name");
+  if (!name) { showToast("Vendor name is required.", "error"); return; }
+  const d = {
+    vendorName:    name,
+    contactPerson: _val("vm_contact"),
+    email:         _val("vm_email"),
+    phone:         _val("vm_phone"),
+    specialization:_val("vm_spec"),
+    languages:     _val("vm_langs"),
+    ratePerPage:   _val("vm_rate"),
+    currency:      _val("vm_currency"),
+    status:        _val("vm_status"),
+    notes:         _val("vm_notes")
+  };
+  showLoader("Saving vendor…");
+  const fn   = _editVendorId ? "updateVendor" : "addVendor";
+  const args = _editVendorId ? [_editVendorId, d] : [d];
+  google.script.run
+    .withFailureHandler(function(e) { hideLoader(); showToast("Error: " + e.message, "error"); })
+    .withSuccessHandler(function() { hideLoader(); closeVendorModal(); showToast(_editVendorId ? "Vendor updated!" : "Vendor added!", "success"); loadVendors(); })
+    [fn].apply(google.script.run, args);
+}
+
+function deleteVendorById(id) {
+  customConfirm("Delete vendor " + id + "? This cannot be undone.", function() {
+    showLoader("Deleting…");
+    google.script.run
+      .withFailureHandler(function(e) { hideLoader(); showToast("Delete failed: " + e.message, "error"); })
+      .withSuccessHandler(function() { hideLoader(); showToast("Vendor deleted.", "warning"); loadVendors(); })
+      .deleteVendor(id);
+  }, true);
+}
+</script>

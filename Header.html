@@ -1,30 +1,31 @@
-<header class="sticky top-0 z-[1001] flex h-16 items-center justify-between border-b border-sky-100 bg-sky-50/80 px-6 backdrop-blur-md">
-  
+<header class="fixed top-0 left-0 right-0 z-[1001] h-16 flex items-center justify-between border-b border-sky-100 bg-white/90 px-6 backdrop-blur-md shadow-sm">
+
   <div class="flex items-center gap-4">
-    <button onclick="toggleSidebar()" class="group relative flex h-10 w-10 items-center justify-center rounded-xl bg-white text-sky-600 shadow-sm transition-all hover:bg-sky-600 hover:text-white">
-      <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+    <button onclick="toggleSidebar()"
+      class="flex h-9 w-9 items-center justify-center rounded-xl bg-gray-100 text-gray-600 hover:bg-sky-600 hover:text-white transition-all">
+      <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/>
       </svg>
     </button>
-    <div class="flex flex-col">
-      <h1 class="text-lg font-black tracking-tight text-sky-900">DTP TRACKER</h1>
-      <div class="flex items-center gap-2">
-        <div class="h-2 w-2 animate-pulse rounded-full bg-green-500"></div>
-        <span id="syncStatus" class="text-[10px] font-bold uppercase tracking-widest text-sky-600">System Live</span>
+    <div>
+      <h1 class="text-base font-black tracking-tight text-slate-800">DTP TRACKER</h1>
+      <div class="flex items-center gap-1.5">
+        <div class="h-1.5 w-1.5 animate-pulse rounded-full bg-green-500"></div>
+        <span class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Live</span>
       </div>
     </div>
   </div>
 
-  <div class="flex items-center gap-6">
-    <div class="hidden flex-col items-end border-r border-sky-200 pr-6 sm:flex">
-      <span class="text-[10px] font-bold uppercase text-sky-400">Database Sync</span>
-      <span id="lastUpdated" class="font-mono text-xs font-medium text-sky-700">Just now</span>
+  <div class="flex items-center gap-4">
+    <div class="hidden sm:flex flex-col items-end border-r border-gray-200 pr-4">
+      <span class="text-[10px] font-bold uppercase text-gray-400">Last Sync</span>
+      <span id="lastUpdated" class="font-mono text-xs font-medium text-gray-600">Just now</span>
     </div>
-
-    <button id="refreshBtn" onclick="handleRefresh()" 
-            class="flex items-center gap-2 rounded-xl bg-sky-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-sky-200 transition-all hover:bg-sky-700 hover:shadow-sky-300 active:scale-95 disabled:opacity-50">
+    <button id="refreshBtn" onclick="handleRefresh()"
+      class="flex items-center gap-2 rounded-xl bg-sky-600 px-4 py-2 text-sm font-bold text-white shadow-md hover:bg-sky-700 active:scale-95 transition-all disabled:opacity-50">
       <span id="refreshIcon">🔄</span>
-      <span>Refresh Data</span>
+      <span class="hidden sm:inline">Refresh</span>
     </button>
   </div>
+
 </header>

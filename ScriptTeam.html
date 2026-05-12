@@ -1,0 +1,105 @@
+<script>
+/* ================================================================
+   ScriptTeam.html — Team members list and CRUD
+================================================================ */
+
+let ALL_TEAM = [];
+let _editTeamId = "";
+
+function loadTeam() {
+  showLoader("Loading team…");
+  google.script.run
+    .withFailureHandler(function(e) { hideLoader(); showToast("Could not load team: " + e.message, "error"); })
+    .withSuccessHandler(function(data) {
+      ALL_TEAM = data || [];
+      _renderTeamTable(ALL_TEAM);
+      hideLoader();
+    })
+    .getTeam();
+}
+
+function _renderTeamTable(data) {
+  const tbody = document.getElementById("teamTable");
+  if (!tbody) return;
+  if (!data.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="py-16 text-center text-slate-400 text-sm">No team members yet. <button onclick="openTeamModal()" class="text-sky-600 hover:underline font-semibold">Add one →</button></td></tr>';
+    return;
+  }
+  tbody.innerHTML = data.map(function(r) {
+    const sc = r[6] === "Active" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500";
+    return `<tr>
+      <td class="font-mono text-[11px] text-gray-400">${r[0]}</td>
+      <td class="font-semibold text-gray-900 text-sm">${r[1]||"—"}</td>
+      <td class="text-sm text-gray-600">${r[2]||"—"}</td>
+      <td class="text-sm text-gray-600">${r[3]||"—"}</td>
+      <td class="text-sm text-gray-600">${r[5]||"—"}</td>
+      <td><span class="badge ${sc}">${r[6]||"Active"}</span></td>
+      <td class="text-right">
+        <div class="flex justify-end gap-1">
+          <button onclick="openTeamModal('${r[0]}')" title="Edit" class="p-1.5 text-amber-500 hover:bg-amber-50 rounded-lg transition-all">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+          </button>
+          <button onclick="deleteTeamMemberById('${r[0]}')" title="Delete" class="p-1.5 text-red-400 hover:bg-red-50 rounded-lg transition-all">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+          </button>
+        </div>
+      </td>
+    </tr>`;
+  }).join("");
+}
+
+function openTeamModal(id) {
+  _editTeamId = id || "";
+  const modal = document.getElementById("teamModal");
+  if (!modal) return;
+  document.getElementById("teamModalTitle").innerText = id ? "Edit Team Member" : "Add Team Member";
+  if (id) {
+    const m = ALL_TEAM.find(r => r[0] === id);
+    if (m) {
+      _setVal("tm_name",   m[1]); _setVal("tm_role",   m[2]);
+      _setVal("tm_email",  m[3]); _setVal("tm_phone",  m[4]);
+      _setVal("tm_spec",   m[5]); _setVal("tm_status", m[6]);
+    }
+  } else {
+    ["tm_name","tm_role","tm_email","tm_phone","tm_spec"].forEach(function(id) { _setVal(id,""); });
+    _setVal("tm_status","Active");
+  }
+  modal.style.display = "flex";
+}
+
+function closeTeamModal() {
+  const modal = document.getElementById("teamModal");
+  if (modal) modal.style.display = "none";
+  _editTeamId = "";
+}
+
+function saveTeamMember() {
+  const name = _val("tm_name");
+  if (!name) { showToast("Name is required.", "error"); return; }
+  const d = {
+    name:           name,
+    role:           _val("tm_role"),
+    email:          _val("tm_email"),
+    phone:          _val("tm_phone"),
+    specialization: _val("tm_spec"),
+    status:         _val("tm_status")
+  };
+  showLoader("Saving…");
+  const fn   = _editTeamId ? "updateTeamMember" : "addTeamMember";
+  const args = _editTeamId ? [_editTeamId, d] : [d];
+  google.script.run
+    .withFailureHandler(function(e) { hideLoader(); showToast("Error: " + e.message, "error"); })
+    .withSuccessHandler(function() { hideLoader(); closeTeamModal(); showToast(_editTeamId ? "Member updated!" : "Member added!", "success"); loadTeam(); })
+    [fn].apply(google.script.run, args);
+}
+
+function deleteTeamMemberById(id) {
+  customConfirm("Delete team member " + id + "? This cannot be undone.", function() {
+    showLoader("Deleting…");
+    google.script.run
+      .withFailureHandler(function(e) { hideLoader(); showToast("Delete failed: " + e.message, "error"); })
+      .withSuccessHandler(function() { hideLoader(); showToast("Member deleted.", "warning"); loadTeam(); })
+      .deleteTeamMember(id);
+  }, true);
+}
+</script>

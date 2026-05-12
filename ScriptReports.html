@@ -1,0 +1,115 @@
+<script>
+/* ================================================================
+   ScriptReports.html — Monthly report rendering
+================================================================ */
+
+function loadReports() {
+  const monthEl = document.getElementById("report_month");
+  const yearEl  = document.getElementById("report_year");
+
+  /* populate year dropdown on first load */
+  if (yearEl && !yearEl.options.length) {
+    const now = new Date();
+    for (let y = now.getFullYear(); y >= now.getFullYear() - 3; y--) {
+      const opt = document.createElement("option");
+      opt.value = y; opt.text = y;
+      if (y === now.getFullYear()) opt.selected = true;
+      yearEl.appendChild(opt);
+    }
+  }
+  /* set current month on first load */
+  if (monthEl && !monthEl.dataset.init) {
+    monthEl.value = new Date().getMonth() + 1;
+    monthEl.dataset.init = "1";
+  }
+
+  const year  = yearEl  ? Number(yearEl.value)  : new Date().getFullYear();
+  const month = monthEl ? Number(monthEl.value) : new Date().getMonth() + 1;
+
+  showLoader("Generating report…");
+  google.script.run
+    .withFailureHandler(function(e) { hideLoader(); showToast("Report error: " + e.message, "error"); })
+    .withSuccessHandler(function(d) {
+      hideLoader();
+      if (!d) return;
+      _renderReport(d);
+    })
+    .getMonthlySummary({ year: year, month: month });
+}
+
+function _renderReport(d) {
+  _set("report_subtitle", "Production report — " + (d.month || ""));
+  _set("rpt_grandTotal",  (d.grandTotal    || 0).toLocaleString());
+  _set("rpt_inHouse",     (d.totalInHouse  || 0).toLocaleString());
+  _set("rpt_vendor",      (d.totalVendor   || 0).toLocaleString());
+  _set("rpt_taskCount",   (d.taskCount     || 0));
+  _set("rpt_revCount",    (d.revisionCount || 0) + " revisions");
+
+  const bt = d.byTaskType || {};
+
+  /* task type bars */
+  const ttEl = document.getElementById("rpt_taskTypeBars");
+  if (ttEl) {
+    const items = [
+      { label:"Main DTP",    val:(bt.mainDTP    ||{total:0}).total, color:"bg-blue-500"   },
+      { label:"Extraction",  val:(bt.extraction  ||{total:0}).total, color:"bg-teal-500"   },
+      { label:"Corrections", val:(bt.corrections ||{total:0}).total, color:"bg-orange-500" },
+      { label:"Bilingual",   val:(bt.bilingual   ||{total:0}).total, color:"bg-violet-500" },
+      { label:"Revisions",   val:(bt.revisions   ||{total:0}).total, color:"bg-purple-500" }
+    ];
+    const max = Math.max.apply(null, items.map(i => i.val)) || 1;
+    ttEl.innerHTML = items.map(i => buildBar(i.label, i.val, max, i.color, "pages")).join("<div class='mt-3'></div>");
+  }
+
+  /* work type bars */
+  const wtEl = document.getElementById("rpt_workTypeBars");
+  if (wtEl) {
+    const ih    = d.totalInHouse || 0;
+    const vd    = d.totalVendor  || 0;
+    const grand = (ih + vd) || 1;
+    wtEl.innerHTML =
+      buildBar("In-House", ih, grand, "bg-sky-500",   "pages (" + Math.round(ih/grand*100) + "%)") +
+      "<div class='mt-3'></div>" +
+      buildBar("Vendor",   vd, grand, "bg-amber-400", "pages (" + Math.round(vd/grand*100) + "%)");
+  }
+
+  /* employee bars */
+  const empEl = document.getElementById("rpt_employeeBars");
+  if (empEl) {
+    const emps = d.byEmployee || [];
+    if (!emps.length) { empEl.innerHTML = '<p class="text-sm text-slate-400 text-center py-4">No data this month.</p>'; }
+    else {
+      const max = emps[0].pages || 1;
+      empEl.innerHTML = emps.slice(0,8).map(function(e) {
+        return buildBar(e.name, e.pages, max, "bg-sky-500", "pages (" + e.tasks + " tasks)");
+      }).join("<div class='mt-3'></div>");
+    }
+  }
+
+  /* vendor bars */
+  const vndEl = document.getElementById("rpt_vendorBars");
+  if (vndEl) {
+    const vnds = d.byVendor || [];
+    if (!vnds.length) { vndEl.innerHTML = '<p class="text-sm text-slate-400 text-center py-4">No vendor work this month.</p>'; }
+    else {
+      const max = vnds[0].pages || 1;
+      vndEl.innerHTML = vnds.slice(0,8).map(function(v) {
+        return buildBar(v.name, v.pages, max, "bg-amber-400", "pages (" + v.tasks + " tasks)");
+      }).join("<div class='mt-3'></div>");
+    }
+  }
+
+  /* language bars */
+  const langEl = document.getElementById("rpt_languageBars");
+  if (langEl) {
+    const langs = d.byLanguage || [];
+    if (!langs.length) { langEl.innerHTML = '<p class="text-sm text-slate-400 text-center py-4">No language data this month.</p>'; }
+    else {
+      const max = langs[0].pages || 1;
+      langEl.innerHTML = langs.slice(0,10).map(function(l) {
+        return buildBar(l.language, l.pages, max, "bg-violet-500", "pages");
+      }).join("<div class='mt-3'></div>");
+    }
+  }
+}
+</script>

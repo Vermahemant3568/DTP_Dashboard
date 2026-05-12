@@ -1,111 +1,118 @@
-<div class="animate-fadeIn p-2 space-y-6">
+<div class="space-y-6 page-enter">
 
-  <!-- HEADER ROW -->
+  <!-- HEADER -->
   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
     <div>
-      <h2 class="text-2xl font-bold text-slate-800 tracking-tight">Dashboard Overview</h2>
-      <p id="dash_monthLabel" class="text-sm text-slate-500 mt-0.5">Live production metrics — loading...</p>
+      <h2 class="text-2xl font-bold text-slate-800">Dashboard</h2>
+      <p id="dash_monthLabel" class="text-sm text-slate-500 mt-0.5">Loading production metrics…</p>
     </div>
     <div class="flex gap-2">
       <button onclick="loadPage('addProject')"
-        class="inline-flex items-center gap-2 bg-sky-600 hover:bg-sky-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl shadow-md active:scale-95 transition-all">
+        class="inline-flex items-center gap-2 bg-sky-600 hover:bg-sky-700 text-white text-sm font-semibold px-4 py-2 rounded-xl shadow-sm active:scale-95 transition-all">
         ➕ New Project
       </button>
+      <button onclick="loadPage('addTask')"
+        class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-xl shadow-sm active:scale-95 transition-all">
+        ✅ Add Task
+      </button>
       <button onclick="loadPage('addRevision')"
-        class="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl shadow-md active:scale-95 transition-all">
-        🔁 New Revision
+        class="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold px-4 py-2 rounded-xl shadow-sm active:scale-95 transition-all">
+        🔁 Add Revision
       </button>
     </div>
   </div>
 
-  <!-- ── ROW 1: MONTHLY PAGE VOLUME BY TASK TYPE ── -->
+  <!-- ROW 1: MONTHLY PAGE VOLUME -->
   <div>
-    <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">Monthly Page Volume — Current Month</p>
+    <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">Monthly Page Volume — <span id="dash_monthName">Current Month</span></p>
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
 
-      <!-- Main DTP -->
-      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 border-l-4 border-l-blue-500">
-        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Main DTP Pages</p>
+      <div class="stat-card border-l-4 border-l-blue-500">
+        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Main DTP</p>
         <h3 id="dash_dtpTotal" class="text-3xl font-black text-blue-600 mt-1">—</h3>
         <div class="mt-2 flex gap-2 text-[11px]">
-          <span class="bg-sky-50 text-sky-700 px-2 py-0.5 rounded-full font-semibold">🏢 <span id="dash_dtpInhouse">—</span></span>
-          <span class="bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full font-semibold">🤝 <span id="dash_dtpVendor">—</span></span>
+          <span class="bg-sky-50 text-sky-700 px-2 py-0.5 rounded-full font-semibold">🏢 <span id="dash_dtpIH">—</span></span>
+          <span class="bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full font-semibold">🤝 <span id="dash_dtpVD">—</span></span>
         </div>
       </div>
 
-      <!-- Content Extraction -->
-      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 border-l-4 border-l-teal-500">
-        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Extraction Pages</p>
-        <h3 id="dash_extractTotal" class="text-3xl font-black text-teal-600 mt-1">—</h3>
+      <div class="stat-card border-l-4 border-l-teal-500">
+        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Extraction</p>
+        <h3 id="dash_extTotal" class="text-3xl font-black text-teal-600 mt-1">—</h3>
         <div class="mt-2 flex gap-2 text-[11px]">
-          <span class="bg-sky-50 text-sky-700 px-2 py-0.5 rounded-full font-semibold">🏢 <span id="dash_extractInhouse">—</span></span>
-          <span class="bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full font-semibold">🤝 <span id="dash_extractVendor">—</span></span>
+          <span class="bg-sky-50 text-sky-700 px-2 py-0.5 rounded-full font-semibold">🏢 <span id="dash_extIH">—</span></span>
+          <span class="bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full font-semibold">🤝 <span id="dash_extVD">—</span></span>
         </div>
       </div>
 
-      <!-- Corrections/Additions -->
-      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 border-l-4 border-l-orange-500">
-        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Correction Pages</p>
+      <div class="stat-card border-l-4 border-l-orange-500">
+        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Corrections</p>
         <h3 id="dash_corrTotal" class="text-3xl font-black text-orange-600 mt-1">—</h3>
         <div class="mt-2 flex gap-2 text-[11px]">
-          <span class="bg-sky-50 text-sky-700 px-2 py-0.5 rounded-full font-semibold">🏢 <span id="dash_corrInhouse">—</span></span>
-          <span class="bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full font-semibold">🤝 <span id="dash_corrVendor">—</span></span>
+          <span class="bg-sky-50 text-sky-700 px-2 py-0.5 rounded-full font-semibold">🏢 <span id="dash_corrIH">—</span></span>
+          <span class="bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full font-semibold">🤝 <span id="dash_corrVD">—</span></span>
         </div>
       </div>
 
-      <!-- Bilingual Creation -->
-      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 border-l-4 border-l-violet-500">
-        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bilingual Pages</p>
+      <div class="stat-card border-l-4 border-l-violet-500">
+        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bilingual</p>
         <h3 id="dash_bilingTotal" class="text-3xl font-black text-violet-600 mt-1">—</h3>
         <div class="mt-2 flex gap-2 text-[11px]">
-          <span class="bg-sky-50 text-sky-700 px-2 py-0.5 rounded-full font-semibold">🏢 <span id="dash_bilingInhouse">—</span></span>
-          <span class="bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full font-semibold">🤝 <span id="dash_bilingVendor">—</span></span>
+          <span class="bg-sky-50 text-sky-700 px-2 py-0.5 rounded-full font-semibold">🏢 <span id="dash_bilingIH">—</span></span>
+          <span class="bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full font-semibold">🤝 <span id="dash_bilingVD">—</span></span>
         </div>
       </div>
 
     </div>
   </div>
 
-  <!-- ── ROW 2: PROJECT STATUS + REVISION COUNTS ── -->
+  <!-- ROW 2: STATUS COUNTS -->
   <div>
-    <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">Project & Revision Status</p>
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">Overall Status</p>
+    <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
 
-      <div onclick="loadPage('manageProjects')" class="cursor-pointer bg-white rounded-2xl border border-slate-100 shadow-sm p-5 border-l-4 border-l-sky-500 hover:shadow-md transition-all group">
-        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Projects</p>
-        <h3 id="dash_totalProjects" class="text-3xl font-black text-slate-700 mt-1 group-hover:text-sky-600 transition-colors">—</h3>
-        <p id="dash_totalPages" class="text-xs text-slate-400 mt-1">— total pages</p>
+      <div onclick="loadPage('projects')" class="stat-card border-l-4 border-l-sky-500 cursor-pointer hover:shadow-md transition-all">
+        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Projects</p>
+        <h3 id="dash_totalProjects" class="text-3xl font-black text-slate-700 mt-1">—</h3>
+        <p class="text-xs text-slate-400 mt-1">total registered</p>
       </div>
 
-      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 border-l-4 border-l-amber-500">
+      <div onclick="loadPage('tasks')" class="stat-card border-l-4 border-l-blue-500 cursor-pointer hover:shadow-md transition-all">
+        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tasks</p>
+        <h3 id="dash_totalTasks" class="text-3xl font-black text-slate-700 mt-1">—</h3>
+        <p id="dash_totalTaskPages" class="text-xs text-slate-400 mt-1">— total pages</p>
+      </div>
+
+      <div class="stat-card border-l-4 border-l-amber-500">
         <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">In Progress</p>
         <h3 id="dash_inProgress" class="text-3xl font-black text-amber-500 mt-1">—</h3>
         <p id="dash_inProgressPages" class="text-xs text-slate-400 mt-1">— pages active</p>
       </div>
 
-      <div onclick="loadPage('revisions')" class="cursor-pointer bg-white rounded-2xl border border-slate-100 shadow-sm p-5 border-l-4 border-l-purple-500 hover:shadow-md transition-all group">
-        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Revisions</p>
-        <h3 id="dash_totalRevisions" class="text-3xl font-black text-slate-700 mt-1 group-hover:text-purple-600 transition-colors">—</h3>
+      <div onclick="loadPage('revisions')" class="stat-card border-l-4 border-l-purple-500 cursor-pointer hover:shadow-md transition-all">
+        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Revisions</p>
+        <h3 id="dash_totalRevisions" class="text-3xl font-black text-slate-700 mt-1">—</h3>
         <p id="dash_totalRevPages" class="text-xs text-slate-400 mt-1">— revision pages</p>
       </div>
 
-      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 border-l-4 border-l-emerald-500">
-        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Grand Total Pages</p>
+      <div class="stat-card border-l-4 border-l-emerald-500">
+        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Grand Total</p>
         <h3 id="dash_grandTotal" class="text-3xl font-black text-emerald-600 mt-1">—</h3>
-        <p class="text-xs text-slate-400 mt-1">all types this month</p>
+        <p class="text-xs text-slate-400 mt-1">all pages this month</p>
       </div>
 
     </div>
   </div>
 
-  <!-- ── ROW 3: MONTHLY VOLUME BAR + PAGES BREAKDOWN ── -->
+  <!-- ROW 3: CHARTS -->
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-    <!-- Monthly Volume by Task Type -->
-    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-      <h3 class="text-sm font-bold text-slate-700 mb-1">Monthly Volume by Task Type</h3>
-      <p class="text-xs text-slate-400 mb-5">Page distribution across workflow stages this month</p>
-      <div id="dash_taskTypeBars" class="space-y-3">
+    <div class="section-card">
+      <div class="px-5 py-4 border-b border-gray-100">
+        <h3 class="text-sm font-bold text-slate-700">Monthly Volume by Task Type</h3>
+        <p class="text-xs text-slate-400 mt-0.5">Page distribution across workflow stages</p>
+      </div>
+      <div id="dash_taskBars" class="p-5 space-y-3">
         <div class="h-4 bg-slate-100 rounded-full animate-pulse"></div>
         <div class="h-4 bg-slate-100 rounded-full animate-pulse w-3/4"></div>
         <div class="h-4 bg-slate-100 rounded-full animate-pulse w-1/2"></div>
@@ -113,11 +120,12 @@
       </div>
     </div>
 
-    <!-- In-House vs Vendor breakdown -->
-    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-      <h3 class="text-sm font-bold text-slate-700 mb-1">In-House vs Vendor Pages</h3>
-      <p class="text-xs text-slate-400 mb-5">Work type split across all DTP task types this month</p>
-      <div id="dash_workTypeBars" class="space-y-4">
+    <div class="section-card">
+      <div class="px-5 py-4 border-b border-gray-100">
+        <h3 class="text-sm font-bold text-slate-700">In-House vs Vendor Split</h3>
+        <p class="text-xs text-slate-400 mt-0.5">Work type distribution this month</p>
+      </div>
+      <div id="dash_workBars" class="p-5 space-y-4">
         <div class="h-4 bg-slate-100 rounded-full animate-pulse"></div>
         <div class="h-4 bg-slate-100 rounded-full animate-pulse w-2/3"></div>
       </div>
@@ -125,24 +133,24 @@
 
   </div>
 
-  <!-- ── ROW 4: TOP PROJECTS + RECENT REVISIONS ── -->
+  <!-- ROW 4: TOP TASKS + RECENT REVISIONS -->
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+    <div class="section-card overflow-hidden">
+      <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
         <div>
-          <h3 class="text-sm font-bold text-slate-700">Top Projects by Pages</h3>
-          <p class="text-xs text-slate-400">Highest total page count</p>
+          <h3 class="text-sm font-bold text-slate-700">Top Tasks by Pages</h3>
+          <p class="text-xs text-slate-400">Highest page count tasks</p>
         </div>
-        <button onclick="loadPage('manageProjects')" class="text-xs text-sky-600 hover:underline font-semibold">View all →</button>
+        <button onclick="loadPage('tasks')" class="text-xs text-sky-600 hover:underline font-semibold">View all →</button>
       </div>
-      <div id="dash_topProjects" class="divide-y divide-slate-50">
-        <div class="p-6 text-center text-slate-300 text-sm animate-pulse">Loading...</div>
+      <div id="dash_topTasks" class="divide-y divide-slate-50">
+        <div class="p-6 text-center text-slate-300 text-sm animate-pulse">Loading…</div>
       </div>
     </div>
 
-    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+    <div class="section-card overflow-hidden">
+      <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
         <div>
           <h3 class="text-sm font-bold text-slate-700">Recent Revisions</h3>
           <p class="text-xs text-slate-400">Latest revision activity</p>
@@ -150,7 +158,34 @@
         <button onclick="loadPage('revisions')" class="text-xs text-purple-600 hover:underline font-semibold">View all →</button>
       </div>
       <div id="dash_recentRevisions" class="divide-y divide-slate-50">
-        <div class="p-6 text-center text-slate-300 text-sm animate-pulse">Loading...</div>
+        <div class="p-6 text-center text-slate-300 text-sm animate-pulse">Loading…</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ROW 5: TOP EMPLOYEES + TOP VENDORS -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+    <div class="section-card overflow-hidden">
+      <div class="px-5 py-4 border-b border-gray-100">
+        <h3 class="text-sm font-bold text-slate-700">Top Employees This Month</h3>
+        <p class="text-xs text-slate-400">By total pages produced</p>
+      </div>
+      <div id="dash_topEmployees" class="p-5 space-y-2">
+        <div class="h-4 bg-slate-100 rounded-full animate-pulse"></div>
+        <div class="h-4 bg-slate-100 rounded-full animate-pulse w-3/4"></div>
+      </div>
+    </div>
+
+    <div class="section-card overflow-hidden">
+      <div class="px-5 py-4 border-b border-gray-100">
+        <h3 class="text-sm font-bold text-slate-700">Top Vendors This Month</h3>
+        <p class="text-xs text-slate-400">By total pages outsourced</p>
+      </div>
+      <div id="dash_topVendors" class="p-5 space-y-2">
+        <div class="h-4 bg-slate-100 rounded-full animate-pulse"></div>
+        <div class="h-4 bg-slate-100 rounded-full animate-pulse w-3/4"></div>
       </div>
     </div>
 

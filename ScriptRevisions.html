@@ -1,215 +1,200 @@
 <script>
 /* ================================================================
-   ScriptRevisions.html — Revision Table, Filter, Delete, Form
-   Depends on: ScriptUtils.html, ScriptNav.html
+   ScriptRevisions.html — Revisions list, CRUD, form
 ================================================================ */
 
-let ALL_REVISIONS_DATA = [];
+var ALL_REVISIONS = [];
 
-/* ── LOAD ── */
 function loadRevisions() {
-  showLoader("Loading revisions...");
+  showLoader("Loading revisions\u2026");
   google.script.run
-    .withFailureHandler(function(err) { hideLoader(); showToast("Could not load revisions: " + err.message, "error"); })
+    .withFailureHandler(function(e) { hideLoader(); showToast("Could not load revisions: " + e.message, "error"); })
     .withSuccessHandler(function(data) {
-      ALL_REVISIONS_DATA = data || [];
-      renderRevisionStats(ALL_REVISIONS_DATA);
-      renderRevisionsTable(ALL_REVISIONS_DATA);
+      ALL_REVISIONS = data || [];
+      _renderRevStats(ALL_REVISIONS);
+      _renderRevisionsTable(ALL_REVISIONS);
       hideLoader();
     })
     .getRevisions();
 }
 
-/* ── STATS ── */
-function renderRevisionStats(data) {
-  const total     = data.length;
-  const pages     = data.reduce((sum, r) => sum + (Number(r[4]) || 0), 0);
-  const pending   = data.filter(r => r[5] === "Pending").length;
-  const completed = data.filter(r => r[5] === "Completed").length;
-  _set("rev-stat-total",     total);
-  _set("rev-stat-pages",     pages);
-  _set("rev-stat-pending",   pending);
-  _set("rev-stat-completed", completed);
+function _renderRevStats(data) {
+  var pages   = data.reduce(function(s, r) { return s + (Number(r[7]) || 0); }, 0);
+  var pending = data.filter(function(r) { return r[11] === "Pending"; }).length;
+  var done    = data.filter(function(r) { return r[11] === "Completed"; }).length;
+  _set("rev_stat_total",   data.length);
+  _set("rev_stat_pages",   pages.toLocaleString());
+  _set("rev_stat_pending", pending);
+  _set("rev_stat_done",    done);
 }
 
-/* ── RENDER TABLE ── */
-function renderRevisionsTable(data) {
-  const tbody = document.getElementById("revisionsTable");
+function _renderRevisionsTable(data) {
+  var tbody = document.getElementById("revisionsTable");
   if (!tbody) return;
-
-  if (!data || data.length === 0) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="8" class="p-12 text-center">
-          <div class="flex flex-col items-center gap-3 text-gray-400">
-            <svg class="w-10 h-10 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-width="1.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-            </svg>
-            <p class="text-sm font-medium">No revisions yet</p>
-            <p class="text-xs">Click Add Revision to get started.</p>
-          </div>
-        </td>
-      </tr>`;
+  if (!data.length) {
+    tbody.innerHTML = '<tr><td colspan="10" class="py-16 text-center text-slate-400 text-sm">No revisions found. <button onclick="loadPage(\'addRevision\')" class="text-purple-600 hover:underline font-semibold">Add one \u2192</button></td></tr>';
     return;
   }
-
-  tbody.innerHTML = data.map(function(row) {
-    const statusClass = getStatusClass(row[5] || "Pending");
-    return `
-      <tr class="border-b border-gray-50 hover:bg-purple-50/20 transition-colors">
-        <td class="p-4 font-mono text-[11px] text-gray-400">${row[0]}</td>
-        <td class="p-4">
-          <div class="font-semibold text-gray-800 text-sm">${row[12] || "—"}</div>
-          <div class="text-[11px] font-mono text-gray-400 mt-0.5">${row[1]}</div>
-        </td>
-        <td class="p-4">
-          <span class="px-2 py-1 bg-purple-100 text-purple-700 text-xs font-semibold rounded-full">${row[13] || "—"}</span>
-        </td>
-        <td class="p-4 text-sm text-gray-600">${row[9] || "—"}</td>
-        <td class="p-4">
-          <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${statusClass}">${row[5] || "Pending"}</span>
-        </td>
-        <td class="p-4 text-center font-bold text-purple-600 text-sm">${row[4] || "0"}</td>
-        <td class="p-4 text-[11px] text-gray-500 leading-relaxed">
-          <div><span class="text-gray-400 italic">Rev:</span> ${row[14] || "—"}</div>
-          <div class="font-medium text-orange-500"><span class="text-gray-400 not-italic">Due:</span> ${row[15] || "—"}</div>
-        </td>
-        <td class="p-4 text-right">
-          <button onclick="deleteRevision('${row[0]}')" title="Delete revision"
-            class="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-all">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-            </svg>
-          </button>
-        </td>
-      </tr>`;
+  tbody.innerHTML = data.map(function(r) {
+    var sc  = getStatusClass(r[11] || "Pending");
+    var wc  = getWorkClass(r[8]   || "In-House");
+    var who = r[8] === "Vendor" ? (r[10] || r[9] || "\u2014") : (r[9] || "\u2014");
+    return '<tr>' +
+      '<td class="font-mono text-[11px] text-gray-400">' + r[0] + '</td>' +
+      '<td>' +
+        '<div class="font-semibold text-gray-900 text-sm truncate max-w-[140px]" title="' + (r[3] || "") + '">' + (r[3] || r[1] || "\u2014") + '</div>' +
+        '<div class="font-mono text-[10px] text-gray-400">' + r[1] + '</div>' +
+      '</td>' +
+      '<td>' +
+        '<div class="text-sm font-semibold text-gray-700">' + (r[4] || "\u2014") + '</div>' +
+        '<div class="text-xs text-gray-400">' + (r[5] || "\u2014") + '</div>' +
+      '</td>' +
+      '<td><span class="badge bg-purple-100 text-purple-700">' + (r[6] || "\u2014") + '</span></td>' +
+      '<td class="text-sm text-gray-600">' + who + '</td>' +
+      '<td><span class="badge ' + wc + '">' + (r[8] || "In-House") + '</span></td>' +
+      '<td><span class="badge ' + sc + '">' + (r[11] || "Pending") + '</span></td>' +
+      '<td class="text-center font-bold text-purple-600 text-sm">' + (Number(r[7]) || 0) + '</td>' +
+      '<td class="text-xs text-gray-500">' + (r[12] || "\u2014") + '</td>' +
+      '<td class="text-right">' +
+        '<div class="flex justify-end gap-1">' +
+          '<button onclick="openRevisionQuickEdit(\'' + r[0] + '\')" title="Quick edit" class="p-1.5 text-amber-500 hover:bg-amber-50 rounded-lg transition-all">' +
+            '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>' +
+          '</button>' +
+          '<button onclick="deleteRevisionById(\'' + r[0] + '\')" title="Delete" class="p-1.5 text-red-400 hover:bg-red-50 rounded-lg transition-all">' +
+            '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>' +
+          '</button>' +
+        '</div>' +
+      '</td>' +
+    '</tr>';
   }).join("");
 }
 
-/* ── FILTER ── */
 function filterRevisions() {
-  const searchEl = document.getElementById("revSearchInput");
-  const statusEl = document.getElementById("revStatusFilter");
-  if (!searchEl) return;
-
-  const q      = searchEl.value.toLowerCase();
-  const status = statusEl ? statusEl.value : "";
-
-  const filtered = ALL_REVISIONS_DATA.filter(function(row) {
-    const matchQ = !q || [row[0], row[1], row[12], row[13]].some(v => String(v).toLowerCase().includes(q));
-    const matchS = !status || row[5] === status;
-    return matchQ && matchS;
+  var q  = (_val("rev_search")       || "").toLowerCase();
+  var st = _val("rev_statusFilter")  || "";
+  var rt = _val("rev_typeFilter")    || "";
+  var wt = _val("rev_workFilter")    || "";
+  var filtered = ALL_REVISIONS.filter(function(r) {
+    var mq = !q  || [r[0], r[1], r[3], r[6]].some(function(v) { return String(v).toLowerCase().includes(q); });
+    var ms = !st || r[11] === st;
+    var mr = !rt || r[5]  === rt;
+    var mw = !wt || r[8]  === wt;
+    return mq && ms && mr && mw;
   });
-
-  renderRevisionsTable(filtered);
+  _renderRevisionsTable(filtered);
 }
 
-/* ── DELETE ── */
-function deleteRevision(id) {
+function openRevisionQuickEdit(id) {
+  var rev = ALL_REVISIONS.find(function(r) { return r[0] === id; });
+  if (!rev) { showToast("Revision not found.", "error"); return; }
+  document.getElementById("m_itemId").innerText   = id;
+  document.getElementById("m_itemName").innerText = (rev[3] || rev[1] || "\u2014") + " \u00B7 " + (rev[6] || "");
+  document.getElementById("m_status").value       = rev[11] || "Pending";
+  document.getElementById("m_deliveryDate").value = formatForInput(rev[13]);
+  document.getElementById("editModal").dataset.editType = "revision";
+  document.getElementById("editModal").style.display    = "flex";
+}
+
+function deleteRevisionById(id) {
   customConfirm("Delete revision " + id + "? This cannot be undone.", function() {
-    showLoader("Deleting...");
+    showLoader("Deleting\u2026");
     google.script.run
-      .withFailureHandler(function(err) { hideLoader(); showToast("Delete failed: " + err.message, "error"); })
+      .withFailureHandler(function(e) { hideLoader(); showToast("Delete failed: " + e.message, "error"); })
       .withSuccessHandler(function() { hideLoader(); showToast("Revision deleted.", "warning"); loadRevisions(); })
       .deleteRevision(id);
-  });
+  }, true);
 }
 
-/* ── PROJECT LOOKUP (AddRevision form) ── */
-function lookupProject() {
-  const idEl = document.getElementById("rev_projectId");
-  if (!idEl || !idEl.value.trim()) { showToast("Enter a Project ID first.", "warning"); return; }
-
-  showLoader("Looking up project...");
+/* ── PROJECT LOOKUP ── */
+function lookupRevisionProject() {
+  var id = _val("rev_projectId");
+  if (!id) { showToast("Enter a Project ID first.", "warning"); return; }
+  showLoader("Looking up project\u2026");
   google.script.run
-    .withFailureHandler(function(err) { hideLoader(); showToast("Lookup failed: " + err.message, "error"); })
-    .withSuccessHandler(function(response) {
+    .withFailureHandler(function(e) { hideLoader(); showToast("Lookup failed: " + e.message, "error"); })
+    .withSuccessHandler(function(res) {
       hideLoader();
-      const previewEl  = document.getElementById("projectPreview");
-      const notFoundEl = document.getElementById("projectNotFound");
-
-      if (!response || !response.details) {
-        if (previewEl)  previewEl.style.display  = "none";
-        if (notFoundEl) notFoundEl.style.display = "block";
+      var prev = document.getElementById("rev_projectPreview");
+      var notF = document.getElementById("rev_projectNotFound");
+      if (!res || !res.project) {
+        if (prev) prev.style.display = "none";
+        if (notF) notF.style.display = "block";
         return;
       }
-
-      const data = response.details;
-      if (notFoundEl) notFoundEl.style.display = "none";
-      if (previewEl)  previewEl.style.display  = "block";
-      _set("preview_name",  data[2]  || "—");
-      _set("preview_langs", "Languages: " + (data[14] || "—"));
-      _set("preview_pages", "DTP Pages: " + (data[15] || "—"));
+      var p = res.project;
+      if (notF) notF.style.display = "none";
+      if (prev) prev.style.display = "block";
+      _set("rev_preview_name",   p[2]);
+      _set("rev_preview_client", "Client: " + (p[1] || "\u2014"));
+      _set("rev_preview_langs",  "Languages: " + (p[5] || "\u2014"));
     })
-    .getProjectById(idEl.value.trim());
+    .getProjectById(id);
+}
+
+/* ── LOAD DROPDOWNS — accepts optional callback ── */
+function loadRevisionDropdowns(cb) {
+  google.script.run
+    .withFailureHandler(function() { if (typeof cb === "function") cb(); })
+    .withSuccessHandler(function(d) {
+      if (d) {
+        var teamOpts   = (d.team    || []).map(function(m) { return '<option value="' + m.name + '">' + m.name + "</option>"; }).join("");
+        var vendorOpts = (d.vendors || []).map(function(v) { return '<option value="' + v.name + '">' + v.name + "</option>"; }).join("");
+        var assignEl   = document.getElementById("rev_assignedTo");
+        var vendorEl   = document.getElementById("rev_vendorName");
+        if (assignEl) assignEl.innerHTML = '<option value="">\u2014 Select Team Member \u2014</option>' + teamOpts;
+        if (vendorEl) vendorEl.innerHTML = '<option value="">\u2014 Select Vendor \u2014</option>' + vendorOpts;
+      }
+      if (typeof cb === "function") cb();
+    })
+    .getDropdownData();
 }
 
 /* ── REVISION FORM SUBMIT ── */
-function initRevisionForm() {
-  const form = document.getElementById("revisionForm");
-  if (!form) return;
-  form.onsubmit = null;
-
-  form.addEventListener("submit", function(e) {
+(function() {
+  document.addEventListener("submit", function(e) {
+    if (!e.target || e.target.id !== "revisionForm") return;
     e.preventDefault();
-
-    const getValue = (id) => { const el = document.getElementById(id); return el ? el.value.trim() : ""; };
-    const projectId = getValue("rev_projectId");
-    const language  = getValue("rev_language");
-    const pages     = getValue("rev_pages");
-
-    if (!projectId) { showToast("Project ID is required.", "error"); return; }
-
-    const previewEl = document.getElementById("projectPreview");
-    if (!previewEl || previewEl.style.display === "none") {
-      showToast("Please lookup and verify the Project ID first.", "warning");
-      return;
-    }
-    if (!language) { showToast("Language is required.", "error"); return; }
+    var editId = document.getElementById("contentArea").dataset.editRevId || "";
+    var projId = _val("rev_projectId");
+    var prev   = document.getElementById("rev_projectPreview");
+    if (!projId) { showToast("Project ID is required.", "error"); return; }
+    if (!prev || prev.style.display === "none") { showToast("Please lookup and verify the Project ID first.", "warning"); return; }
+    var lang  = _val("rev_language");
+    var pages = _val("rev_pages");
+    if (!lang)  { showToast("Language is required.", "error"); return; }
     if (!pages || Number(pages) <= 0) { showToast("Enter valid revision pages.", "error"); return; }
-
-    const nameEl = document.getElementById("preview_name");
-    const projectName = nameEl && nameEl.innerText !== "—" ? nameEl.innerText : "";
-
-    const formData = {
-      projectId:      projectId,
-      projectName:    projectName,
-      revisionNumber: getValue("rev_revisionNumber"),
-      revisionType:   getValue("rev_revisionType"),
+    var wtEl = document.querySelector('input[name="rev_workType"]:checked');
+    var wt   = wtEl ? wtEl.value : "In-House";
+    var d = {
+      projectId:      projId,
+      revisionNumber: _val("rev_revisionNumber"),
+      revisionType:   _val("rev_revisionType"),
+      language:       lang,
       revisionPages:  pages,
-      assignedPerson: getValue("rev_assignedPerson"),
-      status:         getValue("rev_status"),
-      revisionDate:   getValue("rev_revisionDate"),
-      deliveryDate:   getValue("rev_deliveryDate"),
-      notes:          getValue("rev_notes"),
-      language:       language
+      workType:       wt,
+      assignedTo:     _val("rev_assignedTo"),
+      vendorName:     _val("rev_vendorName"),
+      status:         _val("rev_status"),
+      revisionDate:   _val("rev_revisionDate"),
+      deliveryDate:   _val("rev_deliveryDate"),
+      notes:          _val("rev_notes")
     };
-
-    const submitBtn   = form.querySelector('button[type="submit"]');
-    const originalHTML = submitBtn.innerHTML;
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = `<span class="animate-spin inline-block">⏳</span><span>Saving...</span>`;
-    showLoader("Saving revision...");
-
-    google.script.run
-      .withFailureHandler(function(err) {
-        hideLoader();
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = originalHTML;
-        showToast("Failed to save revision.", "error");
-      })
-      .withSuccessHandler(function() {
-        hideLoader();
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = originalHTML;
-        showToast("Revision saved successfully!", "success");
-        form.reset();
-        const notFoundEl = document.getElementById("projectNotFound");
-        if (previewEl)  previewEl.style.display  = "none";
-        if (notFoundEl) notFoundEl.style.display = "none";
-        setTimeout(() => loadPage("revisions"), 700);
-      })
-      .addRevision(formData);
+    var btn   = document.getElementById("revSubmitBtn");
+    var lblEl = document.getElementById("revSubmitLabel");
+    btn.disabled = true;
+    if (lblEl) lblEl.innerText = "Saving\u2026";
+    showLoader("Saving revision\u2026");
+    if (editId) {
+      google.script.run
+        .withFailureHandler(function(er) { hideLoader(); btn.disabled = false; if (lblEl) lblEl.innerText = "Save Revision"; showToast("Error: " + er.message, "error"); })
+        .withSuccessHandler(function() { hideLoader(); showToast("Revision updated!", "success"); loadPage("revisions"); })
+        .updateRevision(editId, d);
+    } else {
+      google.script.run
+        .withFailureHandler(function(er) { hideLoader(); btn.disabled = false; if (lblEl) lblEl.innerText = "Save Revision"; showToast("Error: " + er.message, "error"); })
+        .withSuccessHandler(function() { hideLoader(); showToast("Revision saved!", "success"); loadPage("revisions"); })
+        .addRevision(d);
+    }
   });
-}
+})();
 </script>

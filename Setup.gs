@@ -1,39 +1,220 @@
 /* ================================================================
-   Setup.gs — Run once to create/reset the database sheets
+   Setup.gs — Run once to create all 6 sheets
+   Sheets: Projects | Tasks | Revisions | Vendors | Team | MonthlySnapshot
+   Run setupDatabase() from Apps Script editor to initialize.
+   Run migrateOldProjectsToTasks() AFTER setupDatabase() if you have
+   existing data in the old Projects sheet format.
 ================================================================ */
+
 function setupDatabase() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
 
   const SHEETS = {
+
+    /* ── 1. PROJECTS — master project registry ── */
     Projects: [
-      "Project ID", "Client Name", "Project Name", "Coordinator",
-      "Start Date", "Due Date", "Status", "Source Pages",
-      "Source Language", "Notes", "Created At"
+      "Project ID", "Client Name", "Project Name", "Project Coordinator",
+      "Source Language", "Target Languages", "Target Lang Count", "Source Pages",
+      "Word Count", "Priority", "Status", "Received Date",
+      "Notes", "Created At", "Updated At"
     ],
+
+    /* ── 2. TASKS — every unit of work ── */
     Tasks: [
-      "Task ID", "Project ID", "Project Name", "Client Name",
-      "Task Type", "Language", "Pages", "Assigned Person",
-      "Work Type", "Vendor Name", "Status", "Start Date",
-      "Delivery Date", "Notes", "Created At"
+      "Task ID", "Project ID", "Client Name", "Project Name",
+      "Task Type", "Work Type", "Assigned To", "Vendor Name",
+      "Language", "Source Pages", "Final Pages", "Lang Count",
+      "Status", "Priority", "Start Date", "Delivery Date",
+      "Completed Date", "Source Link", "Deliverable Link", "Notes",
+      "Created At", "Updated At"
+    ],
+
+    /* ── 3. REVISIONS — rework rounds ── */
+    Revisions: [
+      "Revision ID", "Project ID", "Task ID", "Project Name",
+      "Revision Number", "Revision Type", "Language", "Revision Pages",
+      "Work Type", "Assigned To", "Vendor Name", "Status",
+      "Revision Date", "Delivery Date", "Completed Date", "Notes",
+      "Created At", "Updated At"
+    ],
+
+    /* ── 4. VENDORS — vendor master list ── */
+    Vendors: [
+      "Vendor ID", "Vendor Name", "Contact Person", "Email",
+      "Phone", "Specialization", "Languages", "Rate Per Page",
+      "Currency", "Status", "Notes", "Created At"
+    ],
+
+    /* ── 5. TEAM — employee master list ── */
+    Team: [
+      "Member ID", "Name", "Role", "Email",
+      "Phone", "Specialization", "Status", "Created At"
+    ],
+
+    /* ── 6. MONTHLY SNAPSHOT — pre-computed summaries ── */
+    MonthlySnapshot: [
+      "Snapshot ID", "Year Month", "Task Type", "Work Type",
+      "Total Pages", "Total Tasks", "In House Pages", "Vendor Pages",
+      "Generated At"
     ]
   };
 
+  const COLORS = {
+    Projects:        "#0f172a",
+    Tasks:           "#1e3a5f",
+    Revisions:       "#3b0764",
+    Vendors:         "#064e3b",
+    Team:            "#1c1917",
+    MonthlySnapshot: "#1e1b4b"
+  };
+
   Object.keys(SHEETS).forEach(function(name) {
-    const existing = ss.getSheetByName(name);
-    if (existing) ss.deleteSheet(existing);
+    let sheet = ss.getSheetByName(name);
+    // Only create if it doesn't exist — never delete existing data
+    if (!sheet) {
+      sheet = ss.insertSheet(name);
+    }
 
-    const sheet   = ss.insertSheet(name);
     const headers = SHEETS[name];
+    const color   = COLORS[name] || "#0f172a";
 
-    sheet.getRange(1, 1, 1, headers.length).setValues([headers])
-      .setFontWeight("bold")
-      .setBackground("#0f172a")
-      .setFontColor("#ffffff");
-
-    sheet.setFrozenRows(1);
-    sheet.getRange(1, 1, 1, headers.length).createFilter();
-    sheet.autoResizeColumns(1, headers.length);
+    // Write headers only if row 1 is empty
+    const firstCell = sheet.getRange(1, 1).getValue();
+    if (!firstCell) {
+      sheet.getRange(1, 1, 1, headers.length)
+        .setValues([headers])
+        .setFontWeight("bold")
+        .setBackground(color)
+        .setFontColor("#ffffff");
+      sheet.setFrozenRows(1);
+      sheet.autoResizeColumns(1, headers.length);
+    }
   });
 
-  SpreadsheetApp.getUi().alert("✅ Database setup complete. Sheets: Projects + Tasks");
+  SpreadsheetApp.getUi().alert(
+    "✅ Database setup complete.\n\n" +
+    "Sheets created:\n" +
+    "• Projects (15 cols)\n" +
+    "• Tasks (22 cols)\n" +
+    "• Revisions (18 cols)\n" +
+    "• Vendors (12 cols)\n" +
+    "• Team (8 cols)\n" +
+    "• MonthlySnapshot (9 cols)\n\n" +
+    "If you have existing data, run migrateOldProjectsToTasks() next."
+  );
+}
+
+/* ================================================================
+   MIGRATION — copies old Projects sheet data into new Tasks sheet
+   Safe: reads old data, writes to Tasks, does NOT delete old sheet.
+   Run once after setupDatabase().
+================================================================ */
+function migrateOldProjectsToTasks() {
+  const ss        = SpreadsheetApp.getActiveSpreadsheet();
+  const oldSheet  = ss.getSheetByName("Projects");
+  const taskSheet = ss.getSheetByName("Tasks");
+  const projSheet = ss.getSheetByName("Projects");
+
+  if (!oldSheet) {
+    SpreadsheetApp.getUi().alert("❌ Old Projects sheet not found.");
+    return;
+  }
+  if (!taskSheet) {
+    SpreadsheetApp.getUi().alert("❌ Tasks sheet not found. Run setupDatabase() first.");
+    return;
+  }
+
+  const data = oldSheet.getDataRange().getValues();
+  if (data.length < 2) {
+    SpreadsheetApp.getUi().alert("ℹ️ No data rows found in Projects sheet.");
+    return;
+  }
+
+  // Old column map (0-based):
+  // 0=projectId, 1=customerName, 2=projectName, 3=projectCoordinator
+  // 4=modeOfTask, 5=assignedPerson, 6=vendorTeam, 7=priority
+  // 8=startDate, 9=deliveryDate, 10=status, 11=sourcePages
+  // 12=sourceLanguage, 13=targetLangCount, 14=targetLangNames
+  // 15=finalPages, 16=notes, 17=sourceLink, 18=deliverableLink
+  // 19=createdAt, 20=updatedAt, 21=taskType, 22=workType
+
+  const rows    = data.slice(1).filter(r => r[0] !== "");
+  const now     = new Date();
+  let   migrated = 0;
+
+  rows.forEach(function(r) {
+    const oldId    = String(r[0]).trim();
+    const taskType = r[21] || "Main DTP";
+    const workType = r[22] || "In-House";
+
+    // Generate new Task ID preserving timestamp from old PRJ- id
+    const taskId = "TSK-" + Date.now() + "-" + migrated;
+
+    taskSheet.appendRow([
+      taskId,                          // Task ID
+      oldId,                           // Project ID (keep old PRJ- id as project ref)
+      r[1]  || "",                     // Client Name
+      r[2]  || "",                     // Project Name
+      taskType,                        // Task Type
+      workType,                        // Work Type
+      r[5]  || "",                     // Assigned To
+      r[6]  || "",                     // Vendor Name
+      r[14] || "",                     // Language (target lang names)
+      Number(r[11]) || 0,              // Source Pages
+      Number(r[15]) || 0,              // Final Pages
+      Number(r[13]) || 0,              // Lang Count
+      r[10] || "Pending",              // Status
+      r[7]  || "Medium",               // Priority
+      r[8]  || "",                     // Start Date
+      r[9]  || "",                     // Delivery Date
+      r[10] === "Completed" ? r[20] || "" : "", // Completed Date
+      r[17] || "",                     // Source Link
+      r[18] || "",                     // Deliverable Link
+      r[16] || "",                     // Notes
+      r[19] || now,                    // Created At
+      r[20] || now                     // Updated At
+    ]);
+
+    // Also ensure a master Projects record exists for this project
+    // (we use the old PRJ- id as the ProjectID in the new Projects sheet)
+    const existingProj = _findRowInSheet(projSheet, oldId);
+    if (!existingProj) {
+      projSheet.appendRow([
+        oldId,                         // Project ID
+        r[1]  || "",                   // Client Name
+        r[2]  || "",                   // Project Name
+        r[3]  || "",                   // Project Coordinator
+        r[12] || "English",            // Source Language
+        r[14] || "",                   // Target Languages
+        Number(r[13]) || 0,            // Target Lang Count
+        Number(r[11]) || 0,            // Source Pages
+        0,                             // Word Count
+        r[7]  || "Medium",             // Priority
+        r[10] || "Pending",            // Status
+        r[8]  || "",                   // Received Date
+        r[16] || "",                   // Notes
+        r[19] || now,                  // Created At
+        r[20] || now                   // Updated At
+      ]);
+    }
+
+    migrated++;
+    Utilities.sleep(50); // avoid quota issues
+  });
+
+  SpreadsheetApp.getUi().alert(
+    "✅ Migration complete.\n" +
+    migrated + " project rows migrated to Tasks sheet.\n\n" +
+    "The old Projects sheet has NOT been deleted.\n" +
+    "Verify the data, then you can rename it to 'Projects_OLD'."
+  );
+}
+
+/* helper used only inside Setup.gs */
+function _findRowInSheet(sheet, id) {
+  const data = sheet.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][0]).trim() === String(id).trim()) return { row: data[i], index: i + 1 };
+  }
+  return null;
 }

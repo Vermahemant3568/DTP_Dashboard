@@ -1,310 +1,129 @@
-<div class="space-y-6">
+<div class="space-y-6 page-enter">
 
-  <!-- HEADER -->
-  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+  <div class="flex items-center gap-3">
+    <button onclick="loadPage('projects')" class="p-2 rounded-xl hover:bg-gray-100 text-gray-500 transition-colors">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+    </button>
     <div>
-      <h2 class="text-3xl font-bold text-gray-800">Create New Project Entry</h2>
-      <p class="text-sm text-gray-500 mt-1">Each entry tracks one workflow stage. The same Project ID can have multiple stage entries.</p>
+      <h2 id="addProjectTitle" class="text-2xl font-bold text-gray-800">Register New Project</h2>
+      <p class="text-sm text-gray-500 mt-0.5">Create a master project record. Add tasks separately after registration.</p>
     </div>
   </div>
 
-  <form id="projectForm" class="space-y-6">
+  <form id="projectForm" class="space-y-5">
 
-    <!-- ===== SECTION 1: WORKFLOW STAGE ===== -->
-    <div class="rounded-2xl border border-indigo-100 bg-white shadow-sm overflow-hidden">
-      <div class="border-l-4 border-indigo-500 bg-indigo-50 px-5 py-4">
-        <div class="flex items-center gap-3">
-          <div class="h-10 w-10 rounded-xl bg-indigo-100 flex items-center justify-center text-xl">⚙️</div>
-          <div>
-            <h3 class="text-lg font-semibold text-indigo-700">Workflow Stage</h3>
-            <p class="text-sm text-indigo-400">Select the task type and whether it is in-house or outsourced</p>
-          </div>
+    <!-- PROJECT INFO -->
+    <div class="section-card">
+      <div class="section-header border-l-blue-500 bg-blue-50">
+        <div class="h-9 w-9 rounded-xl bg-blue-100 flex items-center justify-center text-lg">📁</div>
+        <div>
+          <h3 class="text-base font-semibold text-blue-700">Project Information</h3>
+          <p class="text-xs text-blue-400">Basic project and client details</p>
         </div>
       </div>
-
-      <div class="p-5">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-
-          <!-- Task Type -->
-          <div>
-            <label class="label">Task Type *
-              <span id="taskTypeHint" class="ml-2 text-[11px] font-normal text-indigo-500"></span>
-            </label>
-            <select id="taskType" class="input" onchange="onTaskTypeChange()" required>
-              <option value="">— Select Task Type —</option>
-              <option value="Main DTP">Main DTP</option>
-              <option value="Content Extraction">Content Extraction</option>
-              <option value="Corrections/Additions">Corrections / Additions</option>
-              <option value="Bilingual Creation">Bilingual Creation</option>
-            </select>
-          </div>
-
-          <!-- Work Type toggle -->
-          <div>
-            <label class="label">Work Type *</label>
-            <div class="flex gap-3 mt-1">
-              <label class="flex-1 cursor-pointer">
-                <input type="radio" name="workType" id="wt_inhouse" value="In-House" class="sr-only" checked>
-                <div id="wt_inhouse_btn"
-                  class="flex items-center justify-center gap-2 rounded-xl border-2 border-sky-500 bg-sky-50 py-3 text-sm font-bold text-sky-700 transition-all">
-                  🏢 In-House
-                </div>
-              </label>
-              <label class="flex-1 cursor-pointer">
-                <input type="radio" name="workType" id="wt_vendor" value="Vendor" class="sr-only">
-                <div id="wt_vendor_btn"
-                  class="flex items-center justify-center gap-2 rounded-xl border-2 border-gray-200 bg-gray-50 py-3 text-sm font-bold text-gray-400 transition-all">
-                  🤝 Vendor
-                </div>
-              </label>
-            </div>
-          </div>
-
-        </div>
-
-        <!-- Dynamic page label hint -->
-        <div id="pageTypeHint" class="mt-4 hidden p-3 bg-indigo-50 border border-indigo-100 rounded-xl text-sm text-indigo-700">
-          <span id="pageTypeHintText"></span>
-        </div>
-      </div>
-    </div>
-
-    <!-- ===== SECTION 2: PROJECT INFO ===== -->
-    <div class="rounded-2xl border border-blue-100 bg-white shadow-sm overflow-hidden">
-      <div class="border-l-4 border-blue-500 bg-blue-50 px-5 py-4">
-        <div class="flex items-center gap-3">
-          <div class="h-10 w-10 rounded-xl bg-blue-100 flex items-center justify-center text-xl">📁</div>
-          <div>
-            <h3 class="text-lg font-semibold text-blue-700">Project Information</h3>
-            <p class="text-sm text-blue-400">Basic project and assignment details</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="p-5">
-        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-
+      <div class="section-body">
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           <div>
             <label class="label">Client Name *</label>
-            <input id="customerName" class="input" placeholder="Enter client/company name" required>
+            <input id="proj_clientName" class="input" placeholder="Enter client/company name" required>
           </div>
-
           <div>
             <label class="label">Project Name *</label>
-            <input id="projectName" class="input" placeholder="Enter project title" required>
+            <input id="proj_projectName" class="input" placeholder="Enter project title" required>
           </div>
-
           <div>
             <label class="label">Project Coordinator</label>
-            <input id="projectCoordinator" class="input" placeholder="Coordinator name">
+            <input id="proj_coordinator" class="input" placeholder="Coordinator name">
           </div>
-
-          <div>
-            <label class="label">Assigned Person</label>
-            <input id="assignedPerson" class="input" placeholder="Assigned team member">
-          </div>
-
-          <div>
-            <label class="label">Vendor / Team</label>
-            <input id="vendorTeam" class="input" placeholder="e.g. Internal Team, ABC Vendor">
-          </div>
-
           <div>
             <label class="label">Priority</label>
-            <select id="priority" class="input">
+            <select id="proj_priority" class="input">
               <option>Low</option>
               <option selected>Medium</option>
               <option>High</option>
+              <option>Urgent</option>
             </select>
           </div>
-
-          <!-- hidden legacy field -->
-          <input type="hidden" id="modeOfTask" value="DTP">
-
-        </div>
-      </div>
-    </div>
-
-    <!-- ===== SECTION 3: TIMELINE ===== -->
-    <div class="rounded-2xl border border-green-100 bg-white shadow-sm overflow-hidden">
-      <div class="border-l-4 border-green-500 bg-green-50 px-5 py-4">
-        <div class="flex items-center gap-3">
-          <div class="h-10 w-10 rounded-xl bg-green-100 flex items-center justify-center text-xl">📅</div>
           <div>
-            <h3 class="text-lg font-semibold text-green-700">Timeline & Status</h3>
-            <p class="text-sm text-green-400">Schedule and tracking information</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="p-5">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-          <div>
-            <label class="label">Start Date *</label>
-            <input type="date" id="startDate" class="input">
-          </div>
-          <div>
-            <label class="label">Delivery Date *</label>
-            <input type="date" id="deliveryDate" class="input">
-          </div>
-          <div>
-            <label class="label">Status *</label>
-            <select id="status" class="input">
-              <option>Pending</option>
-              <option>In Progress</option>
-              <option>Completed</option>
-              <option>On Hold</option>
+            <label class="label">Status</label>
+            <select id="proj_status" class="input">
+              <option value="Active">Active</option>
+              <option value="Pending">Pending</option>
+              <option value="On Hold">On Hold</option>
+              <option value="Completed">Completed</option>
+              <option value="Cancelled">Cancelled</option>
             </select>
+          </div>
+          <div>
+            <label class="label">Received Date</label>
+            <input type="date" id="proj_receivedDate" class="input">
           </div>
         </div>
       </div>
     </div>
 
-    <!-- ===== SECTION 4: PRODUCTION DETAILS ===== -->
-    <div class="rounded-2xl border border-purple-100 bg-white shadow-sm overflow-hidden">
-      <div class="border-l-4 border-purple-500 bg-purple-50 px-5 py-4">
-        <div class="flex items-center gap-3">
-          <div class="h-10 w-10 rounded-xl bg-purple-100 flex items-center justify-center text-xl">🌍</div>
-          <div>
-            <h3 class="text-lg font-semibold text-purple-700">Production Details</h3>
-            <p class="text-sm text-purple-400">Language and page calculation details</p>
-          </div>
+    <!-- LANGUAGE & PAGES -->
+    <div class="section-card">
+      <div class="section-header border-l-purple-500 bg-purple-50">
+        <div class="h-9 w-9 rounded-xl bg-purple-100 flex items-center justify-center text-lg">🌍</div>
+        <div>
+          <h3 class="text-base font-semibold text-purple-700">Language & Scope</h3>
+          <p class="text-xs text-purple-400">Source language, target languages, and page scope</p>
         </div>
       </div>
-
-      <div class="p-5">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-
-          <div>
-            <label class="label" id="sourcePagesLabel">Source Pages *</label>
-            <input type="number" id="sourcePages" class="input" placeholder="e.g. 5">
-            <p class="hint mt-1 text-xs text-gray-400">Number of original source pages</p>
-          </div>
-
-          <div>
-            <label class="label">Number of Languages *</label>
-            <input type="number" id="targetLangCount" class="input" placeholder="e.g. 10">
-            <p class="hint mt-1 text-xs text-gray-400">Total target languages</p>
-          </div>
-
+      <div class="section-body">
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
           <div>
             <label class="label">Source Language</label>
-            <input id="sourceLanguage" class="input" value="English">
+            <input id="proj_sourceLanguage" class="input" value="English">
           </div>
-
           <div>
-            <label class="label">Target Languages *</label>
-            <input id="targetLangNames" class="input" placeholder="French, German, Spanish">
-            <p class="hint mt-1 text-xs text-gray-400">Enter languages separated by commas</p>
+            <label class="label">Target Languages</label>
+            <input id="proj_targetLanguages" class="input" placeholder="French, German, Spanish">
+            <p class="text-xs text-gray-400 mt-1">Comma-separated</p>
           </div>
-
-          <div class="md:col-span-2">
-            <label class="label" id="finalPagesLabel">Final Pages
-              <span class="ml-1 text-[11px] font-normal text-purple-500" id="finalPagesSubLabel">(DTP Pages = Source × Languages)</span>
-            </label>
-            <div class="relative">
-              <input type="number" id="finalPages" class="input bg-yellow-50 pr-28" placeholder="Auto-calculated or enter manually">
-              <span id="finalPagesMode"
-                class="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full bg-yellow-200 text-yellow-700">
-                Auto
-              </span>
-            </div>
-            <p class="mt-1 text-xs text-gray-400">Auto = Source Pages × Languages · You can override manually.</p>
+          <div>
+            <label class="label">Language Count</label>
+            <input type="number" id="proj_langCount" class="input" placeholder="e.g. 5" min="0">
           </div>
-
+          <div>
+            <label class="label">Source Pages</label>
+            <input type="number" id="proj_sourcePages" class="input" placeholder="e.g. 20" min="0">
+          </div>
+          <div>
+            <label class="label">Word Count</label>
+            <input type="number" id="proj_wordCount" class="input" placeholder="e.g. 5000" min="0">
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- ===== SECTION 5: LINKS + NOTES ===== -->
-    <div class="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
-      <div class="bg-gray-50 px-5 py-4 border-l-4 border-gray-400">
-        <div class="flex items-center gap-3">
-          <div class="h-10 w-10 rounded-xl bg-gray-200 flex items-center justify-center text-xl">🔗</div>
-          <div>
-            <h3 class="text-lg font-semibold text-gray-700">Resources & Notes</h3>
-            <p class="text-sm text-gray-500">Links, references, and project notes</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="p-5 space-y-5">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <div>
-            <label class="label">Source File Link</label>
-            <input type="url" id="sourceLink" class="input" placeholder="Paste source file URL">
-          </div>
-          <div>
-            <label class="label">Deliverable File Link</label>
-            <input type="url" id="deliverableLink" class="input" placeholder="Paste deliverable file URL">
-          </div>
-        </div>
+    <!-- NOTES -->
+    <div class="section-card">
+      <div class="section-header border-l-gray-400 bg-gray-50">
+        <div class="h-9 w-9 rounded-xl bg-gray-200 flex items-center justify-center text-lg">📝</div>
         <div>
-          <label class="label">Project Notes</label>
-          <textarea id="notes" rows="4" class="input resize-none"
-            placeholder="Write project notes, delivery instructions, or important details..."></textarea>
+          <h3 class="text-base font-semibold text-gray-700">Notes</h3>
+          <p class="text-xs text-gray-500">Project notes, instructions, or references</p>
         </div>
+      </div>
+      <div class="section-body">
+        <textarea id="proj_notes" rows="3" class="input" placeholder="Project notes, delivery instructions, special requirements…"></textarea>
       </div>
     </div>
 
-    <!-- SUBMIT BAR -->
-    <div class="sticky bottom-0 bg-white/90 backdrop-blur-sm border-t border-gray-200 px-4 py-4 rounded-2xl flex justify-end gap-3">
-      <button type="button" onclick="loadPage('manageProjects')"
+    <!-- SUBMIT -->
+    <div class="sticky bottom-0 bg-white/90 backdrop-blur-sm border-t border-gray-200 px-4 py-3 rounded-2xl flex justify-end gap-3">
+      <button type="button" onclick="loadPage('projects')"
         class="px-5 py-2.5 text-sm font-semibold text-gray-500 hover:bg-gray-100 rounded-xl transition-colors">
         Cancel
       </button>
-      <button type="submit" id="submitBtn"
-        class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-md transition-all hover:bg-blue-700 active:scale-[0.98]">
-        <span>🚀</span>
-        <span>Create Project</span>
+      <button type="submit" id="projSubmitBtn"
+        class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-blue-700 active:scale-[0.98] transition-all">
+        <span id="projSubmitIcon">🚀</span>
+        <span id="projSubmitLabel">Register Project</span>
       </button>
     </div>
 
   </form>
 </div>
-
-<script>
-/* Work Type toggle visual */
-document.querySelectorAll('input[name="workType"]').forEach(function(radio) {
-  radio.addEventListener('change', function() {
-    document.getElementById('wt_inhouse_btn').className =
-      'flex items-center justify-center gap-2 rounded-xl border-2 py-3 text-sm font-bold transition-all ' +
-      (document.getElementById('wt_inhouse').checked
-        ? 'border-sky-500 bg-sky-50 text-sky-700'
-        : 'border-gray-200 bg-gray-50 text-gray-400');
-    document.getElementById('wt_vendor_btn').className =
-      'flex items-center justify-center gap-2 rounded-xl border-2 py-3 text-sm font-bold transition-all ' +
-      (document.getElementById('wt_vendor').checked
-        ? 'border-orange-500 bg-orange-50 text-orange-700'
-        : 'border-gray-200 bg-gray-50 text-gray-400');
-  });
-});
-
-/* Task Type change — update page label hints */
-function onTaskTypeChange() {
-  const type = document.getElementById('taskType').value;
-  const hintEl   = document.getElementById('pageTypeHint');
-  const hintText = document.getElementById('pageTypeHintText');
-  const srcLabel = document.getElementById('sourcePagesLabel');
-  const finLabel = document.getElementById('finalPagesLabel');
-  const finSub   = document.getElementById('finalPagesSubLabel');
-
-  const cfg = {
-    'Main DTP':             { src: 'Source DTP Pages *',       fin: 'Final DTP Pages',        sub: '(DTP Pages = Source × Languages)',        hint: '📐 Tracking DTP Pages — final layout after translation.' },
-    'Content Extraction':   { src: 'Source Pages *',           fin: 'Total Extracted Pages',   sub: '(Extracted Pages = Source × Languages)',  hint: '📄 Tracking Extracted Pages — initial content extraction phase.' },
-    'Corrections/Additions':{ src: 'Source Pages *',           fin: 'Total Correction Pages',  sub: '(Correction Pages = Source × Languages)', hint: '✏️ Tracking Correction/Addition Pages — post-delivery changes.' },
-    'Bilingual Creation':   { src: 'Source Bilingual Pages *', fin: 'Total Bilingual Pages',   sub: '(Bilingual Pages = Source × Languages)',  hint: '🌐 Tracking Bilingual Pages — side-by-side layout task.' }
-  };
-
-  const c = cfg[type];
-  if (c) {
-    srcLabel.childNodes[0].textContent = c.src;
-    finLabel.childNodes[0].textContent = c.fin;
-    finSub.textContent = c.sub;
-    hintText.textContent = c.hint;
-    hintEl.classList.remove('hidden');
-  } else {
-    hintEl.classList.add('hidden');
-  }
-}
-</script>

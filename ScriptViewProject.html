@@ -1,173 +1,177 @@
 <script>
 /* ================================================================
-   ScriptViewProject.html — View Project Data Injection
-   Depends on: ScriptUtils.html, ScriptNav.html
+   ScriptViewProject.html — View project detail, tasks, revisions
 ================================================================ */
 
-function _injectViewData(data) {
-  const set = function(id, val) {
-    const el = document.getElementById(id);
-    if (el) el.innerText = val || "—";
-  };
+let _vpCurrentId = "";
 
-  set("viewProjectTitle",    data[2]);
-  set("viewProjectId",       "ID: " + data[0]);
-  set("v_customerName",      data[1]);
-  set("v_projectName",       data[2]);
-  set("v_projectCoordinator",data[3]);
-  set("v_assignedPerson",    data[5]);
-  set("v_startDate",         data[8]);
-  set("v_deliveryDate",      data[9]);
-  set("v_targetLangNames",   data[14]);
-  set("v_sourcePages",       data[11]);
-  set("v_targetLangCount",   data[13]);
-  set("v_finalPages",        data[15]);
-  set("v_notes",             data[16]);
+function renderViewProject(data) {
+  if (!data) { hideLoader(); showToast("Project data not found.", "error"); return; }
 
-  const taskType = data[21] || "Main DTP";
-  const workType = data[22] || "In-House";
-  const taskColors = {
-    "Main DTP":              "bg-blue-100 text-blue-700",
-    "Content Extraction":    "bg-teal-100 text-teal-700",
-    "Corrections/Additions": "bg-orange-100 text-orange-700",
-    "Bilingual Creation":    "bg-violet-100 text-violet-700"
-  };
+  const proj = data.project || [];
+  const tasks = data.tasks  || [];
+  const revs  = data.revisions || [];
 
-  const taskEl = document.getElementById("v_taskType");
-  if (taskEl) {
-    taskEl.innerText = taskType;
-    taskEl.className = "px-3 py-1 rounded-full text-xs font-bold " + (taskColors[taskType] || "bg-gray-100 text-gray-600");
-  }
+  _vpCurrentId = proj[0] || "";
 
-  const workEl = document.getElementById("v_workType");
-  if (workEl) {
-    workEl.innerText = workType;
-    workEl.className = "px-3 py-1 rounded-full text-xs font-bold " +
-      (workType === "Vendor" ? "bg-amber-100 text-amber-700" : "bg-sky-100 text-sky-700");
-  }
+  /* header */
+  _set("vp_projectName", proj[2]);
+  _set("vp_projectId",   "ID: " + proj[0]);
 
-  const statusEl = document.getElementById("v_status");
-  if (statusEl) {
-    const s = data[10] || "Pending";
-    statusEl.innerText = s;
-    statusEl.className = `px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest ${getStatusClass(s)}`;
-  }
+  const statusEl = document.getElementById("vp_status");
+  if (statusEl) { statusEl.innerText = proj[10] || "Active"; statusEl.className = "badge " + getStatusClass(proj[10] || "Active"); }
 
-  const priorityEl = document.getElementById("v_priority");
-  if (priorityEl) priorityEl.innerText = "Priority: " + (data[7] || "Medium");
+  const prioEl = document.getElementById("vp_priority");
+  if (prioEl) { prioEl.innerText = "Priority: " + (proj[9] || "Medium"); }
 
-  _setLink("v_sourceLink",      data[17]);
-  _setLink("v_deliverableLink", data[18]);
+  /* page totals */
+  _set("vp_sourcePages", Number(proj[7]) || 0);
+  _set("vp_taskPages",   data.taskPages  || 0);
+  _set("vp_revPages",    data.revPages   || 0);
+  _set("vp_totalPages",  data.totalPages || 0);
 
-  loadProjectHistory(data[0]);
-  loadProjectRevisions(data[0]);
+  /* core info */
+  _set("vp_client",       proj[1]);
+  _set("vp_coordinator",  proj[3]);
+  _set("vp_sourceLang",   proj[4]);
+  _set("vp_langCount",    proj[6]);
+  _set("vp_targetLangs",  proj[5]);
+  _set("vp_wordCount",    proj[8] ? Number(proj[8]).toLocaleString() + " words" : "—");
+  _set("vp_receivedDate", proj[11]);
+  _set("vp_notes",        proj[12]);
+
+  /* edit button */
+  const editBtn = document.getElementById("vp_editBtn");
+  if (editBtn) editBtn.onclick = function() { editCurrentProject(); };
+
+  /* tasks table */
+  _renderVpTasks(tasks);
+  _renderVpRevisions(revs);
+
+  hideLoader();
 }
 
-function _setLink(id, url) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  if (url) { el.href = url; el.style.display = "flex"; }
-  else     { el.style.display = "none"; }
+function editCurrentProject() {
+  if (!_vpCurrentId) return;
+  loadPage("addProject");
+  setTimeout(function() {
+    document.getElementById("contentArea").dataset.editProjectId = _vpCurrentId;
+    document.getElementById("addProjectTitle").innerText = "Edit Project";
+    document.getElementById("projSubmitLabel").innerText = "Update Project";
+    google.script.run
+      .withFailureHandler(function() {})
+      .withSuccessHandler(function(res) {
+        if (!res || !res.project) return;
+        const p = res.project;
+        _setVal("proj_clientName",      p[1]);
+        _setVal("proj_projectName",     p[2]);
+        _setVal("proj_coordinator",     p[3]);
+        _setVal("proj_sourceLanguage",  p[4]);
+        _setVal("proj_targetLanguages", p[5]);
+        _setVal("proj_langCount",       p[6]);
+        _setVal("proj_sourcePages",     p[7]);
+        _setVal("proj_wordCount",       p[8]);
+        _setVal("proj_priority",        p[9]);
+        _setVal("proj_status",          p[10]);
+        _setVal("proj_receivedDate",    formatForInput(p[11]));
+        _setVal("proj_notes",           p[12]);
+      })
+      .getProjectById(_vpCurrentId);
+  }, 600);
 }
 
-/* ── STAGE HISTORY ── */
-function loadProjectHistory(projectId) {
-  const container = document.getElementById("projectHistoryList");
-  if (!container) return;
+function _renderVpTasks(tasks) {
+  const tbody    = document.getElementById("vp_tasksTable");
+  const totalEl  = document.getElementById("vp_taskPageTotal");
+  if (!tbody) return;
+  const total = tasks.reduce(function(s,r){ return s+(Number(r[10])||0); }, 0);
+  if (totalEl) totalEl.innerText = total.toLocaleString() + " pages";
 
-  google.script.run
-    .withFailureHandler(function() {
-      container.innerHTML = '<p class="text-sm text-red-400 text-center py-4">Could not load history.</p>';
-    })
-    .withSuccessHandler(function(data) {
-      if (!data || data.length === 0) {
-        container.innerHTML = '<p class="text-sm text-gray-400 text-center py-4">No stage history found.</p>';
-        return;
-      }
-
-      const taskColors = {
-        "Main DTP":              "bg-blue-100 text-blue-700 border-blue-200",
-        "Content Extraction":    "bg-teal-100 text-teal-700 border-teal-200",
-        "Corrections/Additions": "bg-orange-100 text-orange-700 border-orange-200",
-        "Bilingual Creation":    "bg-violet-100 text-violet-700 border-violet-200"
-      };
-
-      const totalPages = data.reduce(function(s, r) { return s + (Number(r[15]) || 0); }, 0);
-
-      container.innerHTML =
-        '<div class="mb-3 flex items-center justify-between">' +
-          '<span class="text-xs text-gray-400">' + data.length + ' stage entry(ies)</span>' +
-          '<span class="text-xs font-bold text-sky-600 bg-sky-50 px-3 py-1 rounded-full border border-sky-100">Total: ' + totalPages.toLocaleString() + ' pages</span>' +
-        '</div>' +
-        '<div class="space-y-2">' +
-        data.map(function(r) {
-          const taskType = r[21] || "Main DTP";
-          const workType = r[22] || "In-House";
-          const tc = taskColors[taskType] || "bg-gray-100 text-gray-600 border-gray-200";
-          const wc = workType === "Vendor" ? "bg-amber-100 text-amber-700" : "bg-sky-100 text-sky-700";
-          const sc = getStatusClass(r[10] || "Pending");
-          return [
-            '<div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100 hover:bg-blue-50/30 transition-colors">',
-              '<div class="flex items-center gap-2 flex-wrap">',
-                '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold border ' + tc + '">' + taskType + '</span>',
-                '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold ' + wc + '">' + workType + '</span>',
-                '<span class="text-xs text-gray-500">' + (r[5] || '—') + '</span>',
-                '<span class="text-[10px] text-gray-400">' + (r[8] || '—') + ' → ' + (r[9] || '—') + '</span>',
-              '</div>',
-              '<div class="flex items-center gap-3">',
-                '<span class="font-bold text-sky-700 text-sm">' + (Number(r[15]) || 0).toLocaleString() + ' pages</span>',
-                '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ' + sc + '">' + (r[10] || 'Pending') + '</span>',
-              '</div>',
-            '</div>'
-          ].join("");
-        }).join("") +
-        '</div>';
-    })
-    .getProjectHistory(projectId);
-}
-
-/* ── PROJECT REVISIONS ── */
-function loadProjectRevisions(projectId) {
-  const container = document.getElementById("projectRevisionsList");
-  if (!container) return;
-
-  google.script.run
-    .withFailureHandler(function() {
-      container.innerHTML = '<p class="text-sm text-red-400 text-center py-4">Could not load revisions.</p>';
-    })
-    .withSuccessHandler(function(data) {
-      if (!data || data.length === 0) {
-        container.innerHTML = '<p class="text-sm text-gray-400 text-center py-6">No revisions for this project yet.</p>';
-        return;
-      }
-
-      const totalRevPages = data.reduce((sum, r) => sum + (Number(r[4]) || 0), 0);
-
-      container.innerHTML = `
-        <div class="mb-4 flex items-center justify-between">
-          <span class="text-xs text-gray-400">${data.length} revision(s) found</span>
-          <span class="text-xs font-bold text-purple-600 bg-purple-50 px-3 py-1 rounded-full border border-purple-100">
-            Total Revision Pages: ${totalRevPages}
-          </span>
+  if (!tasks.length) {
+    tbody.innerHTML = '<tr><td colspan="9" class="py-8 text-center text-slate-400 text-sm">No tasks yet. <button onclick="loadPage(\'addTask\',{projectId:_vpCurrentId})" class="text-blue-600 hover:underline font-semibold">Add first task →</button></td></tr>';
+    return;
+  }
+  tbody.innerHTML = tasks.map(function(r) {
+    const sc = getStatusClass(r[12] || "Pending");
+    const tc = getTaskClass(r[4]   || "Main DTP");
+    const wc = getWorkClass(r[5]   || "In-House");
+    const who = r[5] === "Vendor" ? (r[7]||r[6]||"—") : (r[6]||"—");
+    return `<tr>
+      <td class="font-mono text-[11px] text-gray-400">${r[0]}</td>
+      <td><span class="badge ${tc}">${r[4]||"—"}</span></td>
+      <td class="text-sm text-gray-600">${r[8]||"—"}</td>
+      <td class="text-sm text-gray-600">${who}</td>
+      <td><span class="badge ${wc}">${r[5]||"In-House"}</span></td>
+      <td><span class="badge ${sc}">${r[12]||"Pending"}</span></td>
+      <td class="text-center font-bold text-blue-600 text-sm">${Number(r[10])||0}</td>
+      <td class="text-xs text-gray-500">${r[15]||"—"}</td>
+      <td class="text-right">
+        <div class="flex justify-end gap-1">
+          <button onclick="editTaskFull('${r[0]}')" title="Edit" class="p-1.5 text-amber-500 hover:bg-amber-50 rounded-lg transition-all">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+          </button>
+          <button onclick="_vpDeleteTask('${r[0]}')" title="Delete" class="p-1.5 text-red-400 hover:bg-red-50 rounded-lg transition-all">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+          </button>
         </div>
-        <div class="space-y-2">
-          ${data.map(function(r) {
-            const sc = getStatusClass(r[5] || "Pending");
-            return `
-              <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100 hover:bg-purple-50/30 transition-colors">
-                <div class="flex items-center gap-3 flex-wrap">
-                  <span class="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs font-semibold rounded-full">${r[13] || "—"}</span>
-                  <span class="text-xs text-gray-500">${r[14] || "—"}</span>
-                  <span class="text-[10px] text-gray-400 font-mono">${r[0]}</span>
-                </div>
-                <div class="flex items-center gap-3">
-                  <span class="font-bold text-purple-600 text-sm">${r[4] || 0} pages</span>
-                  <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${sc}">${r[5] || "Pending"}</span>
-                </div>
-              </div>`;
-          }).join("")}
-        </div>`;
-    })
-    .getRevisionsByProjectId(projectId);
+      </td>
+    </tr>`;
+  }).join("");
+}
+
+function _renderVpRevisions(revs) {
+  const tbody   = document.getElementById("vp_revisionsTable");
+  const totalEl = document.getElementById("vp_revPageTotal");
+  if (!tbody) return;
+  const total = revs.reduce(function(s,r){ return s+(Number(r[7])||0); }, 0);
+  if (totalEl) totalEl.innerText = total.toLocaleString() + " pages";
+
+  if (!revs.length) {
+    tbody.innerHTML = '<tr><td colspan="9" class="py-8 text-center text-slate-400 text-sm">No revisions yet. <button onclick="loadPage(\'addRevision\',{projectId:_vpCurrentId})" class="text-purple-600 hover:underline font-semibold">Add first revision →</button></td></tr>';
+    return;
+  }
+  tbody.innerHTML = revs.map(function(r) {
+    const sc = getStatusClass(r[11] || "Pending");
+    const wc = getWorkClass(r[8]   || "In-House");
+    const who = r[8] === "Vendor" ? (r[10]||r[9]||"—") : (r[9]||"—");
+    return `<tr>
+      <td class="font-mono text-[11px] text-gray-400">${r[0]}</td>
+      <td>
+        <div class="text-sm font-semibold text-gray-700">${r[4]||"—"}</div>
+        <div class="text-xs text-gray-400">${r[5]||"—"}</div>
+      </td>
+      <td><span class="badge bg-purple-100 text-purple-700">${r[6]||"—"}</span></td>
+      <td class="text-sm text-gray-600">${who}</td>
+      <td><span class="badge ${wc}">${r[8]||"In-House"}</span></td>
+      <td><span class="badge ${sc}">${r[11]||"Pending"}</span></td>
+      <td class="text-center font-bold text-purple-600 text-sm">${Number(r[7])||0}</td>
+      <td class="text-xs text-gray-500">${r[12]||"—"}</td>
+      <td class="text-right">
+        <button onclick="_vpDeleteRevision('${r[0]}')" title="Delete" class="p-1.5 text-red-400 hover:bg-red-50 rounded-lg transition-all">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+        </button>
+      </td>
+    </tr>`;
+  }).join("");
+}
+
+function _vpDeleteTask(id) {
+  customConfirm("Delete this task? This cannot be undone.", function() {
+    showLoader("Deleting…");
+    google.script.run
+      .withFailureHandler(function(e) { hideLoader(); showToast("Delete failed: " + e.message, "error"); })
+      .withSuccessHandler(function() { hideLoader(); showToast("Task deleted.", "warning"); viewProjectById(_vpCurrentId); })
+      .deleteTask(id);
+  }, true);
+}
+
+function _vpDeleteRevision(id) {
+  customConfirm("Delete this revision? This cannot be undone.", function() {
+    showLoader("Deleting…");
+    google.script.run
+      .withFailureHandler(function(e) { hideLoader(); showToast("Delete failed: " + e.message, "error"); })
+      .withSuccessHandler(function() { hideLoader(); showToast("Revision deleted.", "warning"); viewProjectById(_vpCurrentId); })
+      .deleteRevision(id);
+  }, true);
 }
 </script>

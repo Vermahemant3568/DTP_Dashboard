@@ -1,40 +1,102 @@
 <style>
-  .label{
-    display:block;
-    margin-bottom:8px;
-    font-size:14px;
-    font-weight:600;
-    color:#374151;
+  /* ── GLOBAL FORM ELEMENTS ── */
+  .label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #374151;
+  }
+  .input {
+    width: 100%;
+    border: 1px solid #d1d5db;
+    background: #fff;
+    border-radius: 10px;
+    padding: 10px 13px;
+    font-size: 13px;
+    color: #111827;
+    outline: none;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .input:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37,99,235,.12);
+  }
+  .input::placeholder { color: #9ca3af; }
+  textarea.input { min-height: 100px; resize: vertical; }
+  select.input { cursor: pointer; }
+
+  /* ── SECTION CARD ── */
+  .section-card {
+    background: #fff;
+    border-radius: 16px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    overflow: hidden;
+  }
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    border-left: 4px solid;
+  }
+  .section-body { padding: 20px; }
+
+  /* ── BADGE ── */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .04em;
   }
 
-  .input{
-    width:100%;
-    border:1px solid #d1d5db;
-    background:#fff;
-    border-radius:12px;
-    padding:12px 14px;
-    font-size:14px;
-    color:#111827;
-    outline:none;
-    transition:all .2s ease;
+  /* ── TABLE ── */
+  .data-table { width: 100%; border-collapse: collapse; }
+  .data-table th {
+    padding: 12px 16px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: #6b7280;
+    background: #f9fafb;
+    border-bottom: 1px solid #f3f4f6;
+    white-space: nowrap;
+  }
+  .data-table td {
+    padding: 12px 16px;
+    font-size: 13px;
+    color: #374151;
+    border-bottom: 1px solid #f9fafb;
+    vertical-align: middle;
+  }
+  .data-table tbody tr:hover { background: #f8faff; }
+  .data-table tbody tr:last-child td { border-bottom: none; }
+
+  /* ── STAT CARD ── */
+  .stat-card {
+    background: #fff;
+    border-radius: 16px;
+    border: 1px solid #e5e7eb;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.05);
   }
 
-  .input:focus{
-    border-color:#2563eb;
-    box-shadow:0 0 0 4px rgba(37,99,235,.12);
+  /* ── PAGE FADE IN ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
   }
+  .page-enter { animation: fadeUp .3s ease-out forwards; }
 
-  .input::placeholder{
-    color:#9ca3af;
-  }
-
-  textarea.input{
-    min-height:120px;
-  }
-
-  .hint{
-    font-size:12px;
-    color:#6b7280;
-    margin-top:6px;
-  }
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: #f1f5f9; }
+  ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 </style>

@@ -1,169 +1,161 @@
 <aside id="sidebar"
-  class="fixed left-0 top-0 z-[1002] h-screen w-72 bg-[#0f172a] border-r border-slate-800 shadow-xl transition-all duration-300 ease-in-out overflow-hidden">
+  class="fixed left-0 top-0 z-[1002] h-screen w-72 bg-[#0f172a] border-r border-slate-800 shadow-xl transition-all duration-300 ease-in-out overflow-y-auto overflow-x-hidden flex flex-col">
 
   <!-- LOGO -->
-  <div class="flex h-20 items-center px-6 border-b border-slate-800">
-
+  <div class="flex h-16 shrink-0 items-center px-5 border-b border-slate-800">
     <div class="flex items-center gap-3">
-
-      <div
-        class="flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-600 shadow-md">
-
-        <span class="text-white text-lg font-black tracking-widest">
-          D
-        </span>
-
+      <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sky-600 shadow-md">
+        <span class="text-white text-sm font-black">DTP</span>
       </div>
-
       <div id="sidebarBrand">
-        <h2 class="text-white font-bold tracking-[0.2em] uppercase text-sm leading-none">
-          DTP Tracker
-        </h2>
-
-        <p class="text-[11px] text-slate-400 mt-1">
-          Project Management
-        </p>
+        <h2 class="text-white font-bold tracking-wide text-sm leading-none">DTP Tracker</h2>
+        <p class="text-[11px] text-slate-400 mt-0.5">Production System</p>
       </div>
-
     </div>
-
   </div>
 
-  <!-- NAVIGATION -->
-  <nav class="px-4 py-5">
+  <!-- NAV -->
+  <nav class="flex-1 px-3 py-4 space-y-1">
 
-    <div class="mb-4 px-2">
-      <p class="text-[10px] uppercase tracking-[0.25em] text-slate-500 font-semibold">
-        Main Menu
-      </p>
+    <!-- MAIN -->
+    <p class="px-3 mb-2 text-[10px] uppercase tracking-[0.2em] text-slate-500 font-semibold">Main</p>
+
+    <div data-nav="dashboard" onclick="loadPage('dashboard')"
+      class="group flex items-center gap-3 rounded-xl px-3 py-2.5 cursor-pointer text-slate-300 hover:text-sky-300 hover:bg-sky-500/10 transition-all">
+      <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-800 border border-slate-700 group-hover:border-sky-500/40 transition-all">
+        <span class="text-base">📊</span>
+      </div>
+      <div class="nav-label">
+        <p class="text-sm font-semibold leading-none">Dashboard</p>
+        <span class="text-[11px] text-slate-500">Overview & analytics</span>
+      </div>
     </div>
 
-    <ul class="space-y-2">
+    <!-- PROJECTS -->
+    <p class="px-3 pt-3 mb-2 text-[10px] uppercase tracking-[0.2em] text-slate-500 font-semibold">Projects</p>
 
-      <!-- DASHBOARD -->
-      <li onclick="loadPage('dashboard')"
-        class="group flex items-center gap-4 rounded-2xl px-4 py-3 cursor-pointer text-slate-300 hover:text-sky-300 hover:bg-sky-500/10 transition-all duration-200">
+    <div data-nav="projects" onclick="loadPage('projects')"
+      class="group flex items-center gap-3 rounded-xl px-3 py-2.5 cursor-pointer text-slate-300 hover:text-sky-300 hover:bg-sky-500/10 transition-all">
+      <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-800 border border-slate-700 group-hover:border-sky-500/40 transition-all">
+        <span class="text-base">📁</span>
+      </div>
+      <div class="nav-label">
+        <p class="text-sm font-semibold leading-none">All Projects</p>
+        <span class="text-[11px] text-slate-500">View & manage</span>
+      </div>
+    </div>
 
-        <div
-          class="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-800 border border-slate-700 group-hover:border-sky-500/30 transition-all">
-          <span class="text-lg">📊</span>
-        </div>
+    <div data-nav="addProject" onclick="loadPage('addProject')"
+      class="group flex items-center gap-3 rounded-xl px-3 py-2.5 cursor-pointer text-slate-300 hover:text-sky-300 hover:bg-sky-500/10 transition-all">
+      <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-800 border border-slate-700 group-hover:border-sky-500/40 transition-all">
+        <span class="text-base">➕</span>
+      </div>
+      <div class="nav-label">
+        <p class="text-sm font-semibold leading-none">New Project</p>
+        <span class="text-[11px] text-slate-500">Register project</span>
+      </div>
+    </div>
 
-        <div class="nav-label flex-1">
-          <p class="text-sm font-semibold leading-none">
-            Dashboard
-          </p>
+    <!-- TASKS -->
+    <p class="px-3 pt-3 mb-2 text-[10px] uppercase tracking-[0.2em] text-slate-500 font-semibold">Tasks</p>
 
-          <span class="text-[11px] text-slate-500">
-            Overview & analytics
-          </span>
-        </div>
+    <div data-nav="tasks" onclick="loadPage('tasks')"
+      class="group flex items-center gap-3 rounded-xl px-3 py-2.5 cursor-pointer text-slate-300 hover:text-sky-300 hover:bg-sky-500/10 transition-all">
+      <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-800 border border-slate-700 group-hover:border-sky-500/40 transition-all">
+        <span class="text-base">✅</span>
+      </div>
+      <div class="nav-label">
+        <p class="text-sm font-semibold leading-none">All Tasks</p>
+        <span class="text-[11px] text-slate-500">DTP work entries</span>
+      </div>
+    </div>
 
-      </li>
+    <div data-nav="addTask" onclick="loadPage('addTask')"
+      class="group flex items-center gap-3 rounded-xl px-3 py-2.5 cursor-pointer text-slate-300 hover:text-sky-300 hover:bg-sky-500/10 transition-all">
+      <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-800 border border-slate-700 group-hover:border-sky-500/40 transition-all">
+        <span class="text-base">🆕</span>
+      </div>
+      <div class="nav-label">
+        <p class="text-sm font-semibold leading-none">Add Task</p>
+        <span class="text-[11px] text-slate-500">New work entry</span>
+      </div>
+    </div>
 
-      <!-- ADD PROJECT -->
-      <li onclick="loadPage('addProject')"
-        class="group flex items-center gap-4 rounded-2xl px-4 py-3 cursor-pointer text-slate-300 hover:text-sky-300 hover:bg-sky-500/10 transition-all duration-200">
+    <!-- REVISIONS -->
+    <p class="px-3 pt-3 mb-2 text-[10px] uppercase tracking-[0.2em] text-slate-500 font-semibold">Revisions</p>
 
-        <div
-          class="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-800 border border-slate-700 group-hover:border-sky-500/30 transition-all">
-          <span class="text-lg">➕</span>
-        </div>
+    <div data-nav="revisions" onclick="loadPage('revisions')"
+      class="group flex items-center gap-3 rounded-xl px-3 py-2.5 cursor-pointer text-slate-300 hover:text-sky-300 hover:bg-sky-500/10 transition-all">
+      <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-800 border border-slate-700 group-hover:border-sky-500/40 transition-all">
+        <span class="text-base">🔁</span>
+      </div>
+      <div class="nav-label">
+        <p class="text-sm font-semibold leading-none">Revisions</p>
+        <span class="text-[11px] text-slate-500">Corrections & rounds</span>
+      </div>
+    </div>
 
-        <div class="nav-label flex-1">
-          <p class="text-sm font-semibold leading-none">
-            Add Project
-          </p>
+    <div data-nav="addRevision" onclick="loadPage('addRevision')"
+      class="group flex items-center gap-3 rounded-xl px-3 py-2.5 cursor-pointer text-slate-300 hover:text-sky-300 hover:bg-sky-500/10 transition-all">
+      <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-800 border border-slate-700 group-hover:border-sky-500/40 transition-all">
+        <span class="text-base">🔄</span>
+      </div>
+      <div class="nav-label">
+        <p class="text-sm font-semibold leading-none">Add Revision</p>
+        <span class="text-[11px] text-slate-500">Log revision round</span>
+      </div>
+    </div>
 
-          <span class="text-[11px] text-slate-500">
-            Create new project
-          </span>
-        </div>
+    <!-- REPORTS -->
+    <p class="px-3 pt-3 mb-2 text-[10px] uppercase tracking-[0.2em] text-slate-500 font-semibold">Reports</p>
 
-      </li>
+    <div data-nav="reports" onclick="loadPage('reports')"
+      class="group flex items-center gap-3 rounded-xl px-3 py-2.5 cursor-pointer text-slate-300 hover:text-sky-300 hover:bg-sky-500/10 transition-all">
+      <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-800 border border-slate-700 group-hover:border-sky-500/40 transition-all">
+        <span class="text-base">📈</span>
+      </div>
+      <div class="nav-label">
+        <p class="text-sm font-semibold leading-none">Monthly Report</p>
+        <span class="text-[11px] text-slate-500">Production analytics</span>
+      </div>
+    </div>
 
-      <!-- MANAGE PROJECTS -->
-      <li onclick="loadPage('manageProjects')"
-        class="group flex items-center gap-4 rounded-2xl px-4 py-3 cursor-pointer text-slate-300 hover:text-sky-300 hover:bg-sky-500/10 transition-all duration-200">
+    <!-- SETTINGS -->
+    <p class="px-3 pt-3 mb-2 text-[10px] uppercase tracking-[0.2em] text-slate-500 font-semibold">Settings</p>
 
-        <div
-          class="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-800 border border-slate-700 group-hover:border-sky-500/30 transition-all">
-          <span class="text-lg">📁</span>
-        </div>
+    <div data-nav="vendors" onclick="loadPage('vendors')"
+      class="group flex items-center gap-3 rounded-xl px-3 py-2.5 cursor-pointer text-slate-300 hover:text-sky-300 hover:bg-sky-500/10 transition-all">
+      <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-800 border border-slate-700 group-hover:border-sky-500/40 transition-all">
+        <span class="text-base">🤝</span>
+      </div>
+      <div class="nav-label">
+        <p class="text-sm font-semibold leading-none">Vendors</p>
+        <span class="text-[11px] text-slate-500">Vendor management</span>
+      </div>
+    </div>
 
-        <div class="nav-label flex-1">
-          <p class="text-sm font-semibold leading-none">
-            Manage Projects
-          </p>
-
-          <span class="text-[11px] text-slate-500">
-            View & update projects
-          </span>
-        </div>
-
-      </li>
-
-      <!-- REVISIONS -->
-      <li onclick="loadPage('revisions')"
-        class="group flex items-center gap-4 rounded-2xl px-4 py-3 cursor-pointer text-slate-300 hover:text-sky-300 hover:bg-sky-500/10 transition-all duration-200">
-
-        <div
-          class="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-800 border border-slate-700 group-hover:border-sky-500/30 transition-all">
-          <span class="text-lg">🔄</span>
-        </div>
-
-        <div class="nav-label flex-1">
-          <p class="text-sm font-semibold leading-none">
-            Revisions
-          </p>
-
-          <span class="text-[11px] text-slate-500">
-            Revision tracking
-          </span>
-        </div>
-
-      </li>
-
-    </ul>
+    <div data-nav="team" onclick="loadPage('team')"
+      class="group flex items-center gap-3 rounded-xl px-3 py-2.5 cursor-pointer text-slate-300 hover:text-sky-300 hover:bg-sky-500/10 transition-all">
+      <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-800 border border-slate-700 group-hover:border-sky-500/40 transition-all">
+        <span class="text-base">👥</span>
+      </div>
+      <div class="nav-label">
+        <p class="text-sm font-semibold leading-none">Team</p>
+        <span class="text-[11px] text-slate-500">Team members</span>
+      </div>
+    </div>
 
   </nav>
 
   <!-- FOOTER -->
-  <div class="absolute bottom-5 left-0 w-full px-4">
-
-    <div
-      class="rounded-2xl border border-slate-700 bg-slate-800/50 backdrop-blur-sm p-4">
-
-      <div class="flex items-center gap-3">
-
-        <div
-          class="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-600 text-white font-bold shadow-md">
-
-          A
-
-        </div>
-
-        <div class="nav-label flex-1">
-          <p class="text-sm font-semibold text-white leading-none">
-            Admin User
-          </p>
-
-          <span class="text-[11px] text-slate-400">
-            System Administrator
-          </span>
-        </div>
-
-        <button
-          class="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-700 text-slate-300 hover:bg-slate-600 hover:text-white transition-all">
-
-          ⚙️
-
-        </button>
-
+  <div class="shrink-0 px-3 py-4 border-t border-slate-800">
+    <div class="flex items-center gap-3 rounded-xl bg-slate-800/60 px-3 py-3">
+      <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sky-600 text-white text-xs font-bold">A</div>
+      <div class="nav-label flex-1 min-w-0">
+        <p class="text-sm font-semibold text-white leading-none truncate">Admin</p>
+        <span class="text-[11px] text-slate-400">System Administrator</span>
       </div>
-
     </div>
-
   </div>
 
 </aside>
