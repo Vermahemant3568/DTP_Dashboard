@@ -1,0 +1,215 @@
+<script>
+/* ================================================================
+   ScriptRevisions.html — Revision Table, Filter, Delete, Form
+   Depends on: ScriptUtils.html, ScriptNav.html
+================================================================ */
+
+let ALL_REVISIONS_DATA = [];
+
+/* ── LOAD ── */
+function loadRevisions() {
+  showLoader("Loading revisions...");
+  google.script.run
+    .withFailureHandler(function(err) { hideLoader(); showToast("Could not load revisions: " + err.message, "error"); })
+    .withSuccessHandler(function(data) {
+      ALL_REVISIONS_DATA = data || [];
+      renderRevisionStats(ALL_REVISIONS_DATA);
+      renderRevisionsTable(ALL_REVISIONS_DATA);
+      hideLoader();
+    })
+    .getRevisions();
+}
+
+/* ── STATS ── */
+function renderRevisionStats(data) {
+  const total     = data.length;
+  const pages     = data.reduce((sum, r) => sum + (Number(r[4]) || 0), 0);
+  const pending   = data.filter(r => r[5] === "Pending").length;
+  const completed = data.filter(r => r[5] === "Completed").length;
+  _set("rev-stat-total",     total);
+  _set("rev-stat-pages",     pages);
+  _set("rev-stat-pending",   pending);
+  _set("rev-stat-completed", completed);
+}
+
+/* ── RENDER TABLE ── */
+function renderRevisionsTable(data) {
+  const tbody = document.getElementById("revisionsTable");
+  if (!tbody) return;
+
+  if (!data || data.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="8" class="p-12 text-center">
+          <div class="flex flex-col items-center gap-3 text-gray-400">
+            <svg class="w-10 h-10 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-width="1.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+            <p class="text-sm font-medium">No revisions yet</p>
+            <p class="text-xs">Click Add Revision to get started.</p>
+          </div>
+        </td>
+      </tr>`;
+    return;
+  }
+
+  tbody.innerHTML = data.map(function(row) {
+    const statusClass = getStatusClass(row[5] || "Pending");
+    return `
+      <tr class="border-b border-gray-50 hover:bg-purple-50/20 transition-colors">
+        <td class="p-4 font-mono text-[11px] text-gray-400">${row[0]}</td>
+        <td class="p-4">
+          <div class="font-semibold text-gray-800 text-sm">${row[12] || "—"}</div>
+          <div class="text-[11px] font-mono text-gray-400 mt-0.5">${row[1]}</div>
+        </td>
+        <td class="p-4">
+          <span class="px-2 py-1 bg-purple-100 text-purple-700 text-xs font-semibold rounded-full">${row[13] || "—"}</span>
+        </td>
+        <td class="p-4 text-sm text-gray-600">${row[9] || "—"}</td>
+        <td class="p-4">
+          <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${statusClass}">${row[5] || "Pending"}</span>
+        </td>
+        <td class="p-4 text-center font-bold text-purple-600 text-sm">${row[4] || "0"}</td>
+        <td class="p-4 text-[11px] text-gray-500 leading-relaxed">
+          <div><span class="text-gray-400 italic">Rev:</span> ${row[14] || "—"}</div>
+          <div class="font-medium text-orange-500"><span class="text-gray-400 not-italic">Due:</span> ${row[15] || "—"}</div>
+        </td>
+        <td class="p-4 text-right">
+          <button onclick="deleteRevision('${row[0]}')" title="Delete revision"
+            class="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-all">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+            </svg>
+          </button>
+        </td>
+      </tr>`;
+  }).join("");
+}
+
+/* ── FILTER ── */
+function filterRevisions() {
+  const searchEl = document.getElementById("revSearchInput");
+  const statusEl = document.getElementById("revStatusFilter");
+  if (!searchEl) return;
+
+  const q      = searchEl.value.toLowerCase();
+  const status = statusEl ? statusEl.value : "";
+
+  const filtered = ALL_REVISIONS_DATA.filter(function(row) {
+    const matchQ = !q || [row[0], row[1], row[12], row[13]].some(v => String(v).toLowerCase().includes(q));
+    const matchS = !status || row[5] === status;
+    return matchQ && matchS;
+  });
+
+  renderRevisionsTable(filtered);
+}
+
+/* ── DELETE ── */
+function deleteRevision(id) {
+  customConfirm("Delete revision " + id + "? This cannot be undone.", function() {
+    showLoader("Deleting...");
+    google.script.run
+      .withFailureHandler(function(err) { hideLoader(); showToast("Delete failed: " + err.message, "error"); })
+      .withSuccessHandler(function() { hideLoader(); showToast("Revision deleted.", "warning"); loadRevisions(); })
+      .deleteRevision(id);
+  });
+}
+
+/* ── PROJECT LOOKUP (AddRevision form) ── */
+function lookupProject() {
+  const idEl = document.getElementById("rev_projectId");
+  if (!idEl || !idEl.value.trim()) { showToast("Enter a Project ID first.", "warning"); return; }
+
+  showLoader("Looking up project...");
+  google.script.run
+    .withFailureHandler(function(err) { hideLoader(); showToast("Lookup failed: " + err.message, "error"); })
+    .withSuccessHandler(function(response) {
+      hideLoader();
+      const previewEl  = document.getElementById("projectPreview");
+      const notFoundEl = document.getElementById("projectNotFound");
+
+      if (!response || !response.details) {
+        if (previewEl)  previewEl.style.display  = "none";
+        if (notFoundEl) notFoundEl.style.display = "block";
+        return;
+      }
+
+      const data = response.details;
+      if (notFoundEl) notFoundEl.style.display = "none";
+      if (previewEl)  previewEl.style.display  = "block";
+      _set("preview_name",  data[2]  || "—");
+      _set("preview_langs", "Languages: " + (data[14] || "—"));
+      _set("preview_pages", "DTP Pages: " + (data[15] || "—"));
+    })
+    .getProjectById(idEl.value.trim());
+}
+
+/* ── REVISION FORM SUBMIT ── */
+function initRevisionForm() {
+  const form = document.getElementById("revisionForm");
+  if (!form) return;
+  form.onsubmit = null;
+
+  form.addEventListener("submit", function(e) {
+    e.preventDefault();
+
+    const getValue = (id) => { const el = document.getElementById(id); return el ? el.value.trim() : ""; };
+    const projectId = getValue("rev_projectId");
+    const language  = getValue("rev_language");
+    const pages     = getValue("rev_pages");
+
+    if (!projectId) { showToast("Project ID is required.", "error"); return; }
+
+    const previewEl = document.getElementById("projectPreview");
+    if (!previewEl || previewEl.style.display === "none") {
+      showToast("Please lookup and verify the Project ID first.", "warning");
+      return;
+    }
+    if (!language) { showToast("Language is required.", "error"); return; }
+    if (!pages || Number(pages) <= 0) { showToast("Enter valid revision pages.", "error"); return; }
+
+    const nameEl = document.getElementById("preview_name");
+    const projectName = nameEl && nameEl.innerText !== "—" ? nameEl.innerText : "";
+
+    const formData = {
+      projectId:      projectId,
+      projectName:    projectName,
+      revisionNumber: getValue("rev_revisionNumber"),
+      revisionType:   getValue("rev_revisionType"),
+      revisionPages:  pages,
+      assignedPerson: getValue("rev_assignedPerson"),
+      status:         getValue("rev_status"),
+      revisionDate:   getValue("rev_revisionDate"),
+      deliveryDate:   getValue("rev_deliveryDate"),
+      notes:          getValue("rev_notes"),
+      language:       language
+    };
+
+    const submitBtn   = form.querySelector('button[type="submit"]');
+    const originalHTML = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = `<span class="animate-spin inline-block">⏳</span><span>Saving...</span>`;
+    showLoader("Saving revision...");
+
+    google.script.run
+      .withFailureHandler(function(err) {
+        hideLoader();
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalHTML;
+        showToast("Failed to save revision.", "error");
+      })
+      .withSuccessHandler(function() {
+        hideLoader();
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalHTML;
+        showToast("Revision saved successfully!", "success");
+        form.reset();
+        const notFoundEl = document.getElementById("projectNotFound");
+        if (previewEl)  previewEl.style.display  = "none";
+        if (notFoundEl) notFoundEl.style.display = "none";
+        setTimeout(() => loadPage("revisions"), 700);
+      })
+      .addRevision(formData);
+  });
+}
+</script>

@@ -1,0 +1,127 @@
+<script>
+/* ================================================================
+   ScriptNav.html — Navigation, Sidebar, Refresh, Init
+   Depends on: ScriptUtils.html
+================================================================ */
+
+const PAGE_MAP = {
+  dashboard:      "Dashboard",
+  addProject:     "AddProject",
+  manageProjects: "ManageProjects",
+  viewProject:    "ViewProject",
+  revisions:      "Revisions",
+  addRevision:    "AddRevision"
+};
+
+let _currentPage = null;
+
+function loadPage(page, context) {
+  if (_currentPage === page && !context) return;
+  _currentPage = page;
+
+  showLoader("Loading…");
+
+  const contentArea = document.getElementById("contentArea");
+  if (contentArea) {
+    contentArea.removeAttribute("data-edit-id");
+    contentArea.removeAttribute("data-view-id");
+  }
+
+  google.script.run
+    .withFailureHandler(function(err) {
+      _currentPage = null;
+      hideLoader();
+      showToast("Failed to load page: " + err.message, "error");
+    })
+    .withSuccessHandler(function(html) {
+      contentArea.innerHTML = html;
+      _currentPage = null;
+
+      if (page === "dashboard") {
+        refreshDashboardStats();
+      } else if (page === "manageProjects") {
+        if (typeof loadProjects === "function") loadProjects();
+        else hideLoader();
+      } else if (page === "addProject") {
+        _initAddProjectForm();
+        hideLoader();
+      } else if (page === "revisions") {
+        if (typeof loadRevisions === "function") loadRevisions();
+        else hideLoader();
+      } else if (page === "addRevision") {
+        _initAddRevisionForm(context);
+        if (typeof initRevisionForm === "function") initRevisionForm();
+        hideLoader();
+      } else if (page === "viewProject" && context) {
+        if (typeof _injectViewData === "function") _injectViewData(context);
+        hideLoader();
+      } else {
+        hideLoader();
+      }
+    })
+    .loadPageFile(PAGE_MAP[page] || "Dashboard");
+}
+
+function _initAddProjectForm() {
+  const btn = document.querySelector("#projectForm button[type='submit']");
+  if (btn) btn.innerText = "Create Project";
+  if (typeof initPageCalc === "function") initPageCalc();
+}
+
+function _initAddRevisionForm(context) {
+  const revDateEl = document.getElementById("rev_revisionDate");
+  if (revDateEl) revDateEl.value = todayISO();
+  if (context && context.projectId) {
+    const idEl = document.getElementById("rev_projectId");
+    if (idEl) {
+      idEl.value = context.projectId;
+      if (typeof lookupProject === "function") lookupProject();
+    }
+  }
+}
+
+/* ── SIDEBAR TOGGLE ── */
+function toggleSidebar() {
+  const sidebar   = document.getElementById("sidebar");
+  const main      = document.getElementById("mainContent");
+  const labels    = document.querySelectorAll(".nav-label");
+  const brand     = document.getElementById("sidebarBrand");
+  const collapsed = sidebar.classList.contains("w-20");
+
+  if (collapsed) {
+    sidebar.classList.replace("w-20", "w-72");
+    if (main) main.classList.replace("ml-20", "ml-72");
+    labels.forEach(l => l.classList.remove("hidden"));
+    if (brand) brand.style.display = "";
+  } else {
+    sidebar.classList.replace("w-72", "w-20");
+    if (main) main.classList.replace("ml-72", "ml-20");
+    labels.forEach(l => l.classList.add("hidden"));
+    if (brand) brand.style.display = "none";
+  }
+}
+
+/* ── REFRESH BUTTON ── */
+function handleRefresh() {
+  const btn  = document.getElementById("refreshBtn");
+  const icon = document.getElementById("refreshIcon");
+  if (btn)  btn.disabled  = true;
+  if (icon) icon.innerText = "⏳";
+
+  if (document.getElementById("dash_totalProjects")) {
+    refreshDashboardStats();
+  }
+
+  setTimeout(function() {
+    if (btn)  btn.disabled  = false;
+    if (icon) icon.innerText = "🔄";
+    const el = document.getElementById("lastUpdated");
+    if (el) el.innerText = new Date().toLocaleTimeString();
+  }, 1500);
+}
+
+/* ── INIT ── */
+window.addEventListener("load", function() {
+  loadPage("dashboard");
+});
+</script>

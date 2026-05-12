@@ -1,0 +1,94 @@
+<div class="space-y-6 animate-fadeIn">
+
+  <!-- HEADER -->
+  <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+    <div>
+      <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+        <span class="p-2 bg-purple-50 text-purple-600 rounded-lg">🔁</span>
+        Revision Management
+      </h2>
+      <p class="text-sm text-gray-500 mt-1">
+        All revisions across all projects — pages tracked separately from DTP
+      </p>
+    </div>
+    <button onclick="loadPage('addRevision')"
+      class="inline-flex items-center justify-center bg-purple-600 hover:bg-purple-700 text-white font-medium px-5 py-2.5 rounded-lg transition-all shadow-md active:scale-95">
+      <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+      </svg>
+      Add Revision
+    </button>
+  </div>
+
+  <!-- STATS -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+      <p class="text-xs text-gray-400 uppercase font-semibold tracking-wider">Total Revisions</p>
+      <p id="rev-stat-total" class="text-2xl font-bold text-gray-800 mt-1">—</p>
+    </div>
+    <div class="bg-white rounded-xl border border-purple-100 shadow-sm p-4">
+      <p class="text-xs text-gray-400 uppercase font-semibold tracking-wider">Revision Pages</p>
+      <p id="rev-stat-pages" class="text-2xl font-bold text-purple-600 mt-1">—</p>
+    </div>
+    <div class="bg-white rounded-xl border border-yellow-100 shadow-sm p-4">
+      <p class="text-xs text-gray-400 uppercase font-semibold tracking-wider">Pending</p>
+      <p id="rev-stat-pending" class="text-2xl font-bold text-yellow-500 mt-1">—</p>
+    </div>
+    <div class="bg-white rounded-xl border border-green-100 shadow-sm p-4">
+      <p class="text-xs text-gray-400 uppercase font-semibold tracking-wider">Completed</p>
+      <p id="rev-stat-completed" class="text-2xl font-bold text-green-500 mt-1">—</p>
+    </div>
+  </div>
+
+  <!-- FILTERS -->
+  <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-wrap gap-4 items-center">
+    <div class="relative flex-1 min-w-[250px]">
+      <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+      </span>
+      <input type="text" id="revSearchInput" onkeyup="filterRevisions()"
+        placeholder="Search by Project, Language, ID..."
+        class="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-400 focus:border-transparent outline-none transition-all text-sm">
+    </div>
+    <select id="revStatusFilter" onchange="filterRevisions()"
+      class="border border-gray-200 px-3 py-2 rounded-lg text-sm text-gray-600 outline-none focus:ring-2 focus:ring-purple-400">
+      <option value="">All Statuses</option>
+      <option>Pending</option>
+      <option>In Progress</option>
+      <option>Completed</option>
+    </select>
+  </div>
+
+  <!-- TABLE -->
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse">
+        <thead>
+          <tr class="bg-gray-50 border-b border-gray-100">
+            <th class="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Revision ID</th>
+            <th class="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Project</th>
+            <th class="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Language</th>
+            <th class="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Assigned To</th>
+            <th class="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+            <th class="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">Rev. Pages</th>
+            <th class="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Timeline</th>
+            <th class="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="revisionsTable" class="divide-y divide-gray-50">
+          <tr>
+            <td colspan="8" class="p-10 text-center">
+              <div class="flex flex-col items-center gap-3">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                <p class="text-gray-400 text-sm animate-pulse">Loading revisions...</p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>

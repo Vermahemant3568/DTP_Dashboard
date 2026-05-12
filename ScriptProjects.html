@@ -1,0 +1,327 @@
+<script>
+/* ================================================================
+   ScriptProjects.html — Project Table, Filter, CRUD, Modal, Form
+   Depends on: ScriptUtils.html, ScriptNav.html
+================================================================ */
+
+let ALL_PROJECTS_DATA = [];
+
+/* ── LOAD & RENDER ── */
+function loadProjects() {
+  showLoader("Syncing projects…");
+  google.script.run
+    .withFailureHandler(function(err) {
+      hideLoader();
+      showToast("Could not load projects: " + err.message, "error");
+    })
+    .withSuccessHandler(function(data) {
+      ALL_PROJECTS_DATA = data || [];
+      renderProjectTable(ALL_PROJECTS_DATA);
+      hideLoader();
+    })
+    .getProjects();
+}
+
+function renderProjectTable(data) {
+  const tbody = document.getElementById("projectTable");
+  if (!tbody) return;
+
+  if (!data || data.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="8" class="p-12 text-center">
+          <div class="flex flex-col items-center gap-3 text-gray-400">
+            <svg class="w-10 h-10 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-width="1.5" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+            </svg>
+            <p class="text-sm font-medium">No projects found</p>
+            <p class="text-xs">Try adjusting your filters or add a new project.</p>
+          </div>
+        </td>
+      </tr>`;
+    return;
+  }
+
+  tbody.innerHTML = data.map(row => _buildProjectRow(row)).join("");
+}
+
+function _buildProjectRow(row) {
+  const id         = row[0];
+  const status     = row[10] || "Pending";
+  const statusClass = getStatusClass(status);
+  const isComplete = status === "Completed";
+  const taskType   = row[21] || "Main DTP";
+  const workType   = row[22] || "In-House";
+
+  const taskColors = {
+    "Main DTP":              "bg-blue-100 text-blue-700",
+    "Content Extraction":    "bg-teal-100 text-teal-700",
+    "Corrections/Additions": "bg-orange-100 text-orange-700",
+    "Bilingual Creation":    "bg-violet-100 text-violet-700"
+  };
+  const taskClass = taskColors[taskType] || "bg-gray-100 text-gray-600";
+  const workClass = workType === "Vendor" ? "bg-amber-100 text-amber-700" : "bg-sky-100 text-sky-700";
+
+  const completeBtn = !isComplete ? `
+    <button onclick="directComplete('${id}')" title="Mark complete"
+      class="p-1.5 text-green-600 hover:bg-green-50 rounded-md transition-all">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+    </button>` : "";
+
+  return `
+    <tr class="border-b border-gray-50 hover:bg-blue-50/30 transition-colors">
+      <td class="px-6 py-4 font-mono text-[11px] text-gray-400">${id}</td>
+      <td class="px-6 py-4">
+        <div class="font-semibold text-gray-900 text-sm">${row[1] || "—"}</div>
+        <div class="text-xs text-gray-500 mt-0.5">${row[2] || "—"}</div>
+      </td>
+      <td class="px-6 py-4">
+        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${taskClass}">${taskType}</span>
+        <span class="ml-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${workClass}">${workType}</span>
+      </td>
+      <td class="px-6 py-4 text-xs space-y-0.5">
+        <div><span class="text-gray-400">PC:</span> ${row[3] || "—"}</div>
+        <div class="text-blue-600 font-medium"><span class="text-gray-400">By:</span> ${row[5] || "—"}</div>
+      </td>
+      <td class="px-6 py-4 text-xs text-gray-600">
+        <div class="truncate max-w-[120px]" title="${row[14] || ''}">${row[14] || "—"}</div>
+      </td>
+      <td class="px-6 py-4">
+        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${statusClass}">${status}</span>
+      </td>
+      <td class="px-6 py-4 text-center text-gray-700 font-semibold text-sm">${row[15] || "0"}</td>
+      <td class="px-6 py-4 text-[11px] text-gray-500 leading-relaxed">
+        <div><span class="text-gray-400 italic">Start:</span> ${row[8] || "—"}</div>
+        <div class="font-medium text-orange-600"><span class="text-gray-400 italic not-italic">Due:</span> ${row[9] || "—"}</div>
+      </td>
+      <td class="px-6 py-4 text-right">
+        <div class="flex justify-end gap-1 items-center">
+          ${completeBtn}
+          <button onclick="viewProject('${id}')" title="View"
+            class="p-1.5 text-blue-500 hover:bg-blue-50 rounded-md transition-all">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+              <path stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+            </svg>
+          </button>
+          <button onclick="editProject('${id}')" title="Quick edit"
+            class="p-1.5 text-amber-500 hover:bg-amber-50 rounded-md transition-all">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+            </svg>
+          </button>
+          <button onclick="deleteProject('${id}')" title="Delete"
+            class="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-all">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+            </svg>
+          </button>
+        </div>
+      </td>
+    </tr>`;
+}
+
+/* ── FILTER ── */
+function filterTable() {
+  const searchEl   = document.getElementById("searchInput");
+  const statusEl   = document.getElementById("statusFilter");
+  const priorityEl = document.getElementById("priorityFilter");
+  const taskEl     = document.getElementById("taskTypeFilter");
+  const workEl     = document.getElementById("workTypeFilter");
+  if (!searchEl) return;
+
+  const q        = searchEl.value.toLowerCase();
+  const status   = statusEl   ? statusEl.value   : "";
+  const priority = priorityEl ? priorityEl.value : "";
+  const taskType = taskEl     ? taskEl.value     : "";
+  const workType = workEl     ? workEl.value     : "";
+
+  const filtered = ALL_PROJECTS_DATA.filter(row => {
+    const matchQ = !q        || [row[0], row[1], row[2]].some(v => String(v).toLowerCase().includes(q));
+    const matchS = !status   || row[10] === status;
+    const matchP = !priority || row[7]  === priority;
+    const matchT = !taskType || (row[21] || "Main DTP") === taskType;
+    const matchW = !workType || (row[22] || "In-House") === workType;
+    return matchQ && matchS && matchP && matchT && matchW;
+  });
+
+  renderProjectTable(filtered);
+}
+
+/* ── DIRECT COMPLETE ── */
+function directComplete(id) {
+  customConfirm(
+    "Mark project " + id + " as Completed and set delivery date to today?",
+    function() {
+      showLoader("Updating…");
+      google.script.run
+        .withFailureHandler(function(err) { hideLoader(); showToast("Error: " + err.message, "error"); })
+        .withSuccessHandler(function() { hideLoader(); showToast("Project " + id + " marked as Completed!", "success"); loadProjects(); })
+        .updateQuickStatus(id, "Completed", todayISO());
+    }
+  );
+}
+
+/* ── DELETE ── */
+function deleteProject(id) {
+  customConfirm("Permanently delete project " + id + "? This cannot be undone.", function() {
+    showLoader("Deleting…");
+    google.script.run
+      .withFailureHandler(function(err) { hideLoader(); showToast("Delete failed: " + err.message, "error"); })
+      .withSuccessHandler(function() { hideLoader(); showToast("Project deleted.", "warning"); loadProjects(); })
+      .deleteProject(id);
+  });
+}
+
+/* ── QUICK EDIT MODAL ── */
+function editProject(id) {
+  showLoader("Fetching project…");
+  google.script.run
+    .withFailureHandler(function(err) { hideLoader(); showToast("Could not load project: " + err.message, "error"); })
+    .withSuccessHandler(function(response) {
+      hideLoader();
+      if (!response || !response.details) { showToast("Project data not found.", "error"); return; }
+      const data = response.details;
+      document.getElementById("m_projectId").innerText   = data[0];
+      document.getElementById("m_projectName").innerText = data[2] || "—";
+      document.getElementById("m_status").value          = data[10] || "Pending";
+      document.getElementById("m_deliveryDate").value    = formatForInput(data[9]);
+      document.getElementById("editModal").style.display = "flex";
+    })
+    .getProjectById(id);
+}
+
+function closeModal() {
+  document.getElementById("editModal").style.display = "none";
+}
+
+function markAsCompleteNow() {
+  document.getElementById("m_status").value       = "Completed";
+  document.getElementById("m_deliveryDate").value = todayISO();
+  saveQuickUpdate();
+}
+
+function saveQuickUpdate() {
+  const id     = document.getElementById("m_projectId").innerText.trim();
+  const status = document.getElementById("m_status").value;
+  const date   = document.getElementById("m_deliveryDate").value;
+  if (!id) { showToast("No project selected.", "error"); return; }
+
+  showLoader("Saving changes…");
+  google.script.run
+    .withFailureHandler(function(err) { hideLoader(); showToast("Update failed: " + err.message, "error"); })
+    .withSuccessHandler(function() { hideLoader(); closeModal(); showToast("Project updated successfully!", "success"); loadProjects(); })
+    .updateQuickStatus(id, status, date);
+}
+
+/* ── VIEW PROJECT ── */
+function viewProject(id) {
+  showLoader("Loading project details…");
+  google.script.run
+    .withFailureHandler(function(err) { hideLoader(); showToast("Could not load project: " + err.message, "error"); })
+    .withSuccessHandler(function(response) {
+      if (!response || !response.details) { hideLoader(); showToast("Project not found.", "error"); return; }
+      const data = response.details;
+      loadPage("viewProject");
+
+      let attempts = 0;
+      const poll = setInterval(function() {
+        attempts++;
+        if (document.getElementById("viewProjectTitle")) {
+          clearInterval(poll);
+          _injectViewData(data);
+          hideLoader();
+        }
+        if (attempts > 25) { clearInterval(poll); hideLoader(); showToast("View page took too long to load.", "error"); }
+      }, 200);
+    })
+    .getProjectById(id);
+}
+
+/* ── FORM SUBMIT (Add / Edit Full) ── */
+document.addEventListener("submit", function(e) {
+  if (!e.target || e.target.id !== "projectForm") return;
+  e.preventDefault();
+
+  const editId   = document.getElementById("contentArea").getAttribute("data-edit-id");
+  const getValue = function(id) { const el = document.getElementById(id); return el ? el.value : ""; };
+
+  const formData = {
+    customerName:       getValue("customerName"),
+    projectName:        getValue("projectName"),
+    projectCoordinator: getValue("projectCoordinator"),
+    modeOfTask:         getValue("modeOfTask"),
+    assignedPerson:     getValue("assignedPerson"),
+    vendorTeam:         getValue("vendorTeam"),
+    priority:           getValue("priority"),
+    startDate:          getValue("startDate"),
+    deliveryDate:       getValue("deliveryDate"),
+    status:             getValue("status"),
+    sourcePages:        getValue("sourcePages"),
+    targetLangCount:    getValue("targetLangCount"),
+    sourceLanguage:     getValue("sourceLanguage"),
+    targetLangNames:    getValue("targetLangNames"),
+    finalPages:         getValue("finalPages"),
+    sourceLink:         getValue("sourceLink"),
+    deliverableLink:    getValue("deliverableLink"),
+    notes:              getValue("notes"),
+    taskType:           getValue("taskType") || "Main DTP",
+    workType:           (function() {
+      const el = document.querySelector('input[name="workType"]:checked');
+      return el ? el.value : "In-House";
+    })()
+  };
+
+  showLoader(editId ? "Updating project…" : "Creating project…");
+
+  if (editId) {
+    google.script.run
+      .withFailureHandler(function(err) { hideLoader(); showToast("Update failed: " + err.message, "error"); })
+      .withSuccessHandler(function() {
+        hideLoader();
+        showToast("Project updated!", "success");
+        document.getElementById("contentArea").removeAttribute("data-edit-id");
+        loadPage("manageProjects");
+      })
+      .updateProject(editId, formData);
+  } else {
+    google.script.run
+      .withFailureHandler(function(err) { hideLoader(); showToast("Could not create project: " + err.message, "error"); })
+      .withSuccessHandler(function() { hideLoader(); showToast("Project created!", "success"); loadPage("manageProjects"); })
+      .addProject(formData);
+  }
+});
+
+/* ── PAGE CALC (Add Project form) ── */
+function initPageCalc() {
+  const srcEl   = document.getElementById("sourcePages");
+  const langEl  = document.getElementById("targetLangCount");
+  const finalEl = document.getElementById("finalPages");
+  const modeEl  = document.getElementById("finalPagesMode");
+  if (!srcEl || !langEl || !finalEl) return;
+
+  let isManual = false;
+
+  function calculatePages() {
+    if (isManual) return;
+    const result = (parseFloat(srcEl.value) || 0) * (parseFloat(langEl.value) || 0);
+    finalEl.value = result > 0 ? result : "";
+  }
+
+  function setMode(manual) {
+    isManual = manual;
+    if (!modeEl) return;
+    modeEl.innerText  = manual ? "Manual" : "Auto";
+    modeEl.className  = "absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full " +
+      (manual ? "bg-blue-100 text-blue-600" : "bg-yellow-200 text-yellow-700");
+  }
+
+  finalEl.addEventListener("input", function() {
+    if (finalEl.value === "") { setMode(false); calculatePages(); } else { setMode(true); }
+  });
+  srcEl.addEventListener("input",  calculatePages);
+  langEl.addEventListener("input", calculatePages);
+}
+</script>

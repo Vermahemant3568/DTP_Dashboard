@@ -1,0 +1,234 @@
+<script>
+/* ================================================================
+   ScriptDashboard.html — Dashboard Rendering
+   Depends on: ScriptUtils.html
+================================================================ */
+
+function refreshDashboardStats() {
+  let _allData = null;
+  let _monthly = null;
+
+  function _tryRender() {
+    if (_allData === null || _monthly === null) return;
+    _renderDashboard(_allData.projects, _allData.revisions, _monthly);
+    hideLoader();
+  }
+
+  google.script.run
+    .withFailureHandler(function(err) {
+      console.error("getAllData error:", err);
+      _allData = { projects: [], revisions: [] };
+      _tryRender();
+    })
+    .withSuccessHandler(function(data) {
+      _allData = data || { projects: [], revisions: [] };
+      _tryRender();
+    })
+    .getAllData();
+
+  google.script.run
+    .withFailureHandler(function(err) {
+      console.error("getMonthlySummary error:", err);
+      _monthly = {};
+      _tryRender();
+    })
+    .withSuccessHandler(function(data) {
+      _monthly = data || {};
+      _tryRender();
+    })
+    .getMonthlySummary();
+}
+
+function _renderDashboard(projects, revisions, monthly) {
+  /* Monthly page volume cards */
+  if (monthly && monthly.mainDTP) {
+    _set("dash_dtpTotal",       monthly.mainDTP.total.toLocaleString());
+    _set("dash_dtpInhouse",     monthly.mainDTP.inHouse.toLocaleString());
+    _set("dash_dtpVendor",      monthly.mainDTP.vendor.toLocaleString());
+    _set("dash_extractTotal",   monthly.extraction.total.toLocaleString());
+    _set("dash_extractInhouse", monthly.extraction.inHouse.toLocaleString());
+    _set("dash_extractVendor",  monthly.extraction.vendor.toLocaleString());
+    _set("dash_corrTotal",      monthly.corrections.total.toLocaleString());
+    _set("dash_corrInhouse",    monthly.corrections.inHouse.toLocaleString());
+    _set("dash_corrVendor",     monthly.corrections.vendor.toLocaleString());
+    _set("dash_bilingTotal",    monthly.bilingual.total.toLocaleString());
+    _set("dash_bilingInhouse",  monthly.bilingual.inHouse.toLocaleString());
+    _set("dash_bilingVendor",   monthly.bilingual.vendor.toLocaleString());
+    _set("dash_grandTotal",     monthly.grandTotal.toLocaleString());
+    _set("dash_monthLabel",     "Live production metrics — " + (monthly.month || ""));
+  }
+
+  /* Project status counts */
+  const sumPages = function(arr) { return arr.reduce(function(s, r) { return s + (Number(r[15]) || 0); }, 0); };
+  const inProg    = projects.filter(r => r[10] === "In Progress");
+  const completed = projects.filter(r => r[10] === "Completed");
+  const pending   = projects.filter(r => r[10] === "Pending");
+
+  _set("dash_totalProjects",   projects.length);
+  _set("dash_totalPages",      sumPages(projects).toLocaleString() + " total pages");
+  _set("dash_inProgress",      inProg.length);
+  _set("dash_inProgressPages", sumPages(inProg).toLocaleString() + " pages active");
+  _set("dash_completed",       completed.length);
+  _set("dash_completedPages",  sumPages(completed).toLocaleString() + " pages done");
+  _set("dash_pending",         pending.length);
+  _set("dash_pendingPages",    sumPages(pending).toLocaleString() + " pages queued");
+
+  /* Revision counts */
+  const sumRevPages = function(arr) { return arr.reduce(function(s, r) { return s + (Number(r[4]) || 0); }, 0); };
+  _set("dash_totalRevisions", revisions.length);
+  _set("dash_totalRevPages",  sumRevPages(revisions).toLocaleString() + " revision pages");
+
+  _renderTaskTypeBars(monthly);
+  _renderWorkTypeBars(monthly);
+  _renderTopProjects(projects);
+  _renderRecentRevisions(revisions);
+}
+
+function _renderTaskTypeBars(monthly) {
+  const container = document.getElementById("dash_taskTypeBars");
+  if (!container || !monthly) return;
+
+  const items = [
+    { label: "Main DTP",    val: monthly.mainDTP    ? monthly.mainDTP.total    : 0, color: "bg-blue-500"   },
+    { label: "Extraction",  val: monthly.extraction  ? monthly.extraction.total  : 0, color: "bg-teal-500"   },
+    { label: "Corrections", val: monthly.corrections ? monthly.corrections.total : 0, color: "bg-orange-500" },
+    { label: "Bilingual",   val: monthly.bilingual   ? monthly.bilingual.total   : 0, color: "bg-violet-500" },
+    { label: "Revisions",   val: monthly.revisions   ? monthly.revisions.total   : 0, color: "bg-purple-500" }
+  ];
+
+  const max = Math.max.apply(null, items.map(i => i.val)) || 1;
+  container.innerHTML = items.map(function(item) {
+    const pct = Math.round((item.val / max) * 100);
+    return [
+      '<div>',
+        '<div class="flex justify-between text-xs mb-1">',
+          '<span class="font-semibold text-slate-600">' + item.label + '</span>',
+          '<span class="text-slate-400">' + item.val.toLocaleString() + ' pages</span>',
+        '</div>',
+        '<div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden">',
+          '<div class="' + item.color + ' h-3 rounded-full transition-all duration-700" style="width:' + pct + '%"></div>',
+        '</div>',
+      '</div>'
+    ].join("");
+  }).join("");
+}
+
+function _renderWorkTypeBars(monthly) {
+  const container = document.getElementById("dash_workTypeBars");
+  if (!container || !monthly) return;
+
+  let totalInHouse = 0, totalVendor = 0;
+  ["mainDTP", "extraction", "corrections", "bilingual"].forEach(function(k) {
+    if (monthly[k]) {
+      totalInHouse += monthly[k].inHouse || 0;
+      totalVendor  += monthly[k].vendor  || 0;
+    }
+  });
+
+  const grand = (totalInHouse + totalVendor) || 1;
+  const ihPct = Math.round((totalInHouse / grand) * 100);
+  const vPct  = 100 - ihPct;
+
+  container.innerHTML = [
+    '<div class="flex rounded-full overflow-hidden h-5 mb-5">',
+      '<div class="bg-sky-500 h-5 transition-all duration-700" style="width:' + ihPct + '%" title="In-House: ' + totalInHouse.toLocaleString() + '"></div>',
+      '<div class="bg-amber-400 h-5 transition-all duration-700" style="width:' + vPct + '%" title="Vendor: ' + totalVendor.toLocaleString() + '"></div>',
+    '</div>',
+    '<div class="space-y-3">',
+      _workBar("In-House", totalInHouse, ihPct, "bg-sky-500",   "text-sky-600"),
+      _workBar("Vendor",   totalVendor,  vPct,  "bg-amber-400", "text-amber-600"),
+    '</div>',
+    '<p class="text-xs text-slate-400 text-right mt-2">Grand total: <span class="font-bold text-slate-600">' + grand.toLocaleString() + ' pages</span></p>'
+  ].join("");
+}
+
+function _workBar(label, val, pct, color, text) {
+  return [
+    '<div>',
+      '<div class="flex justify-between text-xs mb-1">',
+        '<span class="flex items-center gap-2">',
+          '<span class="inline-block w-2.5 h-2.5 rounded-full ' + color + '"></span>',
+          '<span class="font-semibold text-slate-600">' + label + '</span>',
+        '</span>',
+        '<span class="' + text + ' font-bold">' + val.toLocaleString() + ' pages (' + pct + '%)</span>',
+      '</div>',
+      '<div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">',
+        '<div class="' + color + ' h-2.5 rounded-full transition-all duration-700" style="width:' + pct + '%"></div>',
+      '</div>',
+    '</div>'
+  ].join("");
+}
+
+function _renderTopProjects(projects) {
+  const container = document.getElementById("dash_topProjects");
+  if (!container) return;
+
+  if (!projects.length) {
+    container.innerHTML = '<p class="p-6 text-center text-slate-300 text-sm">No projects yet.</p>';
+    return;
+  }
+
+  const top = projects.slice().sort(function(a, b) {
+    return (Number(b[15]) || 0) - (Number(a[15]) || 0);
+  }).slice(0, 6);
+
+  const maxPages = Number(top[0][15]) || 1;
+  container.innerHTML = top.map(function(r) {
+    const pages  = Number(r[15]) || 0;
+    const pct    = Math.round((pages / maxPages) * 100);
+    const status = r[10] || "Pending";
+    const sc = status === "Completed"   ? "bg-green-100 text-green-700"  :
+               status === "In Progress" ? "bg-amber-100 text-amber-700"  :
+               status === "On Hold"     ? "bg-slate-100 text-slate-500"  :
+               "bg-rose-100 text-rose-600";
+    return [
+      '<div class="px-5 py-3 hover:bg-slate-50 transition-colors">',
+        '<div class="flex items-center justify-between mb-1">',
+          '<div class="flex items-center gap-2 min-w-0">',
+            '<span class="text-sm font-semibold text-slate-700 truncate max-w-[160px]" title="' + (r[2] || '') + '">' + (r[2] || '—') + '</span>',
+            '<span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full ' + sc + '">' + status + '</span>',
+          '</div>',
+          '<span class="text-sm font-black text-sky-600 ml-2 shrink-0">' + pages.toLocaleString() + '</span>',
+        '</div>',
+        '<div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">',
+          '<div class="bg-sky-400 h-1.5 rounded-full" style="width:' + pct + '%"></div>',
+        '</div>',
+        '<p class="text-[10px] text-slate-400 mt-0.5">' + (r[1] || '—') + ' · ' + (r[14] || '—') + '</p>',
+      '</div>'
+    ].join("");
+  }).join("");
+}
+
+function _renderRecentRevisions(revisions) {
+  const container = document.getElementById("dash_recentRevisions");
+  if (!container) return;
+
+  if (!revisions.length) {
+    container.innerHTML = '<p class="p-6 text-center text-slate-300 text-sm">No revisions yet.</p>';
+    return;
+  }
+
+  const recent = revisions.slice(-6).reverse();
+  container.innerHTML = recent.map(function(r) {
+    const status = r[5] || "Pending";
+    const sc = status === "Completed"   ? "bg-emerald-100 text-emerald-700" :
+               status === "In Progress" ? "bg-blue-100 text-blue-700"       :
+               "bg-yellow-100 text-yellow-700";
+    return [
+      '<div class="px-5 py-3 hover:bg-slate-50 transition-colors flex items-center justify-between gap-3">',
+        '<div class="min-w-0">',
+          '<p class="text-sm font-semibold text-slate-700 truncate">' + (r[12] || r[1] || '—') + '</p>',
+          '<p class="text-xs text-slate-400">',
+            '<span class="px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded-full text-[10px] font-semibold mr-1">' + (r[13] || '—') + '</span>',
+            (r[14] || '—'),
+          '</p>',
+        '</div>',
+        '<div class="text-right shrink-0">',
+          '<p class="text-sm font-black text-purple-600">' + (Number(r[4]) || 0) + ' pg</p>',
+          '<span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full ' + sc + '">' + status + '</span>',
+        '</div>',
+      '</div>'
+    ].join("");
+  }).join("");
+}
+</script>

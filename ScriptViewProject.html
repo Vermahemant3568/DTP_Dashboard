@@ -1,0 +1,173 @@
+<script>
+/* ================================================================
+   ScriptViewProject.html — View Project Data Injection
+   Depends on: ScriptUtils.html, ScriptNav.html
+================================================================ */
+
+function _injectViewData(data) {
+  const set = function(id, val) {
+    const el = document.getElementById(id);
+    if (el) el.innerText = val || "—";
+  };
+
+  set("viewProjectTitle",    data[2]);
+  set("viewProjectId",       "ID: " + data[0]);
+  set("v_customerName",      data[1]);
+  set("v_projectName",       data[2]);
+  set("v_projectCoordinator",data[3]);
+  set("v_assignedPerson",    data[5]);
+  set("v_startDate",         data[8]);
+  set("v_deliveryDate",      data[9]);
+  set("v_targetLangNames",   data[14]);
+  set("v_sourcePages",       data[11]);
+  set("v_targetLangCount",   data[13]);
+  set("v_finalPages",        data[15]);
+  set("v_notes",             data[16]);
+
+  const taskType = data[21] || "Main DTP";
+  const workType = data[22] || "In-House";
+  const taskColors = {
+    "Main DTP":              "bg-blue-100 text-blue-700",
+    "Content Extraction":    "bg-teal-100 text-teal-700",
+    "Corrections/Additions": "bg-orange-100 text-orange-700",
+    "Bilingual Creation":    "bg-violet-100 text-violet-700"
+  };
+
+  const taskEl = document.getElementById("v_taskType");
+  if (taskEl) {
+    taskEl.innerText = taskType;
+    taskEl.className = "px-3 py-1 rounded-full text-xs font-bold " + (taskColors[taskType] || "bg-gray-100 text-gray-600");
+  }
+
+  const workEl = document.getElementById("v_workType");
+  if (workEl) {
+    workEl.innerText = workType;
+    workEl.className = "px-3 py-1 rounded-full text-xs font-bold " +
+      (workType === "Vendor" ? "bg-amber-100 text-amber-700" : "bg-sky-100 text-sky-700");
+  }
+
+  const statusEl = document.getElementById("v_status");
+  if (statusEl) {
+    const s = data[10] || "Pending";
+    statusEl.innerText = s;
+    statusEl.className = `px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest ${getStatusClass(s)}`;
+  }
+
+  const priorityEl = document.getElementById("v_priority");
+  if (priorityEl) priorityEl.innerText = "Priority: " + (data[7] || "Medium");
+
+  _setLink("v_sourceLink",      data[17]);
+  _setLink("v_deliverableLink", data[18]);
+
+  loadProjectHistory(data[0]);
+  loadProjectRevisions(data[0]);
+}
+
+function _setLink(id, url) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (url) { el.href = url; el.style.display = "flex"; }
+  else     { el.style.display = "none"; }
+}
+
+/* ── STAGE HISTORY ── */
+function loadProjectHistory(projectId) {
+  const container = document.getElementById("projectHistoryList");
+  if (!container) return;
+
+  google.script.run
+    .withFailureHandler(function() {
+      container.innerHTML = '<p class="text-sm text-red-400 text-center py-4">Could not load history.</p>';
+    })
+    .withSuccessHandler(function(data) {
+      if (!data || data.length === 0) {
+        container.innerHTML = '<p class="text-sm text-gray-400 text-center py-4">No stage history found.</p>';
+        return;
+      }
+
+      const taskColors = {
+        "Main DTP":              "bg-blue-100 text-blue-700 border-blue-200",
+        "Content Extraction":    "bg-teal-100 text-teal-700 border-teal-200",
+        "Corrections/Additions": "bg-orange-100 text-orange-700 border-orange-200",
+        "Bilingual Creation":    "bg-violet-100 text-violet-700 border-violet-200"
+      };
+
+      const totalPages = data.reduce(function(s, r) { return s + (Number(r[15]) || 0); }, 0);
+
+      container.innerHTML =
+        '<div class="mb-3 flex items-center justify-between">' +
+          '<span class="text-xs text-gray-400">' + data.length + ' stage entry(ies)</span>' +
+          '<span class="text-xs font-bold text-sky-600 bg-sky-50 px-3 py-1 rounded-full border border-sky-100">Total: ' + totalPages.toLocaleString() + ' pages</span>' +
+        '</div>' +
+        '<div class="space-y-2">' +
+        data.map(function(r) {
+          const taskType = r[21] || "Main DTP";
+          const workType = r[22] || "In-House";
+          const tc = taskColors[taskType] || "bg-gray-100 text-gray-600 border-gray-200";
+          const wc = workType === "Vendor" ? "bg-amber-100 text-amber-700" : "bg-sky-100 text-sky-700";
+          const sc = getStatusClass(r[10] || "Pending");
+          return [
+            '<div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100 hover:bg-blue-50/30 transition-colors">',
+              '<div class="flex items-center gap-2 flex-wrap">',
+                '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold border ' + tc + '">' + taskType + '</span>',
+                '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold ' + wc + '">' + workType + '</span>',
+                '<span class="text-xs text-gray-500">' + (r[5] || '—') + '</span>',
+                '<span class="text-[10px] text-gray-400">' + (r[8] || '—') + ' → ' + (r[9] || '—') + '</span>',
+              '</div>',
+              '<div class="flex items-center gap-3">',
+                '<span class="font-bold text-sky-700 text-sm">' + (Number(r[15]) || 0).toLocaleString() + ' pages</span>',
+                '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ' + sc + '">' + (r[10] || 'Pending') + '</span>',
+              '</div>',
+            '</div>'
+          ].join("");
+        }).join("") +
+        '</div>';
+    })
+    .getProjectHistory(projectId);
+}
+
+/* ── PROJECT REVISIONS ── */
+function loadProjectRevisions(projectId) {
+  const container = document.getElementById("projectRevisionsList");
+  if (!container) return;
+
+  google.script.run
+    .withFailureHandler(function() {
+      container.innerHTML = '<p class="text-sm text-red-400 text-center py-4">Could not load revisions.</p>';
+    })
+    .withSuccessHandler(function(data) {
+      if (!data || data.length === 0) {
+        container.innerHTML = '<p class="text-sm text-gray-400 text-center py-6">No revisions for this project yet.</p>';
+        return;
+      }
+
+      const totalRevPages = data.reduce((sum, r) => sum + (Number(r[4]) || 0), 0);
+
+      container.innerHTML = `
+        <div class="mb-4 flex items-center justify-between">
+          <span class="text-xs text-gray-400">${data.length} revision(s) found</span>
+          <span class="text-xs font-bold text-purple-600 bg-purple-50 px-3 py-1 rounded-full border border-purple-100">
+            Total Revision Pages: ${totalRevPages}
+          </span>
+        </div>
+        <div class="space-y-2">
+          ${data.map(function(r) {
+            const sc = getStatusClass(r[5] || "Pending");
+            return `
+              <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100 hover:bg-purple-50/30 transition-colors">
+                <div class="flex items-center gap-3 flex-wrap">
+                  <span class="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs font-semibold rounded-full">${r[13] || "—"}</span>
+                  <span class="text-xs text-gray-500">${r[14] || "—"}</span>
+                  <span class="text-[10px] text-gray-400 font-mono">${r[0]}</span>
+                </div>
+                <div class="flex items-center gap-3">
+                  <span class="font-bold text-purple-600 text-sm">${r[4] || 0} pages</span>
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${sc}">${r[5] || "Pending"}</span>
+                </div>
+              </div>`;
+          }).join("")}
+        </div>`;
+    })
+    .getRevisionsByProjectId(projectId);
+}
+</script>

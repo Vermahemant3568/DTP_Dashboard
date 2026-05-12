@@ -1,0 +1,247 @@
+<div class="space-y-6 animate-fadeIn">
+
+  <!-- PAGE HEADER -->
+  <div class="relative overflow-hidden rounded-3xl border border-blue-100 bg-gradient-to-r from-blue-50 via-white to-sky-50 shadow-sm">
+
+    <!-- glow -->
+    <div class="absolute right-0 top-0 h-40 w-40 rounded-full bg-blue-100/40 blur-3xl"></div>
+
+    <div class="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between p-6 lg:p-8">
+
+      <!-- LEFT -->
+      <div class="flex items-start gap-4">
+
+        <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-200">
+          <span class="text-3xl">📁</span>
+        </div>
+
+        <div>
+          <h2 class="text-3xl font-bold tracking-tight text-gray-800">
+            Project Management
+          </h2>
+
+          <p class="mt-2 text-sm text-gray-500 leading-relaxed max-w-2xl">
+            Manage, monitor, and track all active DTP localization projects in one centralized dashboard.
+          </p>
+
+          <!-- quick badges -->
+          <div class="mt-4 flex flex-wrap gap-2">
+
+            <span class="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700">
+              Active Projects
+            </span>
+
+            <span class="rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">
+              Live Tracking
+            </span>
+
+            <span class="rounded-full bg-purple-100 px-3 py-1 text-xs font-medium text-purple-700">
+              Smart Filters
+            </span>
+
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT -->
+      <div class="flex flex-col sm:flex-row gap-3">
+
+        <button onclick="loadPage('addProject')"
+          class="inline-flex items-center justify-center rounded-2xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-200 transition-all hover:bg-blue-700 hover:shadow-xl active:scale-[0.98]">
+
+          <svg class="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 4v16m8-8H4"></path>
+          </svg>
+
+          New Project
+
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- FILTERS -->
+  <div class="rounded-3xl border border-gray-100 bg-white shadow-sm">
+
+    <div class="flex flex-col gap-5 p-5 lg:flex-row lg:items-center lg:justify-between">
+
+      <!-- SEARCH -->
+      <div class="relative flex-1">
+
+        <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-gray-400">
+
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+
+        </span>
+
+        <input type="text"
+          id="searchInput"
+          onkeyup="filterTable()"
+          placeholder="Search by Project ID, Client Name, or Project..."
+          class="w-full rounded-2xl border border-gray-200 bg-gray-50 py-3 pl-12 pr-4 text-sm text-gray-700 outline-none transition-all focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100">
+
+      </div>
+
+      <!-- FILTERS -->
+      <div class="flex flex-col sm:flex-row gap-3">
+
+        <select id="statusFilter"
+          onchange="filterTable()"
+          class="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600 outline-none transition-all focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100">
+          <option value="">All Statuses</option>
+          <option>Pending</option>
+          <option>In Progress</option>
+          <option>Completed</option>
+          <option>On Hold</option>
+        </select>
+
+        <select id="taskTypeFilter"
+          onchange="filterTable()"
+          class="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600 outline-none transition-all focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100">
+          <option value="">All Task Types</option>
+          <option>Main DTP</option>
+          <option>Content Extraction</option>
+          <option>Corrections/Additions</option>
+          <option>Bilingual Creation</option>
+        </select>
+
+        <select id="workTypeFilter"
+          onchange="filterTable()"
+          class="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600 outline-none transition-all focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100">
+          <option value="">In-House &amp; Vendor</option>
+          <option>In-House</option>
+          <option>Vendor</option>
+        </select>
+
+        <select id="priorityFilter"
+          onchange="filterTable()"
+          class="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600 outline-none transition-all focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100">
+          <option value="">All Priorities</option>
+          <option>Low</option>
+          <option>Medium</option>
+          <option>High</option>
+        </select>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- TABLE CARD -->
+  <div class="overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm">
+
+    <!-- TOP BAR -->
+    <div class="flex items-center justify-between border-b border-gray-100 px-6 py-5 bg-gray-50/60">
+
+      <div>
+        <h3 class="text-lg font-semibold text-gray-800">
+          All Projects
+        </h3>
+
+        <p class="text-sm text-gray-500 mt-1">
+          Latest created projects appear at the top automatically
+        </p>
+      </div>
+
+      <div class="hidden md:flex items-center gap-2 rounded-full bg-blue-50 px-4 py-2 text-xs font-medium text-blue-700">
+        📌 Live Project List
+      </div>
+
+    </div>
+
+    <!-- TABLE -->
+    <div class="overflow-x-auto">
+
+      <table class="w-full border-collapse text-left">
+
+        <thead class="sticky top-0 z-10 bg-white">
+
+          <tr class="border-b border-gray-100 bg-gray-50/80">
+
+            <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-500">Project ID</th>
+            <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-500">Client & Project</th>
+            <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-500">Task Type</th>
+            <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-500">Team</th>
+            <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-500">Languages</th>
+            <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-500">Status</th>
+            <th class="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider text-gray-500">Pages</th>
+            <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-500">Timeline</th>
+            <th class="px-6 py-4 text-right text-xs font-bold uppercase tracking-wider text-gray-500">Actions</th>
+
+          </tr>
+
+        </thead>
+
+        <tbody id="projectTable" class="divide-y divide-gray-50 bg-white">
+
+          <!-- LOADING -->
+          <tr>
+
+            <td colspan="9" class="px-6 py-16 text-center">
+
+              <div class="flex flex-col items-center justify-center gap-4">
+
+                <div class="relative">
+
+                  <div class="h-12 w-12 rounded-full border-4 border-blue-100"></div>
+
+                  <div
+                    class="absolute left-0 top-0 h-12 w-12 animate-spin rounded-full border-4 border-transparent border-t-blue-600">
+                  </div>
+
+                </div>
+
+                <div>
+
+                  <p class="text-base font-medium text-gray-700">
+                    Syncing Projects...
+                  </p>
+
+                  <p class="mt-1 text-sm text-gray-500">
+                    Fetching latest project records from database
+                  </p>
+
+                </div>
+
+              </div>
+
+            </td>
+
+          </tr>
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+  </div>
+
+</div>
+
+<style>
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fadeIn {
+    animation: fadeIn 0.35s ease-out forwards;
+  }
+</style>

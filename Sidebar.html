@@ -1,0 +1,169 @@
+<aside id="sidebar"
+  class="fixed left-0 top-0 z-[1002] h-screen w-72 bg-[#0f172a] border-r border-slate-800 shadow-xl transition-all duration-300 ease-in-out overflow-hidden">
+
+  <!-- LOGO -->
+  <div class="flex h-20 items-center px-6 border-b border-slate-800">
+
+    <div class="flex items-center gap-3">
+
+      <div
+        class="flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-600 shadow-md">
+
+        <span class="text-white text-lg font-black tracking-widest">
+          D
+        </span>
+
+      </div>
+
+      <div id="sidebarBrand">
+        <h2 class="text-white font-bold tracking-[0.2em] uppercase text-sm leading-none">
+          DTP Tracker
+        </h2>
+
+        <p class="text-[11px] text-slate-400 mt-1">
+          Project Management
+        </p>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- NAVIGATION -->
+  <nav class="px-4 py-5">
+
+    <div class="mb-4 px-2">
+      <p class="text-[10px] uppercase tracking-[0.25em] text-slate-500 font-semibold">
+        Main Menu
+      </p>
+    </div>
+
+    <ul class="space-y-2">
+
+      <!-- DASHBOARD -->
+      <li onclick="loadPage('dashboard')"
+        class="group flex items-center gap-4 rounded-2xl px-4 py-3 cursor-pointer text-slate-300 hover:text-sky-300 hover:bg-sky-500/10 transition-all duration-200">
+
+        <div
+          class="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-800 border border-slate-700 group-hover:border-sky-500/30 transition-all">
+          <span class="text-lg">📊</span>
+        </div>
+
+        <div class="nav-label flex-1">
+          <p class="text-sm font-semibold leading-none">
+            Dashboard
+          </p>
+
+          <span class="text-[11px] text-slate-500">
+            Overview & analytics
+          </span>
+        </div>
+
+      </li>
+
+      <!-- ADD PROJECT -->
+      <li onclick="loadPage('addProject')"
+        class="group flex items-center gap-4 rounded-2xl px-4 py-3 cursor-pointer text-slate-300 hover:text-sky-300 hover:bg-sky-500/10 transition-all duration-200">
+
+        <div
+          class="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-800 border border-slate-700 group-hover:border-sky-500/30 transition-all">
+          <span class="text-lg">➕</span>
+        </div>
+
+        <div class="nav-label flex-1">
+          <p class="text-sm font-semibold leading-none">
+            Add Project
+          </p>
+
+          <span class="text-[11px] text-slate-500">
+            Create new project
+          </span>
+        </div>
+
+      </li>
+
+      <!-- MANAGE PROJECTS -->
+      <li onclick="loadPage('manageProjects')"
+        class="group flex items-center gap-4 rounded-2xl px-4 py-3 cursor-pointer text-slate-300 hover:text-sky-300 hover:bg-sky-500/10 transition-all duration-200">
+
+        <div
+          class="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-800 border border-slate-700 group-hover:border-sky-500/30 transition-all">
+          <span class="text-lg">📁</span>
+        </div>
+
+        <div class="nav-label flex-1">
+          <p class="text-sm font-semibold leading-none">
+            Manage Projects
+          </p>
+
+          <span class="text-[11px] text-slate-500">
+            View & update projects
+          </span>
+        </div>
+
+      </li>
+
+      <!-- REVISIONS -->
+      <li onclick="loadPage('revisions')"
+        class="group flex items-center gap-4 rounded-2xl px-4 py-3 cursor-pointer text-slate-300 hover:text-sky-300 hover:bg-sky-500/10 transition-all duration-200">
+
+        <div
+          class="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-800 border border-slate-700 group-hover:border-sky-500/30 transition-all">
+          <span class="text-lg">🔄</span>
+        </div>
+
+        <div class="nav-label flex-1">
+          <p class="text-sm font-semibold leading-none">
+            Revisions
+          </p>
+
+          <span class="text-[11px] text-slate-500">
+            Revision tracking
+          </span>
+        </div>
+
+      </li>
+
+    </ul>
+
+  </nav>
+
+  <!-- FOOTER -->
+  <div class="absolute bottom-5 left-0 w-full px-4">
+
+    <div
+      class="rounded-2xl border border-slate-700 bg-slate-800/50 backdrop-blur-sm p-4">
+
+      <div class="flex items-center gap-3">
+
+        <div
+          class="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-600 text-white font-bold shadow-md">
+
+          A
+
+        </div>
+
+        <div class="nav-label flex-1">
+          <p class="text-sm font-semibold text-white leading-none">
+            Admin User
+          </p>
+
+          <span class="text-[11px] text-slate-400">
+            System Administrator
+          </span>
+        </div>
+
+        <button
+          class="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-700 text-slate-300 hover:bg-slate-600 hover:text-white transition-all">
+
+          ⚙️
+
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</aside>
