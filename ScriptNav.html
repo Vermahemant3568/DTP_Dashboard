@@ -1,46 +1,63 @@
 <script>
 /* ================================================================
    ScriptNav.html — Routing, sidebar, refresh, quick edit, init
+   GAS pattern: initApp() called from <body onload="initApp()">
 ================================================================ */
 
 var PAGE_MAP = {
-  dashboard:      "Dashboard",
-  projects:       "ManageProjects",
-  addProject:     "AddProject",
-  viewProject:    "ViewProject",
-  addTask:        "AddTask",
-  tasks:          "ManageTasks",
-  revisions:      "Revisions",
-  addRevision:    "AddRevision",
-  reports:        "Reports",
-  vendors:        "Vendors",
-  team:           "Team"
+  dashboard:   "Dashboard",
+  projects:    "ManageProjects",
+  addProject:  "AddProject",
+  viewProject: "ViewProject",
+  addTask:     "AddTask",
+  tasks:       "ManageTasks",
+  revisions:   "Revisions",
+  addRevision: "AddRevision",
+  reports:     "Reports",
+  vendors:     "Vendors",
+  team:        "Team"
 };
 
-var _isLoading  = false;
-var _activePage = "dashboard";
-var _pageCtx    = null;
+var _isLoading      = false;
+var _loadingTimer   = null;
+var _activePage     = "dashboard";
+
+/* Called by <body onload="initApp()"> — guaranteed google.script is ready */
+function initApp() {
+  loadPage("dashboard");
+}
+
+function _setLoading(on) {
+  _isLoading = on;
+  if (_loadingTimer) { clearTimeout(_loadingTimer); _loadingTimer = null; }
+  if (on) {
+    _loadingTimer = setTimeout(function() {
+      _isLoading = false;
+      hideLoader();
+    }, 20000);
+  }
+}
 
 function loadPage(page, ctx) {
-  if (_isLoading) return;
-  _isLoading  = true;
+  if (_isLoading) { _setLoading(false); }
+  _setLoading(true);
   _activePage = page;
-  _pageCtx    = ctx || null;
 
   showLoader("Loading...");
   _setActiveNav(page);
 
   google.script.run
     .withFailureHandler(function(err) {
-      _isLoading = false;
+      _setLoading(false);
       hideLoader();
-      showToast("Failed to load page: " + (err.message || err), "error");
+      showToast("Page load failed: " + (err.message || err), "error");
     })
     .withSuccessHandler(function(html) {
       var area = document.getElementById("contentArea");
+      if (!area) { _setLoading(false); hideLoader(); return; }
       area.innerHTML = html;
       area.className = "max-w-7xl mx-auto page-enter";
-      _isLoading = false;
+      _setLoading(false);
       _initPage(page, ctx);
     })
     .loadPageFile(PAGE_MAP[page] || "Dashboard");
@@ -49,7 +66,8 @@ function loadPage(page, ctx) {
 function _initPage(page, ctx) {
   switch (page) {
     case "dashboard":
-      refreshDashboardStats();
+      if (typeof refreshDashboardStats === "function") refreshDashboardStats();
+      else hideLoader();
       break;
     case "projects":
       if (typeof loadProjects === "function") loadProjects();
@@ -75,7 +93,6 @@ function _initPage(page, ctx) {
       break;
     case "addRevision":
       _initAddRevisionForm(ctx);
-      hideLoader();
       break;
     case "reports":
       if (typeof loadReports === "function") loadReports();
@@ -95,6 +112,8 @@ function _initPage(page, ctx) {
 }
 
 function _initAddTaskForm(ctx) {
+  if (typeof initTaskPageCalc === "function") initTaskPageCalc();
+  _wireWorkTypeRadios("task_workType", "wt_inhouse_btn", "wt_vendor_btn");
   if (typeof loadTaskDropdowns === "function") {
     loadTaskDropdowns(function() {
       if (ctx && ctx.projectId) {
@@ -102,7 +121,8 @@ function _initAddTaskForm(ctx) {
         if (typeof lookupTaskProject === "function") lookupTaskProject();
       }
       if (ctx && ctx.editId) {
-        document.getElementById("contentArea").dataset.editTaskId = ctx.editId;
+        var area = document.getElementById("contentArea");
+        if (area) area.dataset.editTaskId = ctx.editId;
         if (typeof loadTaskForEdit === "function") loadTaskForEdit(ctx.editId);
       }
       hideLoader();
@@ -110,13 +130,12 @@ function _initAddTaskForm(ctx) {
   } else {
     hideLoader();
   }
-  if (typeof initTaskPageCalc === "function") initTaskPageCalc();
-  _wireWorkTypeRadios("task_workType", "wt_inhouse_btn", "wt_vendor_btn");
 }
 
 function _initAddRevisionForm(ctx) {
   var dateEl = document.getElementById("rev_revisionDate");
   if (dateEl && !dateEl.value) dateEl.value = todayISO();
+  _wireWorkTypeRadios("rev_workType", "rev_wt_inhouse_btn", "rev_wt_vendor_btn");
   if (typeof loadRevisionDropdowns === "function") {
     loadRevisionDropdowns(function() {
       if (ctx && ctx.projectId) {
@@ -124,21 +143,23 @@ function _initAddRevisionForm(ctx) {
         if (typeof lookupRevisionProject === "function") lookupRevisionProject();
       }
       if (ctx && ctx.editId) {
-        document.getElementById("contentArea").dataset.editRevId = ctx.editId;
+        var area = document.getElementById("contentArea");
+        if (area) area.dataset.editRevId = ctx.editId;
       }
+      hideLoader();
     });
   } else {
     if (ctx && ctx.projectId) {
       _setVal("rev_projectId", ctx.projectId);
       if (typeof lookupRevisionProject === "function") lookupRevisionProject();
     }
+    hideLoader();
   }
-  _wireWorkTypeRadios("rev_workType", "rev_wt_inhouse_btn", "rev_wt_vendor_btn");
 }
 
 function _wireWorkTypeRadios(radioName, inhouseBtnId, vendorBtnId) {
-  document.querySelectorAll('input[name="' + radioName + '"]').forEach(function(radio) {
-    radio.addEventListener("change", function() {
+  document.querySelectorAll('input[name="' + radioName + '"]').forEach(function(r) {
+    r.addEventListener("change", function() {
       _updateWorkTypeBtns(radioName, inhouseBtnId, vendorBtnId);
     });
   });
@@ -157,10 +178,10 @@ function _updateWorkTypeBtns(radioName, inhouseBtnId, vendorBtnId) {
 
 function _setActiveNav(page) {
   document.querySelectorAll("[data-nav]").forEach(function(el) {
-    var isActive = el.dataset.nav === page;
-    el.classList.toggle("bg-sky-500/15",  isActive);
-    el.classList.toggle("text-sky-300",   isActive);
-    el.classList.toggle("text-slate-300", !isActive);
+    var active = el.dataset.nav === page;
+    el.classList.toggle("bg-sky-500/15",  active);
+    el.classList.toggle("text-sky-300",   active);
+    el.classList.toggle("text-slate-300", !active);
   });
 }
 
@@ -170,7 +191,6 @@ function toggleSidebar() {
   var labels    = document.querySelectorAll(".nav-label");
   var brand     = document.getElementById("sidebarBrand");
   var collapsed = sidebar.dataset.collapsed === "true";
-
   if (collapsed) {
     sidebar.classList.replace("w-20", "w-72");
     if (main) main.classList.replace("ml-20", "ml-72");
@@ -186,9 +206,8 @@ function toggleSidebar() {
   }
 }
 
-function closeEditModal() {
-  document.getElementById("editModal").style.display = "none";
-}
+function closeEditModal()   { document.getElementById("editModal").style.display   = "none"; }
+function closeConfirmModal(){ document.getElementById("confirmModal").style.display = "none"; }
 
 function markCompleteNow() {
   document.getElementById("m_status").value       = "Completed";
@@ -202,36 +221,22 @@ function saveQuickEdit() {
   var delivery = document.getElementById("m_deliveryDate").value;
   var editType = document.getElementById("editModal").dataset.editType || "task";
   if (!id) { showToast("No item selected.", "error"); return; }
-
   showLoader("Saving...");
-
   if (editType === "project") {
     google.script.run
       .withFailureHandler(function(e) { hideLoader(); showToast("Update failed: " + e.message, "error"); })
-      .withSuccessHandler(function() {
-        hideLoader();
-        closeEditModal();
-        showToast("Status updated!", "success");
-        if (typeof loadProjects === "function") loadProjects();
-      })
+      .withSuccessHandler(function() { hideLoader(); closeEditModal(); showToast("Status updated!", "success"); if (typeof loadProjects === "function") loadProjects(); })
       .updateProjectStatus(id, status);
   } else if (editType === "revision") {
     google.script.run
       .withFailureHandler(function(e) { hideLoader(); showToast("Update failed: " + e.message, "error"); })
-      .withSuccessHandler(function() {
-        hideLoader();
-        closeEditModal();
-        showToast("Revision updated!", "success");
-        if (typeof loadRevisions === "function") loadRevisions();
-      })
+      .withSuccessHandler(function() { hideLoader(); closeEditModal(); showToast("Revision updated!", "success"); if (typeof loadRevisions === "function") loadRevisions(); })
       .updateRevisionStatus(id, status, delivery);
   } else {
     google.script.run
       .withFailureHandler(function(e) { hideLoader(); showToast("Update failed: " + e.message, "error"); })
       .withSuccessHandler(function() {
-        hideLoader();
-        closeEditModal();
-        showToast("Task updated!", "success");
+        hideLoader(); closeEditModal(); showToast("Task updated!", "success");
         if (_activePage === "tasks"    && typeof loadTasks    === "function") loadTasks();
         if (_activePage === "projects" && typeof loadProjects === "function") loadProjects();
       })
@@ -244,30 +249,21 @@ function handleRefresh() {
   var icon = document.getElementById("refreshIcon");
   if (btn)  btn.disabled   = true;
   if (icon) icon.innerText = "...";
-
-  var refreshMap = {
-    dashboard:  function() { refreshDashboardStats(); },
-    projects:   function() { if (typeof loadProjects  === "function") loadProjects(); },
-    tasks:      function() { if (typeof loadTasks     === "function") loadTasks(); },
-    revisions:  function() { if (typeof loadRevisions === "function") loadRevisions(); },
-    reports:    function() { if (typeof loadReports   === "function") loadReports(); },
-    vendors:    function() { if (typeof loadVendors   === "function") loadVendors(); },
-    team:       function() { if (typeof loadTeam      === "function") loadTeam(); }
+  var map = {
+    dashboard: function() { if (typeof refreshDashboardStats === "function") refreshDashboardStats(); },
+    projects:  function() { if (typeof loadProjects  === "function") loadProjects(); },
+    tasks:     function() { if (typeof loadTasks     === "function") loadTasks(); },
+    revisions: function() { if (typeof loadRevisions === "function") loadRevisions(); },
+    reports:   function() { if (typeof loadReports   === "function") loadReports(); },
+    vendors:   function() { if (typeof loadVendors   === "function") loadVendors(); },
+    team:      function() { if (typeof loadTeam      === "function") loadTeam(); }
   };
-
-  if (refreshMap[_activePage]) refreshMap[_activePage]();
-
+  if (map[_activePage]) map[_activePage]();
   setTimeout(function() {
     if (btn)  btn.disabled   = false;
-    if (icon) icon.innerText = "Refresh";
+    if (icon) icon.innerText = "🔄";
     var el = document.getElementById("lastUpdated");
     if (el) el.innerText = new Date().toLocaleTimeString();
   }, 1500);
 }
-
-window.addEventListener("load", function() {
-  var main = document.getElementById("mainContent");
-  if (main) { main.classList.remove("ml-64"); main.classList.add("ml-72"); }
-  loadPage("dashboard");
-});
 </script>

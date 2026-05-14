@@ -7,7 +7,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <?!= include('Styles'); ?>
 </head>
-<body class="bg-gray-50 text-gray-900 antialiased">
+<body class="bg-gray-50 text-gray-900 antialiased" onload="initApp()">
 
   <?!= include('Header'); ?>
 
@@ -27,11 +27,11 @@
         <div class="absolute inset-0 rounded-full border-4 border-slate-100"></div>
         <div class="absolute inset-0 rounded-full border-4 border-sky-600 border-t-transparent animate-spin"></div>
       </div>
-      <p class="mt-4 text-sm font-bold text-slate-700 tracking-wide uppercase">Processing…</p>
+      <p class="mt-4 text-sm font-bold text-slate-700 tracking-wide uppercase">Loading…</p>
     </div>
   </div>
 
-  <!-- QUICK EDIT MODAL (Task/Project status) -->
+  <!-- QUICK EDIT MODAL -->
   <div id="editModal" style="display:none"
        class="fixed inset-0 z-[2000] flex items-center justify-center bg-black/50 px-4">
     <div class="w-full max-w-md rounded-2xl bg-white shadow-2xl">
@@ -57,7 +57,6 @@
         <div>
           <label class="label">Delivery Date</label>
           <input type="date" id="m_deliveryDate" class="input">
-          <p class="mt-1 text-[10px] text-amber-500">✱ "Mark Complete" sets delivery date to today automatically.</p>
         </div>
       </div>
       <div class="flex flex-col gap-2 border-t border-gray-100 p-4">
@@ -98,7 +97,16 @@
   <!-- TOAST CONTAINER -->
   <div id="toast-container" class="fixed bottom-5 right-5 z-[3000] flex flex-col gap-3 pointer-events-none"></div>
 
-  <?!= include('Scripts'); ?>
+  <?!= include('ScriptUtils'); ?>
+  <?!= include('ScriptNav'); ?>
+  <?!= include('ScriptDashboard'); ?>
+  <?!= include('ScriptProjects'); ?>
+  <?!= include('ScriptTasks'); ?>
+  <?!= include('ScriptRevisions'); ?>
+  <?!= include('ScriptViewProject'); ?>
+  <?!= include('ScriptReports'); ?>
+  <?!= include('ScriptVendors'); ?>
+  <?!= include('ScriptTeam'); ?>
 
 </body>
 </html>
