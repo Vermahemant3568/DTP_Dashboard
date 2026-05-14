@@ -1,1 +1,1 @@
-/* RENAMED — all code moved to Revisions_Service.gs */
+// Revision CRUD is handled in Revisions_Service.gs
