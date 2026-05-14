@@ -1,5 +1,5 @@
 /* ================================================================
-   Revisions_Service.gs — Revision CRUD
+   RevisionsService.gs — Revision CRUD
    Sheet: Revisions (18 columns)
    Col map: RC constants defined in Code.gs
    0=RevID, 1=ProjectID, 2=TaskID, 3=ProjectName,

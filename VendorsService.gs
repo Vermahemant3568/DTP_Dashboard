@@ -1,5 +1,5 @@
 /* ================================================================
-   Vendors_Service.gs — Vendor & Team CRUD
+   VendorsService.gs — Vendor & Team CRUD
    Sheets: Vendors (12 cols) | Team (8 cols)
 ================================================================ */
 
