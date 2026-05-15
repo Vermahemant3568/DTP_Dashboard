@@ -123,6 +123,7 @@ function loadTaskForEdit(id) {
       if (radio){ radio.checked=true; _updateWorkTypeBtns("task_workType","wt_inhouse_btn","wt_vendor_btn"); }
       _setVal("task_assignedTo",t[6]);
       _setVal("task_vendorName",t[7]);
+      if (typeof _syncTaskAssignmentFields==="function") _syncTaskAssignmentFields();
       if (typeof onTaskTypeChange==="function") onTaskTypeChange();
       /* For edit mode, just show the project ID as linked without re-lookup */
       _taskProjectLinked = true;
@@ -322,16 +323,28 @@ function loadTaskDropdowns(cb) {
     .withFailureHandler(function(){ if (typeof cb==="function") cb(); })
     .withSuccessHandler(function(d){
       if (d) {
-        var tOpts = (d.team   ||[]).map(function(m){ return '<option value="'+m.name+'">'+m.name+(m.role?" ("+m.role+")":"")+"</option>"; }).join("");
-        var vOpts = (d.vendors||[]).map(function(v){ return '<option value="'+v.name+'">'+v.name+"</option>"; }).join("");
+        var tOpts = (d.team   ||[]).map(function(m){ return '<option value="'+m.name+'">'+m.name+(m.role?' ('+m.role+')':'')+'</option>'; }).join("");
+        var vOpts = (d.vendors||[]).map(function(v){ return '<option value="'+v.name+'">'+v.name+'</option>'; }).join("");
         var aEl = document.getElementById("task_assignedTo");
         var vEl = document.getElementById("task_vendorName");
         if (aEl) aEl.innerHTML = '<option value="">— Select Team Member —</option>' + tOpts;
         if (vEl) vEl.innerHTML = '<option value="">— Select Vendor —</option>' + vOpts;
       }
+      /* Apply initial show/hide based on current work type selection */
+      _syncTaskAssignmentFields();
       if (typeof cb==="function") cb();
     })
     .getDropdownData();
+}
+
+/* Show Assigned To for In-House, Vendor Name for Vendor */
+function _syncTaskAssignmentFields() {
+  var wtEl = document.querySelector('input[name="task_workType"]:checked');
+  var wt   = wtEl ? wtEl.value : "In-House";
+  var aRow = document.getElementById("task_assignedTo") && document.getElementById("task_assignedTo").closest("div");
+  var vRow = document.getElementById("task_vendorRow");
+  if (aRow) aRow.style.display = wt === "In-House" ? "" : "none";
+  if (vRow) vRow.style.display = wt === "Vendor"   ? "" : "none";
 }
 
 /* ================================================================

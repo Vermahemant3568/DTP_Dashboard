@@ -126,22 +126,37 @@ function loadRevisionDropdowns(cb) {
     .withFailureHandler(function(){ if(typeof cb==="function") cb(); })
     .withSuccessHandler(function(d){
       if (d){
-        var tOpts=(d.team   ||[]).map(function(m){ return '<option value="'+m.name+'">'+m.name+"</option>"; }).join("");
-        var vOpts=(d.vendors||[]).map(function(v){ return '<option value="'+v.name+'">'+v.name+"</option>"; }).join("");
+        var tOpts=(d.team   ||[]).map(function(m){ return '<option value="'+m.name+'">'+m.name+(m.role?' ('+m.role+')':'')+'</option>'; }).join("");
+        var vOpts=(d.vendors||[]).map(function(v){ return '<option value="'+v.name+'">'+v.name+'</option>'; }).join("");
         var aEl=document.getElementById("rev_assignedTo");
         var vEl=document.getElementById("rev_vendorName");
         if (aEl) aEl.innerHTML='<option value="">— Select Team Member —</option>'+tOpts;
         if (vEl) vEl.innerHTML='<option value="">— Select Vendor —</option>'+vOpts;
       }
-      if (typeof cb==="function") cb();
+      /* Apply initial show/hide based on current work type selection */
+      _syncRevAssignmentFields();
+      if(typeof cb==="function") cb();
     })
     .getDropdownData();
 }
 
+/* Show Assigned To for In-House, Vendor Name for Vendor */
+function _syncRevAssignmentFields() {
+  var wtEl = document.querySelector('input[name="rev_workType"]:checked');
+  var wt   = wtEl ? wtEl.value : "In-House";
+  var aEl  = document.getElementById("rev_assignedTo");
+  var aRow = aEl && aEl.closest("div");
+  var vRow = document.getElementById("rev_vendorRow");
+  if (aRow) aRow.style.display = wt === "In-House" ? "" : "none";
+  if (vRow) vRow.style.display = wt === "Vendor"   ? "" : "none";
+}
+
 (function(){
+  var _revSubmitting = false;
   document.addEventListener("submit",function(e){
     if (!e.target||e.target.id!=="revisionForm") return;
     e.preventDefault();
+    if (_revSubmitting) return;
     var editId=document.getElementById("contentArea").dataset.editRevId||"";
     var projId=_val("rev_projectId");
     var prev  =document.getElementById("rev_projectPreview");
@@ -169,18 +184,19 @@ function loadRevisionDropdowns(cb) {
     };
     var btn  =document.getElementById("revSubmitBtn");
     var lblEl=document.getElementById("revSubmitLabel");
+    _revSubmitting=true;
     btn.disabled=true;
     if (lblEl) lblEl.innerText="Saving...";
     showLoader("Saving revision...");
     if (editId){
       google.script.run
-        .withFailureHandler(function(er){ hideLoader(); btn.disabled=false; if(lblEl) lblEl.innerText="Save Revision"; showToast("Error: "+er.message,"error"); })
-        .withSuccessHandler(function(){ hideLoader(); showToast("Revision updated!","success"); loadPage("revisions"); })
+        .withFailureHandler(function(er){ _revSubmitting=false; hideLoader(); btn.disabled=false; if(lblEl) lblEl.innerText="Save Revision"; showToast("Error: "+er.message,"error"); })
+        .withSuccessHandler(function(){ _revSubmitting=false; hideLoader(); showToast("Revision updated!","success"); loadPage("revisions"); })
         .updateRevision(editId,d);
     } else {
       google.script.run
-        .withFailureHandler(function(er){ hideLoader(); btn.disabled=false; if(lblEl) lblEl.innerText="Save Revision"; showToast("Error: "+er.message,"error"); })
-        .withSuccessHandler(function(){ hideLoader(); showToast("Revision saved!","success"); loadPage("revisions"); })
+        .withFailureHandler(function(er){ _revSubmitting=false; hideLoader(); btn.disabled=false; if(lblEl) lblEl.innerText="Save Revision"; showToast("Error: "+er.message,"error"); })
+        .withSuccessHandler(function(){ _revSubmitting=false; hideLoader(); showToast("Revision saved!","success"); loadPage("revisions"); })
         .addRevision(d);
     }
   });

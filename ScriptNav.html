@@ -161,6 +161,9 @@ function _wireWorkTypeRadios(radioName, inhouseBtnId, vendorBtnId) {
   document.querySelectorAll('input[name="' + radioName + '"]').forEach(function(r) {
     r.addEventListener("change", function() {
       _updateWorkTypeBtns(radioName, inhouseBtnId, vendorBtnId);
+      /* Sync assignment field visibility on change */
+      if (radioName === "task_workType" && typeof _syncTaskAssignmentFields === "function") _syncTaskAssignmentFields();
+      if (radioName === "rev_workType"  && typeof _syncRevAssignmentFields  === "function") _syncRevAssignmentFields();
     });
   });
   _updateWorkTypeBtns(radioName, inhouseBtnId, vendorBtnId);
