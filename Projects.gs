@@ -53,18 +53,18 @@ function addProject(d) {
     const now = new Date();
     sh.appendRow([
       id,
-      d.clientName        || "",
-      d.projectName       || "",
-      d.coordinator       || "",
-      d.sourceLanguage    || "English",
-      d.targetLanguages   || "",
-      Number(d.langCount) || 0,
+      d.clientName      || "",
+      d.projectName     || "",
+      d.coordinator     || "",
+      d.sourceLanguage  || "",
+      d.targetLanguages || "",
+      Number(d.langCount)   || 0,
       Number(d.sourcePages) || 0,
-      Number(d.wordCount) || 0,
-      d.priority          || "Medium",
-      d.status            || "Active",
-      d.receivedDate      || "",
-      d.notes             || "",
+      0,                        // wordCount — not in form
+      d.priority        || "Medium",
+      d.status          || "Active",
+      d.receivedDate    || "",
+      d.notes           || "",
       now,
       now
     ]);
@@ -80,21 +80,39 @@ function updateProject(id, d) {
     const sh    = _sh(SH_PROJECTS);
     const found = _findRow(sh, id);
     if (!found) throw new Error("Project not found: " + id);
+
+    /* ── Duplicate guard: block rename to an existing client+project combo ── */
+    const clientNorm  = String(d.clientName  || "").toLowerCase().trim();
+    const projectNorm = String(d.projectName || "").toLowerCase().trim();
+    if (clientNorm && projectNorm) {
+      const conflict = _sheetRows(SH_PROJECTS).find(function(r) {
+        return String(r[PC.ID]).trim() !== String(id).trim() &&
+               String(r[PC.CLIENT]       || "").toLowerCase().trim() === clientNorm &&
+               String(r[PC.PROJECT_NAME] || "").toLowerCase().trim() === projectNorm;
+      });
+      if (conflict) {
+        throw new Error(
+          'Another project named "' + d.projectName + '" for client "' + d.clientName +
+          '" already exists (ID: ' + conflict[PC.ID] + '). Choose a different project name.'
+        );
+      }
+    }
+
     const now = new Date();
     sh.getRange(found.index, 2, 1, 14).setValues([[
-      d.clientName        || "",
-      d.projectName       || "",
-      d.coordinator       || "",
-      d.sourceLanguage    || "English",
-      d.targetLanguages   || "",
-      Number(d.langCount) || 0,
-      Number(d.sourcePages) || 0,
-      Number(d.wordCount) || 0,
-      d.priority          || "Medium",
-      d.status            || "Active",
-      d.receivedDate      || "",
-      d.notes             || "",
-      found.row[PC.CREATED_AT], // preserve createdAt
+      d.clientName      || "",
+      d.projectName     || "",
+      d.coordinator     || "",
+      d.sourceLanguage  !== undefined && d.sourceLanguage !== "" ? d.sourceLanguage  : (found.row[PC.SOURCE_LANG]  || ""),
+      d.targetLanguages !== undefined && d.targetLanguages !== "" ? d.targetLanguages : (found.row[PC.TARGET_LANGS] || ""),
+      d.langCount   !== undefined && d.langCount   !== "" ? Number(d.langCount)   : (found.row[PC.LANG_COUNT]   || 0),
+      d.sourcePages !== undefined && d.sourcePages !== "" ? Number(d.sourcePages) : (found.row[PC.SOURCE_PAGES] || 0),
+      found.row[PC.WORD_COUNT] || 0,
+      d.priority        || "Medium",
+      d.status          || "Active",
+      d.receivedDate    || "",
+      d.notes           !== undefined ? d.notes : (found.row[PC.NOTES] || ""),
+      found.row[PC.CREATED_AT],
       now
     ]]);
     return { success: true };

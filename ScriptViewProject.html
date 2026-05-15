@@ -5,36 +5,49 @@
 var _vpCurrentId = "";
 
 function renderViewProject(data) {
-  if (!data){ hideLoader(); showToast("Project data not found.","error"); return; }
-  var proj=data.project  ||[];
-  var tasks=data.tasks   ||[];
-  var revs =data.revisions||[];
-  _vpCurrentId=proj[0]||"";
+  if (!data) { hideLoader(); showToast("Project data not found.", "error"); return; }
+  var proj  = data.project   || [];
+  var tasks = data.tasks     || [];
+  var revs  = data.revisions || [];
+  _vpCurrentId = proj[0] || "";
 
-  _set("vp_projectName",proj[2]);
-  _set("vp_projectId",  "ID: "+proj[0]);
+  /* ── header ── */
+  _set("vp_projectName", proj[2]);
+  _set("vp_projectId",   "ID: " + proj[0]);
 
-  var statusEl=document.getElementById("vp_status");
-  if (statusEl){ statusEl.innerText=proj[10]||"Active"; statusEl.className="badge "+getStatusClass(proj[10]||"Active"); }
-  var prioEl=document.getElementById("vp_priority");
-  if (prioEl) prioEl.innerText="Priority: "+(proj[9]||"Medium");
+  var statusEl = document.getElementById("vp_status");
+  if (statusEl) { statusEl.innerText = proj[10] || "Active"; statusEl.className = "badge " + getStatusClass(proj[10] || "Active"); }
+  var prioEl = document.getElementById("vp_priority");
+  if (prioEl) prioEl.innerText = "Priority: " + (proj[9] || "Medium");
 
-  _set("vp_sourcePages",Number(proj[7])||0);
-  _set("vp_taskPages",  data.taskPages ||0);
-  _set("vp_revPages",   data.revPages  ||0);
-  _set("vp_totalPages", data.totalPages||0);
+  /* ── stat cards ── */
+  var inProg    = tasks.filter(function(r){ return r[12] === "In Progress"; }).length;
+  var completed = tasks.filter(function(r){ return r[12] === "Completed"; }).length;
 
-  _set("vp_client",      proj[1]);
-  _set("vp_coordinator", proj[3]);
-  _set("vp_sourceLang",  proj[4]);
-  _set("vp_langCount",   proj[6]);
-  _set("vp_targetLangs", proj[5]);
-  _set("vp_wordCount",   proj[8]?Number(proj[8]).toLocaleString()+" words":"—");
-  _set("vp_receivedDate",proj[11]);
-  _set("vp_notes",       proj[12]);
+  _set("vp_taskPages",      (data.taskPages  || 0).toLocaleString());
+  _set("vp_taskCount",      tasks.length + " task" + (tasks.length !== 1 ? "s" : ""));
+  _set("vp_revPages",       (data.revPages   || 0).toLocaleString());
+  _set("vp_revCount",       revs.length + " revision" + (revs.length !== 1 ? "s" : ""));
+  _set("vp_totalPages",     (data.totalPages || 0).toLocaleString());
+  _set("vp_inProgress",     inProg);
+  _set("vp_completedCount", completed + " completed");
 
-  var editBtn=document.getElementById("vp_editBtn");
-  if (editBtn) editBtn.onclick=function(){ editCurrentProject(); };
+  /* ── info card ── */
+  _set("vp_client",        proj[1]);
+  _set("vp_coordinator",   proj[3]);
+  _set("vp_priorityInfo",  proj[9] || "Medium");
+  _set("vp_receivedDate",  proj[11]);
+  _set("vp_projectIdInfo", proj[0]);
+  _set("vp_notes",         proj[12]);
+
+  /* ── scope card ── */
+  _set("vp_sourceLang",    proj[4] || "—");
+  _set("vp_targetLangs",   proj[5] || "—");
+  _set("vp_langCount",     proj[6] ? proj[6] + " languages" : "—");
+  _set("vp_sourcePages",   proj[7] ? proj[7] + " pages" : "—");
+
+  var editBtn = document.getElementById("vp_editBtn");
+  if (editBtn) editBtn.onclick = function() { editCurrentProject(); };
 
   _renderVpTasks(tasks);
   _renderVpRevisions(revs);
@@ -43,114 +56,152 @@ function renderViewProject(data) {
 
 function editCurrentProject() {
   if (!_vpCurrentId) return;
-  loadPage("addProject");
-  setTimeout(function(){
-    document.getElementById("contentArea").dataset.editProjectId=_vpCurrentId;
-    var titleEl=document.getElementById("addProjectTitle");
-    var lblEl  =document.getElementById("projSubmitLabel");
-    if (titleEl) titleEl.innerText="Edit Project";
-    if (lblEl)   lblEl.innerText  ="Update Project";
-    google.script.run
-      .withFailureHandler(function(){})
-      .withSuccessHandler(function(res){
-        if (!res||!res.project) return;
-        var p=res.project;
-        _setVal("proj_clientName",     p[1]);
-        _setVal("proj_projectName",    p[2]);
-        _setVal("proj_coordinator",    p[3]);
-        _setVal("proj_sourceLanguage", p[4]);
-        _setVal("proj_targetLanguages",p[5]);
-        _setVal("proj_langCount",      p[6]);
-        _setVal("proj_sourcePages",    p[7]);
-        _setVal("proj_wordCount",      p[8]);
-        _setVal("proj_priority",       p[9]);
-        _setVal("proj_status",         p[10]);
-        _setVal("proj_receivedDate",   formatForInput(p[11]));
-        _setVal("proj_notes",          p[12]);
-      })
-      .getProjectById(_vpCurrentId);
-  }, 600);
+  var idToEdit = _vpCurrentId;
+  showLoader("Loading project for edit...");
+  google.script.run
+    .withFailureHandler(function(e) { hideLoader(); showToast("Could not load project: " + e.message, "error"); })
+    .withSuccessHandler(function(res) {
+      if (!res || !res.project) { hideLoader(); showToast("Project not found.", "error"); return; }
+      var p = res.project;
+      /* Now load the addProject page, then populate once HTML is ready */
+      google.script.run
+        .withFailureHandler(function(err) { hideLoader(); showToast("Page load failed: " + err.message, "error"); })
+        .withSuccessHandler(function(html) {
+          var area = document.getElementById("contentArea");
+          if (!area) { hideLoader(); return; }
+          area.innerHTML = html;
+          area.dataset.editProjectId = idToEdit;
+          _activePage = "addProject";
+          _setActiveNav("addProject");
+          /* Populate form fields */
+          var titleEl = document.getElementById("addProjectTitle");
+          var lblEl   = document.getElementById("projSubmitLabel");
+          var iconEl  = document.getElementById("projSubmitIcon");
+          if (titleEl) titleEl.innerText = "Edit Project";
+          if (lblEl)   lblEl.innerText   = "Update Project";
+          if (iconEl)  iconEl.innerText  = "✏️";
+          _setVal("proj_clientName",      p[1]);
+          _setVal("proj_projectName",     p[2]);
+          _setVal("proj_coordinator",     p[3]);
+          _setVal("proj_sourceLanguage",  p[4]);
+          _setVal("proj_targetLanguages", p[5]);
+          _setVal("proj_langCount",       p[6]);
+          _setVal("proj_sourcePages",     p[7]);
+          _setVal("proj_priority",        p[9]);
+          _setVal("proj_status",          p[10]);
+          _setVal("proj_receivedDate",    formatForInput(p[11]));
+          _setVal("proj_notes",           p[12]);
+          hideLoader();
+        })
+        .loadPageFile("AddProject");
+    })
+    .getProjectById(idToEdit);
 }
 
 function _renderVpTasks(tasks) {
-  var tbody  =document.getElementById("vp_tasksTable");
-  var totalEl=document.getElementById("vp_taskPageTotal");
+  var tbody   = document.getElementById("vp_tasksTable");
+  var totalEl = document.getElementById("vp_taskPageTotal");
   if (!tbody) return;
-  var total=tasks.reduce(function(s,r){ return s+(Number(r[10])||0); },0);
-  if (totalEl) totalEl.innerText=total.toLocaleString()+" pages";
-  if (!tasks.length){
-    tbody.innerHTML='<tr><td colspan="9" class="py-8 text-center text-slate-400 text-sm">No tasks yet.</td></tr>';
+
+  var total = tasks.reduce(function(s, r) { return s + (Number(r[10]) || 0); }, 0);
+  if (totalEl) totalEl.innerText = total.toLocaleString() + " pages";
+
+  if (!tasks.length) {
+    tbody.innerHTML = '<tr><td colspan="10" class="py-10 text-center text-slate-400 text-sm">' +
+      '<div class="flex flex-col items-center gap-2">' +
+        '<span class="text-3xl">📋</span>' +
+        '<p>No tasks yet.</p>' +
+        '<button onclick="loadPage(\'addTask\',{projectId:_vpCurrentId})" ' +
+          'class="mt-1 text-xs font-semibold text-blue-600 hover:underline">+ Add the first task</button>' +
+      '</div>' +
+    '</td></tr>';
     return;
   }
-  tbody.innerHTML=tasks.map(function(r){
-    var sc=getStatusClass(r[12]||"Pending");
-    var tc=getTaskClass(r[4]  ||"Main DTP");
-    var wc=getWorkClass(r[5]  ||"In-House");
-    var who=r[5]==="Vendor"?(r[7]||r[6]||"—"):(r[6]||"—");
-    return '<tr>'+
-      '<td class="font-mono text-[11px] text-gray-400">'+r[0]+'</td>'+
-      '<td><span class="badge '+tc+'">'+( r[4]||"—")+'</span></td>'+
-      '<td class="text-sm text-gray-600">'+(r[8]||"—")+'</td>'+
-      '<td class="text-sm text-gray-600">'+who+'</td>'+
-      '<td><span class="badge '+wc+'">'+(r[5]||"In-House")+'</span></td>'+
-      '<td><span class="badge '+sc+'">'+(r[12]||"Pending")+'</span></td>'+
-      '<td class="text-center font-bold text-blue-600 text-sm">'+(Number(r[10])||0)+'</td>'+
-      '<td class="text-xs text-gray-500">'+(r[15]||"—")+'</td>'+
-      '<td class="text-right">'+
-        '<div class="flex justify-end gap-1">'+
-          btnEdit(r[0],"editTaskFull")+
-          btnDelete(r[0],"_vpDeleteTask")+
-        '</div>'+
-      '</td>'+
+
+  tbody.innerHTML = tasks.map(function(r) {
+    var sc  = getStatusClass(r[12] || "Pending");
+    var tc  = getTaskClass(r[4]   || "Main DTP");
+    var wc  = getWorkClass(r[5]   || "In-House");
+    var who = r[5] === "Vendor" ? (r[7] || r[6] || "—") : (r[6] || "—");
+    var src = Number(r[9])  || 0;
+    var lc  = Number(r[11]) || 0;
+    var fin = Number(r[10]) || 0;
+    return '<tr>' +
+      '<td><span class="badge ' + tc + '">' + (r[4] || "—") + '</span></td>' +
+      '<td class="text-sm text-gray-600">' + (r[8] || "—") + '</td>' +
+      '<td class="text-sm text-gray-700 font-medium">' + who + '</td>' +
+      '<td><span class="badge ' + wc + '">' + (r[5] || "In-House") + '</span></td>' +
+      '<td class="text-center text-sm text-gray-500">' + src + '</td>' +
+      '<td class="text-center text-sm text-gray-500">' + lc + '</td>' +
+      '<td class="text-center font-bold text-blue-600 text-sm">' + fin.toLocaleString() + '</td>' +
+      '<td><span class="badge ' + sc + '">' + (r[12] || "Pending") + '</span></td>' +
+      '<td class="text-xs text-gray-500">' + (r[15] || "—") + '</td>' +
+      '<td class="text-right">' +
+        '<div class="flex justify-end gap-1">' +
+          btnEdit(r[0], "editTaskFull") +
+          btnDelete(r[0], "_vpDeleteTask") +
+        '</div>' +
+      '</td>' +
     '</tr>';
   }).join("");
 }
 
 function _renderVpRevisions(revs) {
-  var tbody  =document.getElementById("vp_revisionsTable");
-  var totalEl=document.getElementById("vp_revPageTotal");
+  var tbody   = document.getElementById("vp_revisionsTable");
+  var totalEl = document.getElementById("vp_revPageTotal");
   if (!tbody) return;
-  var total=revs.reduce(function(s,r){ return s+(Number(r[7])||0); },0);
-  if (totalEl) totalEl.innerText=total.toLocaleString()+" pages";
-  if (!revs.length){
-    tbody.innerHTML='<tr><td colspan="9" class="py-8 text-center text-slate-400 text-sm">No revisions yet.</td></tr>';
+
+  var total = revs.reduce(function(s, r) { return s + (Number(r[7]) || 0); }, 0);
+  if (totalEl) totalEl.innerText = total.toLocaleString() + " pages";
+
+  if (!revs.length) {
+    tbody.innerHTML = '<tr><td colspan="8" class="py-10 text-center text-slate-400 text-sm">' +
+      '<div class="flex flex-col items-center gap-2">' +
+        '<span class="text-3xl">🔁</span>' +
+        '<p>No revisions yet.</p>' +
+        '<button onclick="loadPage(\'addRevision\',{projectId:_vpCurrentId})" ' +
+          'class="mt-1 text-xs font-semibold text-purple-600 hover:underline">+ Add a revision</button>' +
+      '</div>' +
+    '</td></tr>';
     return;
   }
-  tbody.innerHTML=revs.map(function(r){
-    var sc=getStatusClass(r[11]||"Pending");
-    var wc=getWorkClass(r[8]  ||"In-House");
-    var who=r[8]==="Vendor"?(r[10]||r[9]||"—"):(r[9]||"—");
-    return '<tr>'+
-      '<td class="font-mono text-[11px] text-gray-400">'+r[0]+'</td>'+
-      '<td><div class="text-sm font-semibold text-gray-700">'+(r[4]||"—")+'</div>'+
-          '<div class="text-xs text-gray-400">'+(r[5]||"—")+'</div></td>'+
-      '<td><span class="badge bg-purple-100 text-purple-700">'+(r[6]||"—")+'</span></td>'+
-      '<td class="text-sm text-gray-600">'+who+'</td>'+
-      '<td><span class="badge '+wc+'">'+(r[8]||"In-House")+'</span></td>'+
-      '<td><span class="badge '+sc+'">'+(r[11]||"Pending")+'</span></td>'+
-      '<td class="text-center font-bold text-purple-600 text-sm">'+(Number(r[7])||0)+'</td>'+
-      '<td class="text-xs text-gray-500">'+(r[12]||"—")+'</td>'+
-      '<td class="text-right">'+btnDelete(r[0],"_vpDeleteRevision")+'</td>'+
+
+  tbody.innerHTML = revs.map(function(r) {
+    var sc  = getStatusClass(r[11] || "Pending");
+    var wc  = getWorkClass(r[8]   || "In-House");
+    var who = r[8] === "Vendor" ? (r[10] || r[9] || "—") : (r[9] || "—");
+    return '<tr>' +
+      '<td>' +
+        '<div class="text-sm font-semibold text-gray-700">' + (r[4] || "—") + '</div>' +
+        '<div class="text-xs text-gray-400">' + (r[5] || "—") + '</div>' +
+      '</td>' +
+      '<td><span class="badge bg-purple-100 text-purple-700">' + (r[6] || "—") + '</span></td>' +
+      '<td class="text-sm text-gray-700 font-medium">' + who + '</td>' +
+      '<td><span class="badge ' + wc + '">' + (r[8] || "In-House") + '</span></td>' +
+      '<td><span class="badge ' + sc + '">' + (r[11] || "Pending") + '</span></td>' +
+      '<td class="text-center font-bold text-purple-600 text-sm">' + (Number(r[7]) || 0).toLocaleString() + '</td>' +
+      '<td class="text-xs text-gray-500">' + (r[12] || "—") + '</td>' +
+      '<td class="text-right">' + btnDelete(r[0], "_vpDeleteRevision") + '</td>' +
     '</tr>';
   }).join("");
 }
 
 function _vpDeleteTask(id) {
-  customConfirm("Delete this task? This cannot be undone.", function(){
+  customConfirm("Delete this task? This cannot be undone.", function() {
     showLoader("Deleting...");
     google.script.run
-      .withFailureHandler(function(e){ hideLoader(); showToast("Delete failed: "+e.message,"error"); })
-      .withSuccessHandler(function(){ hideLoader(); showToast("Task deleted.","warning"); viewProjectById(_vpCurrentId); })
+      .withFailureHandler(function(e) { hideLoader(); showToast("Delete failed: " + e.message, "error"); })
+      .withSuccessHandler(function() { hideLoader(); showToast("Task deleted.", "warning"); viewProjectById(_vpCurrentId); })
       .deleteTask(id);
   }, true);
 }
 
 function _vpDeleteRevision(id) {
-  customConfirm("Delete this revision? This cannot be undone.", function(){
+  customConfirm("Delete this revision? This cannot be undone.", function() {
     showLoader("Deleting...");
     google.script.run
-      .withFailureHandler(function(e){ hideLoader(); showToast("Delete failed: "+e.message,"error"); })
-      .withSuccessHandler(function(){ hideLoader(); showToast("Revision deleted.","warning"); viewProjectById(_vpCurrentId); })
+      .withFailureHandler(function(e) { hideLoader(); showToast("Delete failed: " + e.message, "error"); })
+      .withSuccessHandler(function() { hideLoader(); showToast("Revision deleted.", "warning"); viewProjectById(_vpCurrentId); })
       .deleteRevision(id);
   }, true);
 }

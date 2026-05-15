@@ -23,22 +23,35 @@
       </div>
       <div class="section-body">
         <div class="flex gap-2">
-          <input id="rev_projectId" class="input flex-1" placeholder="e.g. PRJ-1234567890" required>
+          <input id="rev_projectId" class="input flex-1" placeholder="Enter Project ID or search by client / project name…"
+            oninput="_revProjectSearchDebounce()" required>
           <button type="button" onclick="lookupRevisionProject()"
             class="px-4 py-2 bg-purple-600 text-white text-sm font-semibold rounded-xl hover:bg-purple-700 transition-colors whitespace-nowrap">
             🔍 Lookup
           </button>
         </div>
+
+        <!-- Search suggestions dropdown -->
+        <div id="rev_searchSuggestions" style="display:none"
+          class="border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-white divide-y divide-gray-100 max-h-48 overflow-y-auto mt-1">
+        </div>
+
         <div id="rev_projectPreview" style="display:none"
           class="mt-3 p-4 bg-green-50 border border-green-200 rounded-xl">
-          <p class="text-[10px] font-bold uppercase tracking-wider text-green-500">✅ Project Found</p>
-          <p id="rev_preview_name"   class="text-sm font-semibold text-green-800 mt-1">—</p>
-          <p id="rev_preview_client" class="text-xs text-green-600 mt-0.5">Client: —</p>
-          <p id="rev_preview_langs"  class="text-xs text-green-600">Languages: —</p>
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <p class="text-[10px] font-bold uppercase tracking-wider text-green-500">✅ Project Found — Linked</p>
+              <p id="rev_preview_name"   class="text-sm font-semibold text-green-800 mt-1">—</p>
+              <p id="rev_preview_client" class="text-xs text-green-600 mt-0.5">Client: —</p>
+              <p id="rev_preview_langs"  class="text-xs text-green-600">Languages: —</p>
+            </div>
+            <button type="button" onclick="_clearRevProjectLink()"
+              class="text-xs text-green-600 hover:text-red-500 font-semibold shrink-0 mt-1">✕ Change</button>
+          </div>
         </div>
         <div id="rev_projectNotFound" style="display:none"
           class="mt-3 p-3 bg-red-50 border border-red-200 rounded-xl">
-          <p class="text-sm text-red-600 font-semibold">❌ Project not found. Check the ID and try again.</p>
+          <p class="text-sm text-red-600 font-semibold">❌ Project not found. Check the ID or name and try again.</p>
         </div>
       </div>
     </div>

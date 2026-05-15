@@ -145,6 +145,7 @@ function _initAddRevisionForm(ctx) {
       if (ctx && ctx.editId) {
         var area = document.getElementById("contentArea");
         if (area) area.dataset.editRevId = ctx.editId;
+        if (typeof loadRevisionForEdit === "function") loadRevisionForEdit(ctx.editId);
       }
       hideLoader();
     });

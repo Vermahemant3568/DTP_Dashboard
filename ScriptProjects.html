@@ -105,7 +105,8 @@ function deleteProjectById(id) {
   document.addEventListener("submit", function(e) {
     if (!e.target || e.target.id !== "projectForm") return;
     e.preventDefault();
-    if (_projSubmitting) return;  /* double-click guard */
+    if (_projSubmitting) return;
+
     var editId = document.getElementById("contentArea").dataset.editProjectId || "";
     var d = {
       clientName:      _val("proj_clientName"),
@@ -118,16 +119,17 @@ function deleteProjectById(id) {
       targetLanguages: _val("proj_targetLanguages"),
       langCount:       _val("proj_langCount"),
       sourcePages:     _val("proj_sourcePages"),
-      wordCount:       _val("proj_wordCount"),
       notes:           _val("proj_notes")
     };
     if (!d.clientName || !d.projectName) { showToast("Client Name and Project Name are required.", "error"); return; }
+
     var btn   = document.getElementById("projSubmitBtn");
     var lblEl = document.getElementById("projSubmitLabel");
     _projSubmitting = true;
     btn.disabled = true;
     if (lblEl) lblEl.innerText = "Saving...";
     showLoader(editId ? "Updating project..." : "Creating project...");
+
     if (editId) {
       google.script.run
         .withFailureHandler(function(er){ _projSubmitting=false; hideLoader(); btn.disabled=false; if(lblEl) lblEl.innerText="Update Project"; showToast("Error: "+er.message,"error"); })
@@ -136,9 +138,39 @@ function deleteProjectById(id) {
     } else {
       google.script.run
         .withFailureHandler(function(er){ _projSubmitting=false; hideLoader(); btn.disabled=false; if(lblEl) lblEl.innerText="Register Project"; showToast("Error: "+er.message,"error"); })
-        .withSuccessHandler(function(){ _projSubmitting=false; hideLoader(); showToast("Project registered!","success"); loadPage("projects"); })
+        .withSuccessHandler(function(res){
+          _projSubmitting=false;
+          hideLoader();
+          /* Hide the form, show the success panel */
+          var form       = document.getElementById("projectForm");
+          var panel      = document.getElementById("proj_successPanel");
+          var nameEl     = document.getElementById("proj_successName");
+          var idEl       = document.getElementById("proj_successId");
+          var addTaskBtn = document.getElementById("proj_addTaskBtn");
+          if (form)  form.style.display  = "none";
+          if (panel) panel.style.display = "block";
+          if (nameEl) nameEl.innerText = d.projectName + " — " + d.clientName;
+          if (idEl)   idEl.innerText   = "Project ID: " + (res.id || "");
+          /* Wire the Add Task button to open AddTask pre-linked to this project */
+          if (addTaskBtn) {
+            addTaskBtn.onclick = function() {
+              loadPage("addTask", { projectId: res.id });
+            };
+          }
+        })
         .addProject(d);
     }
   });
 })();
+
+function _resetProjectForm() {
+  var form  = document.getElementById("projectForm");
+  var panel = document.getElementById("proj_successPanel");
+  if (form)  { form.style.display = ""; form.reset(); }
+  if (panel) panel.style.display = "none";
+  var btn   = document.getElementById("projSubmitBtn");
+  var lblEl = document.getElementById("projSubmitLabel");
+  if (btn)   btn.disabled = false;
+  if (lblEl) lblEl.innerText = "Register Project";
+}
 </script>

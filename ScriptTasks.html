@@ -134,7 +134,7 @@ function loadTaskForEdit(id) {
       if (notF) notF.style.display = "none";
       _set("task_preview_name",   t[3] || "—");
       _set("task_preview_client", "Client: " + (t[2] || "—"));
-      _set("task_preview_langs",  "Project ID: " + (t[1] || "—"));
+      _set("task_preview_langs",  "Project ID: " + (t[1] || "—") + " · Language: " + (t[8] || "—"));
     })
     .getTaskById(id);
 }
@@ -307,7 +307,7 @@ function onTaskTypeChange() {
   var hint = document.getElementById("task_typeHint");
   var cfg = {
     "Main DTP":              "Tracking DTP Pages — final layout after translation. Final Pages = Source Pages × Languages.",
-    "Content Extraction":    "Tracking Extracted Pages — initial content extraction phase. Final Pages = Source Pages × Languages.",
+    "Pre-Engineering":     "Tracking Pre-Engineering Pages — initial file setup and preparation phase. Final Pages = Source Pages × Languages.",
     "Corrections/Additions": "Tracking Correction/Addition Pages — post-delivery changes. Enter actual correction pages.",
     "Bilingual Creation":    "Tracking Bilingual Pages — side-by-side layout task. Final Pages = Source Pages × Languages.",
     "QC":                    "Quality Control check — In-house or Vendor QC round. Final Pages = Source Pages × Languages."
@@ -323,14 +323,28 @@ function loadTaskDropdowns(cb) {
     .withFailureHandler(function(){ if (typeof cb==="function") cb(); })
     .withSuccessHandler(function(d){
       if (d) {
-        var tOpts = (d.team   ||[]).map(function(m){ return '<option value="'+m.name+'">'+m.name+(m.role?' ('+m.role+')':'')+'</option>'; }).join("");
-        var vOpts = (d.vendors||[]).map(function(v){ return '<option value="'+v.name+'">'+v.name+'</option>'; }).join("");
+        /* Team members — show name + role + specialization */
+        var tOpts = (d.team || []).map(function(m) {
+          var sub = [m.role, m.specialization].filter(Boolean).join(" · ");
+          return '<option value="' + m.name + '">' + m.name + (sub ? ' (' + sub + ')' : '') + '</option>';
+        }).join("");
+        /* Vendors — show name + specialization + languages */
+        var vOpts = (d.vendors || []).map(function(v) {
+          var sub = [v.specialization, v.languages].filter(Boolean).join(" · ");
+          return '<option value="' + v.name + '">' + v.name + (sub ? ' (' + sub + ')' : '') + '</option>';
+        }).join("");
+
         var aEl = document.getElementById("task_assignedTo");
         var vEl = document.getElementById("task_vendorName");
-        if (aEl) aEl.innerHTML = '<option value="">— Select Team Member —</option>' + tOpts;
-        if (vEl) vEl.innerHTML = '<option value="">— Select Vendor —</option>' + vOpts;
+        if (aEl) {
+          aEl.innerHTML = '<option value="">— Select Team Member —</option>' + tOpts;
+          if (!tOpts) aEl.innerHTML += '<option value="" disabled>No active team members found</option>';
+        }
+        if (vEl) {
+          vEl.innerHTML = '<option value="">— Select Vendor —</option>' + vOpts;
+          if (!vOpts) vEl.innerHTML += '<option value="" disabled>No active vendors found</option>';
+        }
       }
-      /* Apply initial show/hide based on current work type selection */
       _syncTaskAssignmentFields();
       if (typeof cb==="function") cb();
     })

@@ -59,7 +59,33 @@ function loadPageFile(filename) {
 /* ── CORE HELPERS ── */
 function _ss()   { return SpreadsheetApp.openById(SS_ID); }
 function _sh(n)  { return _ss().getSheetByName(n); }
-function _id(p)  { return p + "-" + Date.now(); }
+
+/* Sequential short ID: PRJ-001, TSK-042, etc.
+   Reads the sheet to find the highest existing number for that prefix,
+   then increments. Falls back to timestamp if sheet is unreadable. */
+function _id(prefix) {
+  try {
+    var sheetName = prefix === "PRJ" ? SH_PROJECTS
+                  : prefix === "TSK" ? SH_TASKS
+                  : prefix === "REV" ? SH_REVISIONS
+                  : prefix === "VND" ? SH_VENDORS
+                  : prefix === "MBR" ? SH_TEAM
+                  : null;
+    var max = 0;
+    if (sheetName) {
+      var rows = _sheetRows(sheetName);
+      rows.forEach(function(r) {
+        var m = String(r[0]).match(/^[A-Z]+-0*(\d+)$/);
+        if (m) max = Math.max(max, parseInt(m[1], 10));
+      });
+    }
+    var next = max + 1;
+    var padded = next < 1000 ? String(next).padStart(3, "0") : String(next);
+    return prefix + "-" + padded;
+  } catch(e) {
+    return prefix + "-" + Date.now();
+  }
+}
 
 function _fmt(v) {
   if (v instanceof Date) return Utilities.formatDate(v, Session.getScriptTimeZone(), "dd/MM/yyyy");
@@ -135,8 +161,8 @@ function getMonthlySummary(params) {
     const monthRevs  = revisions.filter(r => _inMonth(r[RC.REV_DATE], month, year));
 
     /* ── by task type ── */
-    const TASK_TYPES = ["Main DTP", "Content Extraction", "Corrections/Additions", "Bilingual Creation", "QC"];
-    const TASK_KEYS  = { "Main DTP": "mainDTP", "Content Extraction": "extraction",
+    const TASK_TYPES = ["Main DTP", "Pre-Engineering", "Corrections/Additions", "Bilingual Creation", "QC"];
+    const TASK_KEYS  = { "Main DTP": "mainDTP", "Pre-Engineering": "preEng",
                          "Corrections/Additions": "corrections", "Bilingual Creation": "bilingual", "QC": "qc" };
 
     const byTaskType = {};
@@ -290,10 +316,27 @@ function getProjectsWithTaskCount() {
 ================================================================ */
 function getDropdownData() {
   try {
-    const vendors = _sheetRows(SH_VENDORS).map(r => ({ id: r[0], name: r[1] || "", status: r[9] || "Active" }))
-                                          .filter(v => v.status === "Active");
-    const team    = _sheetRows(SH_TEAM).map(r => ({ id: r[0], name: r[1] || "", role: r[2] || "", status: r[6] || "Active" }))
-                                       .filter(m => m.status === "Active");
+    const vendors = _sheetRows(SH_VENDORS)
+      .map(r => ({
+        id:             r[0],
+        name:           r[1] || "",
+        contactPerson:  r[2] || "",
+        specialization: r[5] || "",
+        languages:      r[6] || "",
+        ratePerPage:    r[7] || 0,
+        currency:       r[8] || "",
+        status:         r[9] || "Active"
+      }))
+      .filter(v => v.status === "Active");
+    const team = _sheetRows(SH_TEAM)
+      .map(r => ({
+        id:             r[0],
+        name:           r[1] || "",
+        role:           r[2] || "",
+        specialization: r[5] || "",
+        status:         r[6] || "Active"
+      }))
+      .filter(m => m.status === "Active");
     return { vendors, team };
   } catch (e) {
     console.error("getDropdownData:", e);

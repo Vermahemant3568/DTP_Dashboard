@@ -44,7 +44,6 @@ function _renderDashboard(all, m) {
   var completedProj = projects.filter(function(r){ return r[10]==="Completed"; }).length;
   var pendingTasks  = tasks.filter(function(r){ return r[12]==="Pending"; }).length;
   var inProgTasks   = tasks.filter(function(r){ return r[12]==="In Progress"; }).length;
-  var allTaskPages  = tasks.reduce(function(s,r){ return s+(Number(r[10])||0); }, 0);
   var allRevPages   = revisions.reduce(function(s,r){ return s+(Number(r[7])||0); }, 0);
   var pendingRevs   = revisions.filter(function(r){ return r[11]==="Pending"||r[11]==="In Progress"; }).length;
 
@@ -54,9 +53,6 @@ function _renderDashboard(all, m) {
   _set("dash_totalTasks",       tasks.length);
   _set("dash_pendingTasks",     pendingTasks + " pending");
   _set("dash_inProgressTasks",  inProgTasks + " in progress");
-  _set("dash_allTimePages",     (allTaskPages + allRevPages).toLocaleString());
-  _set("dash_allTimeTaskPages", allTaskPages.toLocaleString() + " task pages");
-  _set("dash_allTimeRevPages",  allRevPages.toLocaleString() + " rev pages");
   _set("dash_totalRevisions",   revisions.length);
   _set("dash_pendingRevisions", pendingRevs + " pending");
   _set("dash_totalRevPages",    allRevPages.toLocaleString() + " pages");
@@ -68,8 +64,6 @@ function _renderDashboard(all, m) {
   _set("dash_grandTotal",      grandTotal.toLocaleString());
   _set("dash_monthIH",         (m.totalInHouse || 0).toLocaleString());
   _set("dash_monthVD",         (m.totalVendor  || 0).toLocaleString());
-  _set("dash_monthTaskCount",  m.taskCount     || 0);
-  _set("dash_monthRevCount",   (m.revisionCount || 0) + " revisions");
 
   /* per-type cards with mini progress bars */
   var typeMax = Math.max(
@@ -88,7 +82,7 @@ function _renderDashboard(all, m) {
     if (bar) bar.style.width = Math.round(d.total / typeMax * 100) + "%";
   }
   _typeCard("mainDTP",    "dash_dtpTotal",   "dash_dtpIH",   "dash_dtpVD",   "dash_dtpBarFill");
-  _typeCard("extraction", "dash_extTotal",   "dash_extIH",   "dash_extVD",   "dash_extBarFill");
+  _typeCard("preEng",     "dash_preEngTotal", "dash_preEngIH", "dash_preEngVD", "dash_preEngBarFill");
   _typeCard("corrections","dash_corrTotal",  "dash_corrIH",  "dash_corrVD",  "dash_corrBarFill");
   _typeCard("bilingual",  "dash_bilingTotal","dash_bilingIH","dash_bilingVD","dash_bilingBarFill");
 
@@ -170,7 +164,7 @@ function _renderTaskBars(m) {
   var bt = m.byTaskType || {};
   var items = [
     { label:"Main DTP",    val:(bt.mainDTP    ||{total:0}).total, color:"bg-blue-500"   },
-    { label:"Extraction",  val:(bt.extraction ||{total:0}).total, color:"bg-teal-500"   },
+    { label:"Pre-Engineering", val:(bt.preEng      ||{total:0}).total, color:"bg-teal-500"   },
     { label:"Corrections", val:(bt.corrections||{total:0}).total, color:"bg-orange-500" },
     { label:"Bilingual",   val:(bt.bilingual  ||{total:0}).total, color:"bg-violet-500" },
     { label:"QC",          val:(bt.qc         ||{total:0}).total, color:"bg-green-500"  },

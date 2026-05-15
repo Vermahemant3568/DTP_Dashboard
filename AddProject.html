@@ -6,30 +6,64 @@
     </button>
     <div>
       <h2 id="addProjectTitle" class="text-2xl font-bold text-gray-800">Register New Project</h2>
-      <p class="text-sm text-gray-500 mt-0.5">Create a master project record. Add tasks separately after registration.</p>
+      <p class="text-sm text-gray-500 mt-0.5">One project per job received. Same client can have multiple projects.</p>
+    </div>
+  </div>
+
+  <!-- ── SUCCESS PANEL (shown after save) ── -->
+  <div id="proj_successPanel" style="display:none"
+    class="p-5 bg-emerald-50 border-2 border-emerald-300 rounded-2xl space-y-4">
+    <div class="flex items-center gap-3">
+      <span class="text-3xl">✅</span>
+      <div>
+        <p class="text-base font-bold text-emerald-800">Project Registered!</p>
+        <p id="proj_successName" class="text-sm text-emerald-600 mt-0.5">—</p>
+        <p id="proj_successId"   class="text-xs font-mono text-emerald-400 mt-0.5">—</p>
+      </div>
+    </div>
+    <div class="bg-white border border-emerald-200 rounded-xl p-4">
+      <p class="text-sm font-semibold text-slate-700 mb-1">👇 What's next?</p>
+      <p class="text-xs text-slate-500 mb-3">
+        Project registered. Now add your first task — DTP, Extraction, QC etc. Each task tracks its own languages, page count, and who's working on it.
+      </p>
+      <div class="flex flex-wrap gap-2">
+        <button id="proj_addTaskBtn"
+          class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-5 py-2.5 rounded-xl shadow-sm active:scale-95 transition-all">
+          ✅ Add First Task to This Project
+        </button>
+        <button onclick="loadPage('projects')"
+          class="inline-flex items-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 text-sm font-semibold px-4 py-2.5 rounded-xl transition-all">
+          View All Projects
+        </button>
+        <button onclick="_resetProjectForm()"
+          class="inline-flex items-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 text-sm font-semibold px-4 py-2.5 rounded-xl transition-all">
+          ➕ Register Another Project
+        </button>
+      </div>
     </div>
   </div>
 
   <form id="projectForm" class="space-y-5">
 
-    <!-- PROJECT INFO -->
+    <!-- ── PROJECT INFO ── -->
     <div class="section-card">
       <div class="section-header border-l-blue-500 bg-blue-50">
         <div class="h-9 w-9 rounded-xl bg-blue-100 flex items-center justify-center text-lg">📁</div>
         <div>
           <h3 class="text-base font-semibold text-blue-700">Project Information</h3>
-          <p class="text-xs text-blue-400">Basic project and client details</p>
+          <p class="text-xs text-blue-400">One record per job. Same client can have many projects with different names.</p>
         </div>
       </div>
       <div class="section-body">
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           <div>
             <label class="label">Client Name *</label>
-            <input id="proj_clientName" class="input" placeholder="Enter client/company name" required>
+            <input id="proj_clientName" class="input" placeholder="e.g. ICICI Bank" required>
           </div>
           <div>
             <label class="label">Project Name *</label>
-            <input id="proj_projectName" class="input" placeholder="Enter project title" required>
+            <input id="proj_projectName" class="input" placeholder="e.g. Annual Report Book 1 DTP" required>
+            <p class="text-xs text-gray-400 mt-1">Must be unique per client</p>
           </div>
           <div>
             <label class="label">Project Coordinator</label>
@@ -62,57 +96,54 @@
       </div>
     </div>
 
-    <!-- LANGUAGE & PAGES -->
+    <!-- ── SCOPE OVERVIEW (optional) ── -->
     <div class="section-card">
       <div class="section-header border-l-purple-500 bg-purple-50">
         <div class="h-9 w-9 rounded-xl bg-purple-100 flex items-center justify-center text-lg">🌍</div>
         <div>
-          <h3 class="text-base font-semibold text-purple-700">Language & Scope</h3>
-          <p class="text-xs text-purple-400">Source language, target languages, and page scope</p>
+          <h3 class="text-base font-semibold text-purple-700">Scope Overview <span class="text-xs font-normal text-purple-400 ml-1">(optional)</span></h3>
+          <p class="text-xs text-purple-400">High-level scope for reference. Actual page calculations happen per task.</p>
         </div>
       </div>
       <div class="section-body">
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
           <div>
             <label class="label">Source Language</label>
-            <input id="proj_sourceLanguage" class="input" value="English">
+            <input id="proj_sourceLanguage" class="input" placeholder="e.g. English">
           </div>
           <div>
             <label class="label">Target Languages</label>
-            <input id="proj_targetLanguages" class="input" placeholder="French, German, Spanish">
-            <p class="text-xs text-gray-400 mt-1">Comma-separated</p>
+            <input id="proj_targetLanguages" class="input" placeholder="e.g. French, German, Hindi">
+            <p class="text-xs text-gray-400 mt-1">Comma-separated, for reference</p>
           </div>
           <div>
-            <label class="label">Language Count</label>
-            <input type="number" id="proj_langCount" class="input" placeholder="e.g. 5" min="0">
+            <label class="label">No. of Languages</label>
+            <input type="number" id="proj_langCount" class="input" placeholder="e.g. 10" min="0">
           </div>
           <div>
             <label class="label">Source Pages</label>
-            <input type="number" id="proj_sourcePages" class="input" placeholder="e.g. 20" min="0">
-          </div>
-          <div>
-            <label class="label">Word Count</label>
-            <input type="number" id="proj_wordCount" class="input" placeholder="e.g. 5000" min="0">
+            <input type="number" id="proj_sourcePages" class="input" placeholder="e.g. 120" min="0">
+            <p class="text-xs text-gray-400 mt-1">Original document pages</p>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- NOTES -->
+    <!-- ── NOTES ── -->
     <div class="section-card">
       <div class="section-header border-l-gray-400 bg-gray-50">
         <div class="h-9 w-9 rounded-xl bg-gray-200 flex items-center justify-center text-lg">📝</div>
         <div>
           <h3 class="text-base font-semibold text-gray-700">Notes</h3>
-          <p class="text-xs text-gray-500">Project notes, instructions, or references</p>
+          <p class="text-xs text-gray-500">Delivery instructions, special requirements, PM notes</p>
         </div>
       </div>
       <div class="section-body">
-        <textarea id="proj_notes" rows="3" class="input" placeholder="Project notes, delivery instructions, special requirements…"></textarea>
+        <textarea id="proj_notes" rows="3" class="input" placeholder="e.g. Client wants bilingual layout. Delivery in 3 phases. Contact: pm@client.com"></textarea>
       </div>
     </div>
 
-    <!-- SUBMIT -->
+    <!-- ── SUBMIT ── -->
     <div class="sticky bottom-0 bg-white/90 backdrop-blur-sm border-t border-gray-200 px-4 py-3 rounded-2xl flex justify-end gap-3">
       <button type="button" onclick="loadPage('projects')"
         class="px-5 py-2.5 text-sm font-semibold text-gray-500 hover:bg-gray-100 rounded-xl transition-colors">

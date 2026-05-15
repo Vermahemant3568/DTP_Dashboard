@@ -86,6 +86,47 @@ function openRevisionQuickEdit(id) {
   document.getElementById("editModal").style.display   ="flex";
 }
 
+function loadRevisionForEdit(id) {
+  showLoader("Loading revision...");
+  google.script.run
+    .withFailureHandler(function(e){ hideLoader(); showToast("Could not load revision: "+e.message,"error"); })
+    .withSuccessHandler(function(res){
+      hideLoader();
+      if (!res||!res.revision){ showToast("Revision not found.","error"); return; }
+      var r = res.revision;
+      var titleEl = document.getElementById("addRevTitle");
+      var lblEl   = document.getElementById("revSubmitLabel");
+      if (titleEl) titleEl.innerText = "Edit Revision";
+      if (lblEl)   lblEl.innerText   = "Update Revision";
+      /* Set project link */
+      _setVal("rev_projectId", r[1]);
+      _revProjectLinked = true;
+      var prev = document.getElementById("rev_projectPreview");
+      var notF = document.getElementById("rev_projectNotFound");
+      if (prev) prev.style.display = "block";
+      if (notF) notF.style.display = "none";
+      _set("rev_preview_name",   r[3] || "—");
+      _set("rev_preview_client", "Project ID: " + (r[1] || "—"));
+      _set("rev_preview_langs",  "Language: " + (r[6] || "—"));
+      /* Fill form fields */
+      _setVal("rev_revisionNumber", r[4]);
+      _setVal("rev_revisionType",   r[5]);
+      _setVal("rev_language",       r[6]);
+      _setVal("rev_pages",          r[7]);
+      _setVal("rev_status",         r[11]);
+      _setVal("rev_revisionDate",   formatForInput(r[12]));
+      _setVal("rev_deliveryDate",   formatForInput(r[13]));
+      _setVal("rev_notes",          r[15]);
+      var wt = r[8] || "In-House";
+      var radio = document.querySelector('input[name="rev_workType"][value="'+wt+'"]');
+      if (radio){ radio.checked=true; _updateWorkTypeBtns("rev_workType","rev_wt_inhouse_btn","rev_wt_vendor_btn"); }
+      _setVal("rev_assignedTo", r[9]);
+      _setVal("rev_vendorName", r[10]);
+      if (typeof _syncRevAssignmentFields==="function") _syncRevAssignmentFields();
+    })
+    .getRevisionById(id);
+}
+
 function deleteRevisionById(id) {
   customConfirm("Delete revision "+id+"? This cannot be undone.", function(){
     showLoader("Deleting...");
@@ -96,27 +137,83 @@ function deleteRevisionById(id) {
   }, true);
 }
 
+var _revProjectLinked  = false;
+var _revSearchTimer    = null;
+
+function _revProjectSearchDebounce() {
+  if (_revSearchTimer) clearTimeout(_revSearchTimer);
+  _revSearchTimer = setTimeout(function() {
+    var q = _val("rev_projectId");
+    if (!q || q.length < 2) { _hideRevSuggestions(); return; }
+    if (q.startsWith("PRJ-")) { lookupRevisionProject(); return; }
+    google.script.run
+      .withFailureHandler(function() {})
+      .withSuccessHandler(function(results) { _showRevSuggestions(results || []); })
+      .searchProjects(q);
+  }, 350);
+}
+
+function _showRevSuggestions(results) {
+  var box = document.getElementById("rev_searchSuggestions");
+  if (!box) return;
+  if (!results.length) { box.style.display = "none"; return; }
+  box.innerHTML = results.map(function(p) {
+    return '<button type="button" onclick="_selectRevProjectSuggestion(\'' + p[0] + '\')"' +
+      ' class="w-full text-left px-4 py-2.5 hover:bg-purple-50 transition-colors">' +
+      '<div class="text-sm font-semibold text-gray-800">' + (p[2] || "—") + '</div>' +
+      '<div class="text-xs text-gray-400">' + (p[1] || "—") + ' · ID: ' + p[0] + ' · ' + (p[6] || 0) + ' langs</div>' +
+      '</button>';
+  }).join("");
+  box.style.display = "block";
+}
+
+function _hideRevSuggestions() {
+  var box = document.getElementById("rev_searchSuggestions");
+  if (box) box.style.display = "none";
+}
+
+function _selectRevProjectSuggestion(id) {
+  _hideRevSuggestions();
+  _setVal("rev_projectId", id);
+  lookupRevisionProject();
+}
+
+function _clearRevProjectLink() {
+  _revProjectLinked = false;
+  _setVal("rev_projectId", "");
+  var prev = document.getElementById("rev_projectPreview");
+  var notF = document.getElementById("rev_projectNotFound");
+  var box  = document.getElementById("rev_searchSuggestions");
+  if (prev) prev.style.display = "none";
+  if (notF) notF.style.display = "none";
+  if (box)  box.style.display  = "none";
+}
+
 function lookupRevisionProject() {
-  var id=_val("rev_projectId");
-  if (!id){ showToast("Enter a Project ID first.","warning"); return; }
+  _hideRevSuggestions();
+  var id = _val("rev_projectId");
+  if (!id) { showToast("Enter a Project ID or name first.", "warning"); return; }
   showLoader("Looking up project...");
   google.script.run
-    .withFailureHandler(function(e){ hideLoader(); showToast("Lookup failed: "+e.message,"error"); })
-    .withSuccessHandler(function(res){
+    .withFailureHandler(function(e) { hideLoader(); showToast("Lookup failed: " + e.message, "error"); })
+    .withSuccessHandler(function(res) {
       hideLoader();
-      var prev=document.getElementById("rev_projectPreview");
-      var notF=document.getElementById("rev_projectNotFound");
-      if (!res||!res.project){
-        if (prev) prev.style.display="none";
-        if (notF) notF.style.display="block";
+      var prev = document.getElementById("rev_projectPreview");
+      var notF = document.getElementById("rev_projectNotFound");
+      if (!res || !res.project) {
+        _revProjectLinked = false;
+        if (prev) prev.style.display = "none";
+        if (notF) notF.style.display = "block";
         return;
       }
-      var p=res.project;
-      if (notF) notF.style.display="none";
-      if (prev) prev.style.display="block";
-      _set("rev_preview_name",  p[2]);
-      _set("rev_preview_client","Client: "+(p[1]||"—"));
-      _set("rev_preview_langs", "Languages: "+(p[5]||"—"));
+      var p = res.project;
+      _revProjectLinked = true;
+      _setVal("rev_projectId", p[0]);
+      if (notF) notF.style.display = "none";
+      if (prev) prev.style.display = "block";
+      _set("rev_preview_name",   p[2]);
+      _set("rev_preview_client", "Client: " + (p[1] || "—"));
+      _set("rev_preview_langs",  "Languages: " + (p[5] || "—") + " (" + (p[6] || 0) + " langs)");
     })
     .getProjectById(id);
 }
@@ -126,8 +223,14 @@ function loadRevisionDropdowns(cb) {
     .withFailureHandler(function(){ if(typeof cb==="function") cb(); })
     .withSuccessHandler(function(d){
       if (d){
-        var tOpts=(d.team   ||[]).map(function(m){ return '<option value="'+m.name+'">'+m.name+(m.role?' ('+m.role+')':'')+'</option>'; }).join("");
-        var vOpts=(d.vendors||[]).map(function(v){ return '<option value="'+v.name+'">'+v.name+'</option>'; }).join("");
+        var tOpts=(d.team||[]).map(function(m){
+          var sub=[m.role,m.specialization].filter(Boolean).join(" · ");
+          return '<option value="'+m.name+'">'+m.name+(sub?' ('+sub+')':'')+'</option>';
+        }).join("");
+        var vOpts=(d.vendors||[]).map(function(v){
+          var sub=[v.specialization,v.languages].filter(Boolean).join(" · ");
+          return '<option value="'+v.name+'">'+v.name+(sub?' ('+sub+')':'')+'</option>';
+        }).join("");
         var aEl=document.getElementById("rev_assignedTo");
         var vEl=document.getElementById("rev_vendorName");
         if (aEl) aEl.innerHTML='<option value="">— Select Team Member —</option>'+tOpts;
@@ -161,7 +264,7 @@ function _syncRevAssignmentFields() {
     var projId=_val("rev_projectId");
     var prev  =document.getElementById("rev_projectPreview");
     if (!projId){ showToast("Project ID is required.","error"); return; }
-    if (!prev||prev.style.display==="none"){ showToast("Please lookup and verify the Project ID first.","warning"); return; }
+    if (!_revProjectLinked){ showToast("Please lookup and verify the Project ID first.","warning"); return; }
     var lang =_val("rev_language");
     var pages=_val("rev_pages");
     if (!lang)                    { showToast("Language is required.","error"); return; }

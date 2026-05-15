@@ -121,6 +121,14 @@ function updateTask(id, d) {
     if (!found) throw new Error("Task not found: " + id);
     const now = new Date();
 
+    /* Auto-calculate finalPages = sourcePages × langCount if not manually provided */
+    var srcPages  = Number(d.sourcePages) || 0;
+    var langCount = Number(d.langCount)   || 0;
+    var finalPgs  = Number(d.finalPages)  || 0;
+    if (langCount > 0 && (!d.finalPages || Number(d.finalPages) === 0)) {
+      finalPgs = srcPages * langCount;
+    }
+
     sh.getRange(found.index, 2, 1, 21).setValues([[
       found.row[TC.PROJECT_ID],          // preserve projectId
       d.clientName   || found.row[TC.CLIENT]        || "",
@@ -130,9 +138,9 @@ function updateTask(id, d) {
       d.assignedTo        || "",
       d.vendorName        || "",
       d.language          || "",
-      Number(d.sourcePages)  || 0,
-      Number(d.finalPages)   || 0,
-      Number(d.langCount)    || 0,
+      srcPages,
+      finalPgs,
+      langCount,
       d.status            || "Pending",
       d.priority          || "Medium",
       d.startDate         || "",
