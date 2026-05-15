@@ -161,9 +161,9 @@ function getMonthlySummary(params) {
     const monthRevs  = revisions.filter(r => _inMonth(r[RC.REV_DATE], month, year));
 
     /* ── by task type ── */
-    const TASK_TYPES = ["Main DTP", "Pre-Engineering", "Corrections/Additions", "Bilingual Creation", "QC"];
+    const TASK_TYPES = ["Main DTP", "Pre-Engineering", "Bilingual Creation", "QC"];
     const TASK_KEYS  = { "Main DTP": "mainDTP", "Pre-Engineering": "preEng",
-                         "Corrections/Additions": "corrections", "Bilingual Creation": "bilingual", "QC": "qc" };
+                         "Bilingual Creation": "bilingual", "QC": "qc" };
 
     const byTaskType = {};
     TASK_TYPES.forEach(function(t) {
@@ -173,10 +173,12 @@ function getMonthlySummary(params) {
       byTaskType[TASK_KEYS[t]] = { label: t, total: ih + vd, inHouse: ih, vendor: vd, count: rows.length };
     });
 
-    /* ── revisions ── */
+    /* ── revisions pages (tracked separately, included in grand totals) ── */
     const revIH  = monthRevs.filter(r => r[RC.WORK_TYPE] === "In-House").reduce((s, r) => s + (Number(r[RC.REV_PAGES]) || 0), 0);
     const revVD  = monthRevs.filter(r => r[RC.WORK_TYPE] === "Vendor").reduce((s, r)   => s + (Number(r[RC.REV_PAGES]) || 0), 0);
-    byTaskType.revisions = { label: "Revisions", total: revIH + revVD, inHouse: revIH, vendor: revVD, count: monthRevs.length };
+    const revTotal = revIH + revVD;
+    /* Store revision totals separately so reports/dashboard can access them */
+    byTaskType.revisions = { label: "Revisions", total: revTotal, inHouse: revIH, vendor: revVD, count: monthRevs.length };
 
     /* ── grand totals ── */
     const allTaskPages = monthTasks.reduce((s, r) => s + (Number(r[TC.FINAL_PAGES]) || 0), 0);
@@ -185,16 +187,18 @@ function getMonthlySummary(params) {
     const totalInHouse = monthTasks.filter(r => r[TC.WORK_TYPE] === "In-House").reduce((s, r) => s + (Number(r[TC.FINAL_PAGES]) || 0), 0) + revIH;
     const totalVendor  = monthTasks.filter(r => r[TC.WORK_TYPE] === "Vendor").reduce((s, r)   => s + (Number(r[TC.FINAL_PAGES]) || 0), 0) + revVD;
 
-    /* ── by employee ── */
+    /* ── by employee (In-House tasks only) ── */
     const empMap = {};
-    monthTasks.forEach(function(r) {
-      const name = r[TC.ASSIGNED_TO] || "Unassigned";
+    monthTasks.filter(r => r[TC.WORK_TYPE] === "In-House").forEach(function(r) {
+      const name = r[TC.ASSIGNED_TO] || "";
+      if (!name) return;  // skip blank assigned-to
       if (!empMap[name]) empMap[name] = { pages: 0, tasks: 0 };
       empMap[name].pages += Number(r[TC.FINAL_PAGES]) || 0;
       empMap[name].tasks++;
     });
-    monthRevs.forEach(function(r) {
-      const name = r[RC.ASSIGNED_TO] || "Unassigned";
+    monthRevs.filter(r => r[RC.WORK_TYPE] === "In-House").forEach(function(r) {
+      const name = r[RC.ASSIGNED_TO] || "";
+      if (!name) return;
       if (!empMap[name]) empMap[name] = { pages: 0, tasks: 0 };
       empMap[name].pages += Number(r[RC.REV_PAGES]) || 0;
       empMap[name].tasks++;
@@ -202,16 +206,18 @@ function getMonthlySummary(params) {
     const byEmployee = Object.keys(empMap).map(n => ({ name: n, pages: empMap[n].pages, tasks: empMap[n].tasks }))
                              .sort((a, b) => b.pages - a.pages);
 
-    /* ── by vendor ── */
+    /* ── by vendor (Vendor tasks only) ── */
     const vendMap = {};
     monthTasks.filter(r => r[TC.WORK_TYPE] === "Vendor").forEach(function(r) {
-      const name = r[TC.VENDOR_NAME] || "Unknown Vendor";
+      const name = r[TC.VENDOR_NAME] || "";
+      if (!name) return;  // skip blank vendor name
       if (!vendMap[name]) vendMap[name] = { pages: 0, tasks: 0 };
       vendMap[name].pages += Number(r[TC.FINAL_PAGES]) || 0;
       vendMap[name].tasks++;
     });
     monthRevs.filter(r => r[RC.WORK_TYPE] === "Vendor").forEach(function(r) {
-      const name = r[RC.VENDOR_NAME] || "Unknown Vendor";
+      const name = r[RC.VENDOR_NAME] || "";
+      if (!name) return;
       if (!vendMap[name]) vendMap[name] = { pages: 0, tasks: 0 };
       vendMap[name].pages += Number(r[RC.REV_PAGES]) || 0;
       vendMap[name].tasks++;

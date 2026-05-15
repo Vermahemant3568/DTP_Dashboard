@@ -306,11 +306,10 @@ function onTaskTypeChange() {
   var type = _val("task_taskType");
   var hint = document.getElementById("task_typeHint");
   var cfg = {
-    "Main DTP":              "Tracking DTP Pages — final layout after translation. Final Pages = Source Pages × Languages.",
-    "Pre-Engineering":     "Tracking Pre-Engineering Pages — initial file setup and preparation phase. Final Pages = Source Pages × Languages.",
-    "Corrections/Additions": "Tracking Correction/Addition Pages — post-delivery changes. Enter actual correction pages.",
-    "Bilingual Creation":    "Tracking Bilingual Pages — side-by-side layout task. Final Pages = Source Pages × Languages.",
-    "QC":                    "Quality Control check — In-house or Vendor QC round. Final Pages = Source Pages × Languages."
+    "Main DTP":           "Tracking DTP Pages — final layout after translation. Final Pages = Source Pages × Languages.",
+    "Pre-Engineering":    "Tracking Pre-Engineering Pages — initial file setup and preparation phase. Final Pages = Source Pages × Languages.",
+    "Bilingual Creation": "Tracking Bilingual Pages — side-by-side layout task. Final Pages = Source Pages × Languages.",
+    "QC":                 "Quality Control check — In-house or Vendor QC round. Final Pages = Source Pages × Languages."
   };
   if (hint) {
     if (cfg[type]) { hint.innerText = cfg[type]; hint.classList.remove("hidden"); }

@@ -67,10 +67,9 @@ function _renderDashboard(all, m) {
 
   /* per-type cards with mini progress bars */
   var typeMax = Math.max(
-    (bt.mainDTP    ||{total:0}).total,
-    (bt.extraction ||{total:0}).total,
-    (bt.corrections||{total:0}).total,
-    (bt.bilingual  ||{total:0}).total
+    (bt.mainDTP ||{total:0}).total,
+    (bt.preEng  ||{total:0}).total,
+    (bt.bilingual||{total:0}).total
   ) || 1;
 
   function _typeCard(key, totalId, ihId, vdId, barId) {
@@ -81,22 +80,15 @@ function _renderDashboard(all, m) {
     var bar = document.getElementById(barId);
     if (bar) bar.style.width = Math.round(d.total / typeMax * 100) + "%";
   }
-  _typeCard("mainDTP",    "dash_dtpTotal",   "dash_dtpIH",   "dash_dtpVD",   "dash_dtpBarFill");
-  _typeCard("preEng",     "dash_preEngTotal", "dash_preEngIH", "dash_preEngVD", "dash_preEngBarFill");
-  _typeCard("corrections","dash_corrTotal",  "dash_corrIH",  "dash_corrVD",  "dash_corrBarFill");
-  _typeCard("bilingual",  "dash_bilingTotal","dash_bilingIH","dash_bilingVD","dash_bilingBarFill");
+  _typeCard("mainDTP",  "dash_dtpTotal",    "dash_dtpIH",    "dash_dtpVD",    "dash_dtpBarFill");
+  _typeCard("preEng",   "dash_preEngTotal", "dash_preEngIH", "dash_preEngVD", "dash_preEngBarFill");
+  _typeCard("bilingual","dash_bilingTotal", "dash_bilingIH", "dash_bilingVD", "dash_bilingBarFill");
 
   /* QC */
   var qc = bt.qc || {total:0, inHouse:0, vendor:0};
   _set("dash_qcTotal", qc.total.toLocaleString());
   _set("dash_qcIH",    qc.inHouse.toLocaleString());
   _set("dash_qcVD",    qc.vendor.toLocaleString());
-
-  /* Revisions this month */
-  var revM = bt.revisions || {total:0, inHouse:0, vendor:0};
-  _set("dash_monthRevTotal", revM.total.toLocaleString());
-  _set("dash_monthRevIH",    revM.inHouse.toLocaleString());
-  _set("dash_monthRevVD",    revM.vendor.toLocaleString());
 
   /* In Progress now (all-time tasks) */
   var inProg      = tasks.filter(function(r){ return r[12]==="In Progress"; });
@@ -163,12 +155,10 @@ function _renderTaskBars(m) {
   if (!el) return;
   var bt = m.byTaskType || {};
   var items = [
-    { label:"Main DTP",    val:(bt.mainDTP    ||{total:0}).total, color:"bg-blue-500"   },
-    { label:"Pre-Engineering", val:(bt.preEng      ||{total:0}).total, color:"bg-teal-500"   },
-    { label:"Corrections", val:(bt.corrections||{total:0}).total, color:"bg-orange-500" },
-    { label:"Bilingual",   val:(bt.bilingual  ||{total:0}).total, color:"bg-violet-500" },
-    { label:"QC",          val:(bt.qc         ||{total:0}).total, color:"bg-green-500"  },
-    { label:"Revisions",   val:(bt.revisions  ||{total:0}).total, color:"bg-purple-500" }
+    { label:"Main DTP",          val:(bt.mainDTP  ||{total:0}).total, color:"bg-blue-500"   },
+    { label:"Pre-Engineering",   val:(bt.preEng   ||{total:0}).total, color:"bg-teal-500"   },
+    { label:"Bilingual Creation",val:(bt.bilingual||{total:0}).total, color:"bg-violet-500" },
+    { label:"QC",                val:(bt.qc       ||{total:0}).total, color:"bg-green-500"  }
   ];
   var max = Math.max.apply(null, items.map(function(i){ return i.val; })) || 1;
   el.innerHTML = items.map(function(i) {

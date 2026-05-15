@@ -75,7 +75,7 @@
         <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block"></span>Vendor</span>
       </div>
     </div>
-    <div class="grid grid-cols-2 lg:grid-cols-6 gap-3">
+    <div class="grid grid-cols-2 lg:grid-cols-5 gap-3">
 
       <!-- Grand Total this month -->
       <div class="col-span-2 lg:col-span-2 stat-card border-l-4 border-l-emerald-500 bg-gradient-to-br from-emerald-50 to-white">
@@ -121,19 +121,6 @@
         </div>
       </div>
 
-      <div class="stat-card border-l-4 border-l-orange-500">
-        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Corrections</p>
-        <h3 id="dash_corrTotal" class="text-3xl font-black text-orange-600 mt-1">—</h3>
-        <p class="text-[10px] text-slate-400 mt-0.5">pages</p>
-        <div class="mt-2 space-y-1 text-[11px]">
-          <div class="flex justify-between"><span class="text-sky-600">🏢</span><span id="dash_corrIH" class="font-bold text-sky-700">—</span></div>
-          <div class="flex justify-between"><span class="text-amber-500">🤝</span><span id="dash_corrVD" class="font-bold text-amber-600">—</span></div>
-        </div>
-        <div class="mt-2 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-          <div id="dash_corrBarFill" class="h-1.5 bg-orange-500 rounded-full transition-all duration-700" style="width:0%"></div>
-        </div>
-      </div>
-
       <div class="stat-card border-l-4 border-l-violet-500">
         <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bilingual</p>
         <h3 id="dash_bilingTotal" class="text-3xl font-black text-violet-600 mt-1">—</h3>
@@ -149,8 +136,8 @@
 
     </div>
 
-    <!-- QC + Revisions this month — secondary row -->
-    <div class="grid grid-cols-2 lg:grid-cols-3 gap-3 mt-3">
+    <!-- QC + In Progress — secondary row -->
+    <div class="grid grid-cols-2 lg:grid-cols-2 gap-3 mt-3">
 
       <div class="stat-card border-l-4 border-l-green-500">
         <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">QC</p>
@@ -158,15 +145,6 @@
         <div class="mt-2 flex gap-2 text-[11px]">
           <span class="bg-sky-50 text-sky-700 px-2 py-0.5 rounded-full font-semibold">🏢 <span id="dash_qcIH">—</span></span>
           <span class="bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full font-semibold">🤝 <span id="dash_qcVD">—</span></span>
-        </div>
-      </div>
-
-      <div class="stat-card border-l-4 border-l-purple-400">
-        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Revisions</p>
-        <h3 id="dash_monthRevTotal" class="text-3xl font-black text-purple-600 mt-1">—</h3>
-        <div class="mt-2 flex gap-2 text-[11px]">
-          <span class="bg-sky-50 text-sky-700 px-2 py-0.5 rounded-full font-semibold">🏢 <span id="dash_monthRevIH">—</span></span>
-          <span class="bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full font-semibold">🤝 <span id="dash_monthRevVD">—</span></span>
         </div>
       </div>
 

@@ -44,6 +44,7 @@ function _renderReport(d) {
   _set("rpt_vendor",      (d.totalVendor   || 0).toLocaleString());
   _set("rpt_taskCount",   (d.taskCount     || 0));
   _set("rpt_revCount",    (d.revisionCount || 0) + " revisions");
+  _set("rpt_revPages",    ((d.byTaskType && d.byTaskType.revisions) ? (d.byTaskType.revisions.total || 0) : 0).toLocaleString());
   _set("rpt_qcPages",     ((d.byTaskType && d.byTaskType.qc) ? (d.byTaskType.qc.total || 0) : 0).toLocaleString());
 
   var bt = d.byTaskType || {};
@@ -51,12 +52,10 @@ function _renderReport(d) {
   var ttEl = document.getElementById("rpt_taskTypeBars");
   if (ttEl) {
     var ttItems = [
-      { label: "Main DTP",    val: (bt.mainDTP    || {total:0}).total, color: "bg-blue-500"   },
-      { label: "Extraction",  val: (bt.extraction  || {total:0}).total, color: "bg-teal-500"   },
-      { label: "Corrections", val: (bt.corrections || {total:0}).total, color: "bg-orange-500" },
-      { label: "Bilingual",   val: (bt.bilingual   || {total:0}).total, color: "bg-violet-500" },
-      { label: "QC",          val: (bt.qc          || {total:0}).total, color: "bg-green-500"  },
-      { label: "Revisions",   val: (bt.revisions   || {total:0}).total, color: "bg-purple-500" }
+      { label: "Main DTP",          val: (bt.mainDTP  || {total:0}).total, color: "bg-blue-500"   },
+      { label: "Pre-Engineering",   val: (bt.preEng   || {total:0}).total, color: "bg-teal-500"   },
+      { label: "Bilingual Creation",val: (bt.bilingual|| {total:0}).total, color: "bg-violet-500" },
+      { label: "QC",                val: (bt.qc       || {total:0}).total, color: "bg-green-500"  }
     ];
     var ttMax = Math.max.apply(null, ttItems.map(function(i) { return i.val; })) || 1;
     ttEl.innerHTML = ttItems.map(function(i) {
@@ -77,9 +76,12 @@ function _renderReport(d) {
 
   var empEl = document.getElementById("rpt_employeeBars");
   if (empEl) {
-    var emps = d.byEmployee || [];
+    /* Filter out blank/unassigned — only show named team members */
+    var emps = (d.byEmployee || []).filter(function(e) {
+      return e.name && e.name !== "Unassigned" && e.name.trim() !== "";
+    });
     if (!emps.length) {
-      empEl.innerHTML = '<p class="text-sm text-slate-400 text-center py-4">No data this month.</p>';
+      empEl.innerHTML = '<p class="text-sm text-slate-400 text-center py-4">No in-house work recorded this month.</p>';
     } else {
       var empMax = emps[0].pages || 1;
       empEl.innerHTML = emps.slice(0, 8).map(function(e) {
@@ -90,26 +92,15 @@ function _renderReport(d) {
 
   var vndEl = document.getElementById("rpt_vendorBars");
   if (vndEl) {
-    var vnds = d.byVendor || [];
+    var vnds = (d.byVendor || []).filter(function(v) {
+      return v.name && v.name !== "Unknown Vendor" && v.name.trim() !== "";
+    });
     if (!vnds.length) {
       vndEl.innerHTML = '<p class="text-sm text-slate-400 text-center py-4">No vendor work this month.</p>';
     } else {
       var vndMax = vnds[0].pages || 1;
       vndEl.innerHTML = vnds.slice(0, 8).map(function(v) {
         return buildBar(v.name, v.pages, vndMax, "bg-amber-400", "pages (" + v.tasks + " tasks)");
-      }).join("<div class='mt-3'></div>");
-    }
-  }
-
-  var langEl = document.getElementById("rpt_languageBars");
-  if (langEl) {
-    var langs = d.byLanguage || [];
-    if (!langs.length) {
-      langEl.innerHTML = '<p class="text-sm text-slate-400 text-center py-4">No language data this month.</p>';
-    } else {
-      var langMax = langs[0].pages || 1;
-      langEl.innerHTML = langs.slice(0, 10).map(function(l) {
-        return buildBar(l.language, l.pages, langMax, "bg-violet-500", "pages");
       }).join("<div class='mt-3'></div>");
     }
   }
