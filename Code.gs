@@ -135,9 +135,9 @@ function getMonthlySummary(params) {
     const monthRevs  = revisions.filter(r => _inMonth(r[RC.REV_DATE], month, year));
 
     /* ── by task type ── */
-    const TASK_TYPES = ["Main DTP", "Content Extraction", "Corrections/Additions", "Bilingual Creation"];
+    const TASK_TYPES = ["Main DTP", "Content Extraction", "Corrections/Additions", "Bilingual Creation", "QC"];
     const TASK_KEYS  = { "Main DTP": "mainDTP", "Content Extraction": "extraction",
-                         "Corrections/Additions": "corrections", "Bilingual Creation": "bilingual" };
+                         "Corrections/Additions": "corrections", "Bilingual Creation": "bilingual", "QC": "qc" };
 
     const byTaskType = {};
     TASK_TYPES.forEach(function(t) {
@@ -253,6 +253,35 @@ function getProjectSummary(projectId) {
   } catch (e) {
     console.error("getProjectSummary:", e);
     return null;
+  }
+}
+
+/* ================================================================
+   PROJECTS WITH TASK COUNT — used by ManageProjects grouped view
+   Returns each project row with an extra field: taskCount
+================================================================ */
+function getProjectsWithTaskCount() {
+  try {
+    const projects = _sheetRows(SH_PROJECTS).map(_fmtRow);
+    const tasks    = _sheetRows(SH_TASKS);
+
+    /* Build a map: projectId -> { count, pages } */
+    const taskMap = {};
+    tasks.forEach(function(r) {
+      const pid = String(r[TC.PROJECT_ID]).trim();
+      if (!taskMap[pid]) taskMap[pid] = { count: 0, pages: 0 };
+      taskMap[pid].count++;
+      taskMap[pid].pages += Number(r[TC.FINAL_PAGES]) || 0;
+    });
+
+    return projects.map(function(p) {
+      const pid  = String(p[0]).trim();
+      const info = taskMap[pid] || { count: 0, pages: 0 };
+      return p.concat([info.count, info.pages]); // append taskCount, taskPages at end
+    });
+  } catch (e) {
+    console.error("getProjectsWithTaskCount:", e);
+    return [];
   }
 }
 

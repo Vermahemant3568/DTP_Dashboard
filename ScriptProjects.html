@@ -13,14 +13,14 @@ function loadProjects() {
       _renderProjectsTable(ALL_PROJECTS);
       hideLoader();
     })
-    .getProjects();
+    .getProjectsWithTaskCount();
 }
 
 function _renderProjectsTable(data) {
   var tbody = document.getElementById("projectsTable");
   if (!tbody) return;
   if (!data.length) {
-    tbody.innerHTML = '<tr><td colspan="9" class="py-16 text-center text-slate-400 text-sm">No projects found.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10" class="py-16 text-center text-slate-400 text-sm">No projects found.</td></tr>';
     return;
   }
   tbody.innerHTML = data.map(function(r) {
@@ -28,6 +28,9 @@ function _renderProjectsTable(data) {
     var pc = r[9] === "Urgent" ? "bg-red-100 text-red-700" :
              r[9] === "High"   ? "bg-orange-100 text-orange-700" :
              r[9] === "Low"    ? "bg-gray-100 text-gray-500" : "bg-blue-100 text-blue-700";
+    /* r[15] = taskCount, r[16] = taskPages (appended by getProjectsWithTaskCount) */
+    var taskCount = Number(r[15]) || 0;
+    var taskPages = Number(r[16]) || 0;
     return '<tr>' +
       '<td class="font-mono text-[11px] text-gray-400">' + r[0] + '</td>' +
       '<td><div class="font-semibold text-gray-900 text-sm">' + (r[1] || "—") + '</div>' +
@@ -37,7 +40,8 @@ function _renderProjectsTable(data) {
       '<td class="text-sm text-gray-600">' + (r[3] || "—") + '</td>' +
       '<td><span class="badge ' + pc + '">' + (r[9] || "Medium") + '</span></td>' +
       '<td><span class="badge ' + sc + '">' + (r[10] || "Active") + '</span></td>' +
-      '<td class="text-center text-sm font-semibold text-gray-700">' + (r[7] || 0) + '</td>' +
+      '<td class="text-center text-sm font-semibold text-blue-600">' + taskCount + '</td>' +
+      '<td class="text-center text-sm font-semibold text-emerald-600">' + taskPages.toLocaleString() + '</td>' +
       '<td class="text-xs text-gray-500">' + (r[11] || "—") + '</td>' +
       '<td class="text-right">' +
         '<div class="flex justify-end gap-1">' +
@@ -97,9 +101,11 @@ function deleteProjectById(id) {
 
 /* ── PROJECT FORM SUBMIT ── */
 (function() {
+  var _projSubmitting = false;
   document.addEventListener("submit", function(e) {
     if (!e.target || e.target.id !== "projectForm") return;
     e.preventDefault();
+    if (_projSubmitting) return;  /* double-click guard */
     var editId = document.getElementById("contentArea").dataset.editProjectId || "";
     var d = {
       clientName:      _val("proj_clientName"),
@@ -118,18 +124,19 @@ function deleteProjectById(id) {
     if (!d.clientName || !d.projectName) { showToast("Client Name and Project Name are required.", "error"); return; }
     var btn   = document.getElementById("projSubmitBtn");
     var lblEl = document.getElementById("projSubmitLabel");
+    _projSubmitting = true;
     btn.disabled = true;
     if (lblEl) lblEl.innerText = "Saving...";
     showLoader(editId ? "Updating project..." : "Creating project...");
     if (editId) {
       google.script.run
-        .withFailureHandler(function(er){ hideLoader(); btn.disabled=false; if(lblEl) lblEl.innerText="Update Project"; showToast("Error: "+er.message,"error"); })
-        .withSuccessHandler(function(){ hideLoader(); showToast("Project updated!","success"); loadPage("projects"); })
+        .withFailureHandler(function(er){ _projSubmitting=false; hideLoader(); btn.disabled=false; if(lblEl) lblEl.innerText="Update Project"; showToast("Error: "+er.message,"error"); })
+        .withSuccessHandler(function(){ _projSubmitting=false; hideLoader(); showToast("Project updated!","success"); loadPage("projects"); })
         .updateProject(editId, d);
     } else {
       google.script.run
-        .withFailureHandler(function(er){ hideLoader(); btn.disabled=false; if(lblEl) lblEl.innerText="Register Project"; showToast("Error: "+er.message,"error"); })
-        .withSuccessHandler(function(){ hideLoader(); showToast("Project registered!","success"); loadPage("projects"); })
+        .withFailureHandler(function(er){ _projSubmitting=false; hideLoader(); btn.disabled=false; if(lblEl) lblEl.innerText="Register Project"; showToast("Error: "+er.message,"error"); })
+        .withSuccessHandler(function(){ _projSubmitting=false; hideLoader(); showToast("Project registered!","success"); loadPage("projects"); })
         .addProject(d);
     }
   });

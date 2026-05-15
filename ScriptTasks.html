@@ -4,6 +4,11 @@
 ================================================================ */
 var ALL_TASKS = [];
 
+/* ── state for the task form project link ── */
+var _taskProjectLinked  = false;  // true = existing project confirmed
+var _taskProjectIsNew   = false;  // true = user is creating a new project inline
+var _taskSearchTimer    = null;
+
 function loadTasks() {
   showLoader("Loading tasks...");
   google.script.run
@@ -119,7 +124,16 @@ function loadTaskForEdit(id) {
       _setVal("task_assignedTo",t[6]);
       _setVal("task_vendorName",t[7]);
       if (typeof onTaskTypeChange==="function") onTaskTypeChange();
-      lookupTaskProject();
+      /* For edit mode, just show the project ID as linked without re-lookup */
+      _taskProjectLinked = true;
+      _taskProjectIsNew  = false;
+      var prev = document.getElementById("task_projectPreview");
+      var notF = document.getElementById("task_projectNotFound");
+      if (prev) prev.style.display = "block";
+      if (notF) notF.style.display = "none";
+      _set("task_preview_name",   t[3] || "—");
+      _set("task_preview_client", "Client: " + (t[2] || "—"));
+      _set("task_preview_langs",  "Project ID: " + (t[1] || "—"));
     })
     .getTaskById(id);
 }
@@ -134,129 +148,301 @@ function deleteTaskById(id) {
   }, true);
 }
 
+/* ================================================================
+   PROJECT LOOKUP — smart: search by ID or name, show suggestions
+================================================================ */
+function _taskProjectSearchDebounce() {
+  if (_taskSearchTimer) clearTimeout(_taskSearchTimer);
+  _taskSearchTimer = setTimeout(function() {
+    var q = _val("task_projectId");
+    if (!q || q.length < 2) { _hideSuggestions(); return; }
+    /* If it looks like a full PRJ- id, do direct lookup */
+    if (q.startsWith("PRJ-")) { lookupTaskProject(); return; }
+    /* Otherwise search by name */
+    google.script.run
+      .withFailureHandler(function(){})
+      .withSuccessHandler(function(results) {
+        _showSuggestions(results || []);
+      })
+      .searchProjects(q);
+  }, 350);
+}
+
+function _showSuggestions(results) {
+  var box = document.getElementById("task_searchSuggestions");
+  if (!box) return;
+  if (!results.length) { box.style.display = "none"; return; }
+  box.innerHTML = results.map(function(p) {
+    return '<button type="button" onclick="_selectProjectSuggestion(\'' + p[0] + '\')"' +
+      ' class="w-full text-left px-4 py-2.5 hover:bg-sky-50 transition-colors">' +
+      '<div class="text-sm font-semibold text-gray-800">' + (p[2]||"—") + '</div>' +
+      '<div class="text-xs text-gray-400">' + (p[1]||"—") + ' · ID: ' + p[0] + ' · ' + (p[6]||0) + ' langs</div>' +
+      '</button>';
+  }).join("");
+  box.style.display = "block";
+}
+
+function _hideSuggestions() {
+  var box = document.getElementById("task_searchSuggestions");
+  if (box) box.style.display = "none";
+}
+
+function _selectProjectSuggestion(id) {
+  _hideSuggestions();
+  _setVal("task_projectId", id);
+  lookupTaskProject();
+}
+
 function lookupTaskProject() {
-  var id=_val("task_projectId");
-  if (!id){ showToast("Enter a Project ID first.","warning"); return; }
+  _hideSuggestions();
+  var id = _val("task_projectId");
+  if (!id) { showToast("Enter a Project ID or name first.","warning"); return; }
   showLoader("Looking up project...");
   google.script.run
     .withFailureHandler(function(e){ hideLoader(); showToast("Lookup failed: "+e.message,"error"); })
     .withSuccessHandler(function(res){
       hideLoader();
-      var prev=document.getElementById("task_projectPreview");
-      var notF=document.getElementById("task_projectNotFound");
-      if (!res||!res.project){
-        if (prev) prev.style.display="none";
-        if (notF) notF.style.display="block";
+      var prev = document.getElementById("task_projectPreview");
+      var notF = document.getElementById("task_projectNotFound");
+      var newP = document.getElementById("task_newProjectPanel");
+      if (!res || !res.project) {
+        /* Not found — show amber warning + offer to create */
+        _taskProjectLinked = false;
+        _taskProjectIsNew  = false;
+        if (prev) prev.style.display = "none";
+        if (notF) notF.style.display = "block";
+        if (newP) newP.style.display = "none";
+        /* Pre-fill new project name from what user typed */
+        var typed = _val("task_projectId");
+        if (typed && !typed.startsWith("PRJ-")) {
+          _setVal("np_projectName", typed);
+        }
         return;
       }
-      var p=res.project;
-      if (notF) notF.style.display="none";
-      if (prev) prev.style.display="block";
-      _set("task_preview_name",  p[2]);
-      _set("task_preview_client","Client: "+(p[1]||"—"));
-      _set("task_preview_langs", "Languages: "+(p[5]||"—"));
+      /* Found — show green preview */
+      var p = res.project;
+      _taskProjectLinked = true;
+      _taskProjectIsNew  = false;
+      if (notF) notF.style.display = "none";
+      if (newP) newP.style.display = "none";
+      if (prev) prev.style.display = "block";
+      _set("task_preview_name",   p[2]);
+      _set("task_preview_client", "Client: " + (p[1]||"—"));
+      _set("task_preview_langs",  "Languages: " + (p[5]||"—") + " (" + (p[6]||0) + " langs)");
+      /* Auto-fill lang count into task if empty */
+      if (!_val("task_langCount") && p[6]) _setVal("task_langCount", p[6]);
     })
     .getProjectById(id);
 }
 
-function initTaskPageCalc() {
-  var src  =document.getElementById("task_sourcePages");
-  var lang =document.getElementById("task_langCount");
-  var fin  =document.getElementById("task_finalPages");
-  var mode =document.getElementById("task_pagesMode");
-  if (!src||!lang||!fin) return;
-  var manual=false;
-  function calc(){ if(manual) return; var v=(parseFloat(src.value)||0)*(parseFloat(lang.value)||0); fin.value=v>0?v:""; }
-  function setMode(m){
-    manual=m;
-    if (!mode) return;
-    mode.innerText=m?"Manual":"Auto";
-    mode.className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase px-2 py-0.5 rounded-full "+(m?"bg-blue-100 text-blue-600":"bg-yellow-200 text-yellow-700");
+function _clearProjectLink() {
+  _taskProjectLinked = false;
+  _taskProjectIsNew  = false;
+  _setVal("task_projectId", "");
+  var prev = document.getElementById("task_projectPreview");
+  var notF = document.getElementById("task_projectNotFound");
+  var newP = document.getElementById("task_newProjectPanel");
+  if (prev) prev.style.display = "none";
+  if (notF) notF.style.display = "none";
+  if (newP) newP.style.display = "none";
+}
+
+function _showNewProjectPanel() {
+  _taskProjectIsNew = true;
+  var notF = document.getElementById("task_projectNotFound");
+  var newP = document.getElementById("task_newProjectPanel");
+  if (notF) notF.style.display = "none";
+  if (newP) newP.style.display = "block";
+  /* Focus client name */
+  var el = document.getElementById("np_clientName");
+  if (el) el.focus();
+}
+
+function _hideNewProjectPanel() {
+  _taskProjectIsNew = false;
+  var newP = document.getElementById("task_newProjectPanel");
+  var notF = document.getElementById("task_projectNotFound");
+  if (newP) newP.style.display = "none";
+  if (notF) notF.style.display = "block";
+}
+
+/* Sync lang count from new-project panel into task lang count field */
+function _syncLangCountFromProject() {
+  var npLang = _val("np_langCount");
+  if (npLang && !_val("task_langCount")) {
+    _setVal("task_langCount", npLang);
   }
-  fin.addEventListener("input",function(){ setMode(fin.value!==""); if(!fin.value) calc(); });
-  src.addEventListener("input",calc);
-  lang.addEventListener("input",calc);
+}
+
+/* ================================================================
+   PAGE CALC
+================================================================ */
+function initTaskPageCalc() {
+  var src  = document.getElementById("task_sourcePages");
+  var lang = document.getElementById("task_langCount");
+  var fin  = document.getElementById("task_finalPages");
+  var mode = document.getElementById("task_pagesMode");
+  if (!src||!lang||!fin) return;
+  var manual = false;
+  function calc() {
+    if (manual) return;
+    var v = (parseFloat(src.value)||0) * (parseFloat(lang.value)||0);
+    fin.value = v > 0 ? v : "";
+  }
+  function setMode(m) {
+    manual = m;
+    if (!mode) return;
+    mode.innerText = m ? "Manual" : "Auto";
+    mode.className = "absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase px-2 py-0.5 rounded-full " +
+      (m ? "bg-blue-100 text-blue-600" : "bg-yellow-200 text-yellow-700");
+  }
+  fin.addEventListener("input",  function(){ setMode(fin.value !== ""); if (!fin.value) calc(); });
+  src.addEventListener("input",  calc);
+  lang.addEventListener("input", calc);
 }
 
 function onTaskTypeChange() {
-  var type=_val("task_taskType");
-  var hint=document.getElementById("task_typeHint");
-  var cfg={
-    "Main DTP":              "Tracking DTP Pages — final layout after translation.",
-    "Content Extraction":    "Tracking Extracted Pages — initial content extraction phase.",
-    "Corrections/Additions": "Tracking Correction/Addition Pages — post-delivery changes.",
-    "Bilingual Creation":    "Tracking Bilingual Pages — side-by-side layout task."
+  var type = _val("task_taskType");
+  var hint = document.getElementById("task_typeHint");
+  var cfg = {
+    "Main DTP":              "Tracking DTP Pages — final layout after translation. Final Pages = Source Pages × Languages.",
+    "Content Extraction":    "Tracking Extracted Pages — initial content extraction phase. Final Pages = Source Pages × Languages.",
+    "Corrections/Additions": "Tracking Correction/Addition Pages — post-delivery changes. Enter actual correction pages.",
+    "Bilingual Creation":    "Tracking Bilingual Pages — side-by-side layout task. Final Pages = Source Pages × Languages.",
+    "QC":                    "Quality Control check — In-house or Vendor QC round. Final Pages = Source Pages × Languages."
   };
-  if (hint){
-    if (cfg[type]){ hint.innerText=cfg[type]; hint.classList.remove("hidden"); }
-    else          { hint.classList.add("hidden"); }
+  if (hint) {
+    if (cfg[type]) { hint.innerText = cfg[type]; hint.classList.remove("hidden"); }
+    else           { hint.classList.add("hidden"); }
   }
 }
 
 function loadTaskDropdowns(cb) {
   google.script.run
-    .withFailureHandler(function(){ if(typeof cb==="function") cb(); })
+    .withFailureHandler(function(){ if (typeof cb==="function") cb(); })
     .withSuccessHandler(function(d){
-      if (d){
-        var tOpts=(d.team   ||[]).map(function(m){ return '<option value="'+m.name+'">'+m.name+(m.role?" ("+m.role+")":"")+"</option>"; }).join("");
-        var vOpts=(d.vendors||[]).map(function(v){ return '<option value="'+v.name+'">'+v.name+"</option>"; }).join("");
-        var aEl=document.getElementById("task_assignedTo");
-        var vEl=document.getElementById("task_vendorName");
-        if (aEl) aEl.innerHTML='<option value="">— Select Team Member —</option>'+tOpts;
-        if (vEl) vEl.innerHTML='<option value="">— Select Vendor —</option>'+vOpts;
+      if (d) {
+        var tOpts = (d.team   ||[]).map(function(m){ return '<option value="'+m.name+'">'+m.name+(m.role?" ("+m.role+")":"")+"</option>"; }).join("");
+        var vOpts = (d.vendors||[]).map(function(v){ return '<option value="'+v.name+'">'+v.name+"</option>"; }).join("");
+        var aEl = document.getElementById("task_assignedTo");
+        var vEl = document.getElementById("task_vendorName");
+        if (aEl) aEl.innerHTML = '<option value="">— Select Team Member —</option>' + tOpts;
+        if (vEl) vEl.innerHTML = '<option value="">— Select Vendor —</option>' + vOpts;
       }
       if (typeof cb==="function") cb();
     })
     .getDropdownData();
 }
 
+/* ================================================================
+   FORM SUBMIT — handles both existing-project and new-project flows
+   _taskSubmitting flag prevents double-click duplicate submissions.
+================================================================ */
+var _taskSubmitting = false;
+
 (function(){
-  document.addEventListener("submit",function(e){
-    if (!e.target||e.target.id!=="taskForm") return;
+  document.addEventListener("submit", function(e){
+    if (!e.target || e.target.id !== "taskForm") return;
     e.preventDefault();
-    var editId=document.getElementById("contentArea").dataset.editTaskId||"";
-    var projId=_val("task_projectId");
-    var prev  =document.getElementById("task_projectPreview");
-    if (!projId){ showToast("Project ID is required.","error"); return; }
-    if (!prev||prev.style.display==="none"){ showToast("Please lookup and verify the Project ID first.","warning"); return; }
-    var wtEl=document.querySelector('input[name="task_workType"]:checked');
-    var wt  =wtEl?wtEl.value:"In-House";
-    var d={
-      projectId:      projId,
-      taskType:       _val("task_taskType"),
-      workType:       wt,
-      assignedTo:     _val("task_assignedTo"),
-      vendorName:     _val("task_vendorName"),
-      language:       _val("task_language"),
-      sourcePages:    _val("task_sourcePages"),
-      langCount:      _val("task_langCount"),
-      finalPages:     _val("task_finalPages"),
-      status:         _val("task_status"),
-      priority:       _val("task_priority"),
-      startDate:      _val("task_startDate"),
-      deliveryDate:   _val("task_deliveryDate"),
-      completedDate:  _val("task_completedDate"),
-      sourceLink:     _val("task_sourceLink"),
-      deliverableLink:_val("task_deliverableLink"),
-      notes:          _val("task_notes")
+    if (_taskSubmitting) return;   /* double-click guard */
+
+    var editId = document.getElementById("contentArea").dataset.editTaskId || "";
+    var wtEl   = document.querySelector('input[name="task_workType"]:checked');
+    var wt     = wtEl ? wtEl.value : "In-House";
+
+    var taskData = {
+      taskType:        _val("task_taskType"),
+      workType:        wt,
+      assignedTo:      _val("task_assignedTo"),
+      vendorName:      _val("task_vendorName"),
+      language:        _val("task_language"),
+      sourcePages:     _val("task_sourcePages"),
+      langCount:       _val("task_langCount"),
+      finalPages:      _val("task_finalPages"),
+      status:          _val("task_status"),
+      priority:        _val("task_priority"),
+      startDate:       _val("task_startDate"),
+      deliveryDate:    _val("task_deliveryDate"),
+      completedDate:   _val("task_completedDate"),
+      sourceLink:      _val("task_sourceLink"),
+      deliverableLink: _val("task_deliverableLink"),
+      notes:           _val("task_notes")
     };
-    if (!d.taskType){ showToast("Task Type is required.","error"); return; }
-    var btn  =document.getElementById("taskSubmitBtn");
-    var lblEl=document.getElementById("taskSubmitLabel");
-    btn.disabled=true;
-    if (lblEl) lblEl.innerText="Saving...";
-    showLoader(editId?"Updating task...":"Saving task...");
-    if (editId){
+
+    if (!taskData.taskType) { showToast("Task Type is required.","error"); return; }
+
+    var btn   = document.getElementById("taskSubmitBtn");
+    var lblEl = document.getElementById("taskSubmitLabel");
+
+    /* ── EDIT MODE ── */
+    if (editId) {
+      _taskSubmitting = true;
+      btn.disabled = true;
+      if (lblEl) lblEl.innerText = "Saving...";
+      showLoader("Updating task...");
       google.script.run
-        .withFailureHandler(function(er){ hideLoader(); btn.disabled=false; if(lblEl) lblEl.innerText="Update Task"; showToast("Error: "+er.message,"error"); })
-        .withSuccessHandler(function(){ hideLoader(); showToast("Task updated!","success"); loadPage("tasks"); })
-        .updateTask(editId,d);
-    } else {
-      google.script.run
-        .withFailureHandler(function(er){ hideLoader(); btn.disabled=false; if(lblEl) lblEl.innerText="Save Task"; showToast("Error: "+er.message,"error"); })
-        .withSuccessHandler(function(){ hideLoader(); showToast("Task saved!","success"); loadPage("tasks"); })
-        .addTask(d);
+        .withFailureHandler(function(er){ _taskSubmitting=false; hideLoader(); btn.disabled=false; if(lblEl) lblEl.innerText="Update Task"; showToast("Error: "+er.message,"error"); })
+        .withSuccessHandler(function(){ _taskSubmitting=false; hideLoader(); showToast("Task updated!","success"); loadPage("tasks"); })
+        .updateTask(editId, taskData);
+      return;
     }
+
+    /* ── NEW TASK: existing project ── */
+    if (_taskProjectLinked) {
+      var projId = _val("task_projectId");
+      if (!projId) { showToast("Project ID is required.","error"); return; }
+      taskData.projectId = projId;
+      _taskSubmitting = true;
+      btn.disabled = true;
+      if (lblEl) lblEl.innerText = "Saving...";
+      showLoader("Saving task...");
+      google.script.run
+        .withFailureHandler(function(er){ _taskSubmitting=false; hideLoader(); btn.disabled=false; if(lblEl) lblEl.innerText="Save Task"; showToast("Error: "+er.message,"error"); })
+        .withSuccessHandler(function(){ _taskSubmitting=false; hideLoader(); showToast("Task saved!","success"); loadPage("tasks"); })
+        .addTask(taskData);
+      return;
+    }
+
+    /* ── NEW TASK: create project inline ── */
+    if (_taskProjectIsNew) {
+      var clientName  = _val("np_clientName");
+      var projectName = _val("np_projectName");
+      if (!clientName)  { showToast("Client Name is required for the new project.","error"); return; }
+      if (!projectName) { showToast("Project Name is required for the new project.","error"); return; }
+      var projectData = {
+        clientName:      clientName,
+        projectName:     projectName,
+        coordinator:     _val("np_coordinator"),
+        sourceLanguage:  _val("np_sourceLanguage") || "English",
+        targetLanguages: _val("np_targetLanguages"),
+        langCount:       _val("np_langCount"),
+        sourcePages:     _val("np_sourcePages"),
+        wordCount:       _val("np_wordCount"),
+        receivedDate:    _val("np_receivedDate"),
+        priority:        _val("np_priority") || "Medium",
+        notes:           _val("np_notes")
+      };
+      _taskSubmitting = true;
+      btn.disabled = true;
+      if (lblEl) lblEl.innerText = "Creating project & saving task...";
+      showLoader("Creating project and saving task...");
+      google.script.run
+        .withFailureHandler(function(er){ _taskSubmitting=false; hideLoader(); btn.disabled=false; if(lblEl) lblEl.innerText="Save Task"; showToast("Error: "+er.message,"error"); })
+        .withSuccessHandler(function(res){
+          _taskSubmitting=false;
+          hideLoader();
+          var msg = res.reused
+            ? "Linked to existing project (" + res.projectId + ") & task saved!"
+            : "New project created (" + res.projectId + ") & task saved!";
+          showToast(msg, "success");
+          loadPage("tasks");
+        })
+        .addTaskWithProject(projectData, taskData);
+      return;
+    }
+
+    /* ── Neither linked nor new project panel open ── */
+    showToast("Please link to an existing project or create a new one.","warning");
   });
 })();
 </script>

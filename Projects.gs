@@ -32,6 +32,23 @@ function addProject(d) {
   try {
     const sh  = _sh(SH_PROJECTS);
     if (!sh) throw new Error("Projects sheet not found.");
+
+    /* ── Duplicate guard: block same client + project name (case-insensitive) ── */
+    const clientNorm  = String(d.clientName  || "").toLowerCase().trim();
+    const projectNorm = String(d.projectName || "").toLowerCase().trim();
+    if (clientNorm && projectNorm) {
+      const existing = _sheetRows(SH_PROJECTS).find(function(r) {
+        return String(r[PC.CLIENT]       || "").toLowerCase().trim() === clientNorm &&
+               String(r[PC.PROJECT_NAME] || "").toLowerCase().trim() === projectNorm;
+      });
+      if (existing) {
+        throw new Error(
+          'A project named "' + d.projectName + '" for client "' + d.clientName +
+          '" already exists (ID: ' + existing[PC.ID] + '). Use that project or choose a different name.'
+        );
+      }
+    }
+
     const id  = _id("PRJ");
     const now = new Date();
     sh.appendRow([

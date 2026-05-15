@@ -63,6 +63,15 @@ function addTask(d) {
     const id  = _id("TSK");
     const now = new Date();
 
+    /* Auto-calculate finalPages = sourcePages × langCount if not manually overridden */
+    var srcPages  = Number(d.sourcePages) || 0;
+    var langCount = Number(d.langCount)   || 0;
+    var finalPgs  = Number(d.finalPages)  || 0;
+    /* For DTP/Extraction/QC/Bilingual: if langCount > 0 and finalPages not manually set, auto-calc */
+    if (langCount > 0 && (!d.finalPages || Number(d.finalPages) === 0)) {
+      finalPgs = srcPages * langCount;
+    }
+
     sh.appendRow([
       id,
       d.projectId         || "",
@@ -73,9 +82,9 @@ function addTask(d) {
       d.assignedTo        || "",
       d.vendorName        || "",
       d.language          || "",
-      Number(d.sourcePages)  || 0,
-      Number(d.finalPages)   || 0,
-      Number(d.langCount)    || 0,
+      srcPages,
+      finalPgs,
+      langCount,
       d.status            || "Pending",
       d.priority          || "Medium",
       d.startDate         || "",
@@ -168,6 +177,66 @@ function deleteTask(id) {
     return { success: true };
   } catch (e) {
     console.error("deleteTask:", e);
+    throw e;
+  }
+}
+
+/* ================================================================
+   ADD TASK WITH AUTO PROJECT CREATION
+   Checks for an existing project with same clientName + projectName
+   (case-insensitive) before creating. If a match is found, reuses it.
+   This prevents duplicate projects from double-clicks or re-submissions.
+================================================================ */
+function addTaskWithProject(projectData, taskData) {
+  try {
+    const projSh = _sh(SH_PROJECTS);
+    if (!projSh) throw new Error("Projects sheet not found.");
+    const now = new Date();
+
+    /* ── 1. Duplicate guard: find existing project by client + name ── */
+    const clientNorm  = String(projectData.clientName  || "").toLowerCase().trim();
+    const projectNorm = String(projectData.projectName || "").toLowerCase().trim();
+    const allProjects = _sheetRows(SH_PROJECTS);
+    const existing    = allProjects.find(function(r) {
+      return String(r[PC.CLIENT]       || "").toLowerCase().trim() === clientNorm &&
+             String(r[PC.PROJECT_NAME] || "").toLowerCase().trim() === projectNorm;
+    });
+
+    let projId;
+    if (existing) {
+      /* Reuse the existing project — do NOT create a duplicate */
+      projId = String(existing[PC.ID]);
+    } else {
+      /* ── 2. Create the new project ── */
+      projId = _id("PRJ");
+      projSh.appendRow([
+        projId,
+        projectData.clientName      || "",
+        projectData.projectName     || "",
+        projectData.coordinator     || "",
+        projectData.sourceLanguage  || "English",
+        projectData.targetLanguages || "",
+        Number(projectData.langCount)   || 0,
+        Number(projectData.sourcePages) || 0,
+        Number(projectData.wordCount)   || 0,
+        projectData.priority        || "Medium",
+        "Active",
+        projectData.receivedDate    || "",
+        projectData.notes           || "",
+        now,
+        now
+      ]);
+    }
+
+    /* ── 3. Create the task linked to the project ── */
+    taskData.projectId   = projId;
+    taskData.clientName  = projectData.clientName  || "";
+    taskData.projectName = projectData.projectName || "";
+    const taskResult = addTask(taskData);
+
+    return { success: true, projectId: projId, taskId: taskResult.id, reused: !!existing };
+  } catch (e) {
+    console.error("addTaskWithProject:", e);
     throw e;
   }
 }

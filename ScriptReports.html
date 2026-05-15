@@ -44,6 +44,7 @@ function _renderReport(d) {
   _set("rpt_vendor",      (d.totalVendor   || 0).toLocaleString());
   _set("rpt_taskCount",   (d.taskCount     || 0));
   _set("rpt_revCount",    (d.revisionCount || 0) + " revisions");
+  _set("rpt_qcPages",     ((d.byTaskType && d.byTaskType.qc) ? (d.byTaskType.qc.total || 0) : 0).toLocaleString());
 
   var bt = d.byTaskType || {};
 
@@ -54,6 +55,7 @@ function _renderReport(d) {
       { label: "Extraction",  val: (bt.extraction  || {total:0}).total, color: "bg-teal-500"   },
       { label: "Corrections", val: (bt.corrections || {total:0}).total, color: "bg-orange-500" },
       { label: "Bilingual",   val: (bt.bilingual   || {total:0}).total, color: "bg-violet-500" },
+      { label: "QC",          val: (bt.qc          || {total:0}).total, color: "bg-green-500"  },
       { label: "Revisions",   val: (bt.revisions   || {total:0}).total, color: "bg-purple-500" }
     ];
     var ttMax = Math.max.apply(null, ttItems.map(function(i) { return i.val; })) || 1;

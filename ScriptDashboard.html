@@ -46,6 +46,7 @@ function _renderDashboard(all, m) {
   _card("extraction", "dash_extTotal",   "dash_extIH",   "dash_extVD");
   _card("corrections","dash_corrTotal",  "dash_corrIH",  "dash_corrVD");
   _card("bilingual",  "dash_bilingTotal","dash_bilingIH","dash_bilingVD");
+  _card("qc",         "dash_qcTotal",    "dash_qcIH",    "dash_qcVD");
 
   var inProg=tasks.filter(function(r){ return r[12]==="In Progress"; });
   function sumPages(arr,col){ return arr.reduce(function(s,r){ return s+(Number(r[col])||0); },0); }
@@ -76,6 +77,7 @@ function _renderTaskBars(m) {
     {label:"Extraction", val:(bt.extraction  ||{total:0}).total,color:"bg-teal-500"},
     {label:"Corrections",val:(bt.corrections ||{total:0}).total,color:"bg-orange-500"},
     {label:"Bilingual",  val:(bt.bilingual   ||{total:0}).total,color:"bg-violet-500"},
+    {label:"QC",         val:(bt.qc          ||{total:0}).total,color:"bg-green-500"},
     {label:"Revisions",  val:(bt.revisions   ||{total:0}).total,color:"bg-purple-500"}
   ];
   var max=Math.max.apply(null,items.map(function(i){ return i.val; }))||1;
