@@ -104,7 +104,8 @@ function _renderDashboard(d) {
     (bt.mainDTP  ||{total:0}).total,
     (bt.preEng   ||{total:0}).total,
     (bt.bilingual||{total:0}).total,
-    (bt.qc       ||{total:0}).total
+    (bt.qc       ||{total:0}).total,
+    (bt.others   ||{total:0}).total
   ) || 1;
 
   function _typeCard(key, totalId, ihId, vdId, barId) {
@@ -119,6 +120,7 @@ function _renderDashboard(d) {
   _typeCard("preEng",   "dash_preEngTotal", "dash_preEngIH", "dash_preEngVD", "dash_preEngBarFill");
   _typeCard("bilingual","dash_bilingTotal", "dash_bilingIH", "dash_bilingVD", "dash_bilingBarFill");
   _typeCard("qc",       "dash_qcTotal",     "dash_qcIH",     "dash_qcVD",     "dash_qcBarFill");
+  _typeCard("others",   "dash_othersTotal", "dash_othersIH", "dash_othersVD", "dash_othersBarFill");
 
   var revM = bt.revisions || {total:0, inHouse:0, vendor:0};
   _set("dash_revTotal", revM.total.toLocaleString());
@@ -193,7 +195,8 @@ function _renderTaskBars(m) {
     { label:"Main DTP",          val:(bt.mainDTP  ||{total:0}).total, color:"bg-blue-500"   },
     { label:"Pre-Engineering",   val:(bt.preEng   ||{total:0}).total, color:"bg-teal-500"   },
     { label:"Bilingual Creation",val:(bt.bilingual||{total:0}).total, color:"bg-violet-500" },
-    { label:"QC",                val:(bt.qc       ||{total:0}).total, color:"bg-green-500"  }
+    { label:"QC",                val:(bt.qc       ||{total:0}).total, color:"bg-green-500"  },
+    { label:"Others",            val:(bt.others   ||{total:0}).total, color:"bg-orange-500" }
   ];
   var max = Math.max.apply(null, items.map(function(i){ return i.val; })) || 1;
   el.innerHTML = items.map(function(i) {

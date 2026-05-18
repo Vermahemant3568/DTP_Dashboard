@@ -45,7 +45,8 @@ function _renderReport(d) {
   _set("rpt_taskCount",   (d.taskCount     || 0));
   _set("rpt_revCount",    (d.revisionCount || 0) + " revisions");
   _set("rpt_revPages",    ((d.byTaskType && d.byTaskType.revisions) ? (d.byTaskType.revisions.total || 0) : 0).toLocaleString());
-  _set("rpt_qcPages",     ((d.byTaskType && d.byTaskType.qc) ? (d.byTaskType.qc.total || 0) : 0).toLocaleString());
+  _set("rpt_qcPages",     ((d.byTaskType && d.byTaskType.qc)        ? (d.byTaskType.qc.total        || 0) : 0).toLocaleString());
+  _set("rpt_othersPages", ((d.byTaskType && d.byTaskType.others)    ? (d.byTaskType.others.total    || 0) : 0).toLocaleString());
 
   var bt = d.byTaskType || {};
 
@@ -55,7 +56,8 @@ function _renderReport(d) {
       { label: "Main DTP",          val: (bt.mainDTP  || {total:0}).total, color: "bg-blue-500"   },
       { label: "Pre-Engineering",   val: (bt.preEng   || {total:0}).total, color: "bg-teal-500"   },
       { label: "Bilingual Creation",val: (bt.bilingual|| {total:0}).total, color: "bg-violet-500" },
-      { label: "QC",                val: (bt.qc       || {total:0}).total, color: "bg-green-500"  }
+      { label: "QC",                val: (bt.qc       || {total:0}).total, color: "bg-green-500"  },
+      { label: "Others",            val: (bt.others   || {total:0}).total, color: "bg-orange-500" }
     ];
     var ttMax = Math.max.apply(null, ttItems.map(function(i) { return i.val; })) || 1;
     ttEl.innerHTML = ttItems.map(function(i) {

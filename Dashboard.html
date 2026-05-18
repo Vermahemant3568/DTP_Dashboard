@@ -84,7 +84,7 @@
         <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block"></span>Vendor</span>
       </div>
     </div>
-    <div class="grid grid-cols-2 lg:grid-cols-6 gap-3">
+    <div class="grid grid-cols-2 lg:grid-cols-7 gap-3">
 
       <!-- Grand Total this month -->
       <div class="col-span-2 lg:col-span-2 stat-card border-l-4 border-l-emerald-500 bg-gradient-to-br from-emerald-50 to-white">
@@ -153,6 +153,19 @@
         </div>
         <div class="mt-2 h-1.5 bg-slate-100 rounded-full overflow-hidden">
           <div id="dash_qcBarFill" class="h-1.5 bg-green-500 rounded-full transition-all duration-700" style="width:0%"></div>
+        </div>
+      </div>
+
+      <div class="stat-card border-l-4 border-l-orange-500">
+        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Others</p>
+        <h3 id="dash_othersTotal" class="text-3xl font-black text-orange-600 mt-1">—</h3>
+        <p class="text-[10px] text-slate-400 mt-0.5">pages</p>
+        <div class="mt-2 space-y-1 text-[11px]">
+          <div class="flex justify-between"><span class="text-sky-600">🏢</span><span id="dash_othersIH" class="font-bold text-sky-700">—</span></div>
+          <div class="flex justify-between"><span class="text-amber-500">🤝</span><span id="dash_othersVD" class="font-bold text-amber-600">—</span></div>
+        </div>
+        <div class="mt-2 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+          <div id="dash_othersBarFill" class="h-1.5 bg-orange-500 rounded-full transition-all duration-700" style="width:0%"></div>
         </div>
       </div>
 

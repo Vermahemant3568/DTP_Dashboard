@@ -171,9 +171,9 @@ function getMonthlySummary(params) {
     });
 
     /* ── by task type ── */
-    const TASK_TYPES = ["Main DTP", "Pre-Engineering", "Bilingual Creation", "QC"];
+    const TASK_TYPES = ["Main DTP", "Pre-Engineering", "Bilingual Creation", "QC", "Others"];
     const TASK_KEYS  = { "Main DTP": "mainDTP", "Pre-Engineering": "preEng",
-                         "Bilingual Creation": "bilingual", "QC": "qc" };
+                         "Bilingual Creation": "bilingual", "QC": "qc", "Others": "others" };
 
     const byTaskType = {};
     TASK_TYPES.forEach(function(t) {
