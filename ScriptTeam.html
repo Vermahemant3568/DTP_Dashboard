@@ -35,6 +35,7 @@ function _renderTeamTable(data) {
       '<td><span class="badge '+sc+'">'+(r[6]||"Active")+'</span></td>'+
       '<td class="text-right">'+
         '<div class="flex justify-end gap-1">'+
+          btnView(r[1],"viewMemberPerformance")+
           btnEdit(r[0],"openTeamModal")+
           btnDelete(r[0],"deleteTeamMemberById")+
         '</div>'+
@@ -100,5 +101,10 @@ function deleteTeamMemberById(id) {
       .withSuccessHandler(function(){ hideLoader(); showToast("Member deleted.","warning"); loadTeam(); })
       .deleteTeamMember(id);
   }, true);
+}
+
+/* Navigate to team member performance view by member name */
+function viewMemberPerformance(memberName) {
+  loadPage("memberView", { memberName: memberName });
 }
 </script>

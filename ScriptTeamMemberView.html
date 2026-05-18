@@ -1,0 +1,180 @@
+<script>
+/* ================================================================
+   ScriptTeamMemberView.html — Team Member Performance Page Logic
+================================================================ */
+var _mvMemberName = "";
+var _mvData       = null;
+
+/* ── Entry point: called from ScriptNav when page = memberView ── */
+function loadMemberView(memberName) {
+  _mvMemberName = memberName || "";
+  _mvInitYearFilter();
+  _mvFetch();
+}
+
+function _mvInitYearFilter() {
+  var el = document.getElementById("mv_fYear");
+  if (!el || el.options.length > 1) return;
+  var now = new Date().getFullYear();
+  for (var y = now; y >= now - 4; y--) {
+    var o = document.createElement("option");
+    o.value = y; o.text = y;
+    if (y === now) o.selected = true;
+    el.appendChild(o);
+  }
+}
+
+function mvApplyFilter() { _mvFetch(); }
+
+function _mvGetFilters() {
+  return {
+    month:    _val("mv_fMonth")    || "",
+    year:     _val("mv_fYear")     || "",
+    projectId:_val("mv_fProject")  || "",
+    language: _val("mv_fLang")     || "",
+    taskType: _val("mv_fTaskType") || ""
+  };
+}
+
+function _mvFetch() {
+  if (!_mvMemberName) { hideLoader(); return; }
+  showLoader("Loading member performance…");
+  var filters = _mvGetFilters();
+  Object.keys(filters).forEach(function(k) { if (!filters[k]) delete filters[k]; });
+  google.script.run
+    .withFailureHandler(function(e) { hideLoader(); showToast("Error: " + e.message, "error"); })
+    .withSuccessHandler(function(data) {
+      hideLoader();
+      _mvData = data;
+      _mvRender(data);
+    })
+    .getTeamMemberPerformance(_mvMemberName, filters);
+}
+
+function _mvRender(d) {
+  if (!d) return;
+  var m = d.member || {};
+  var s = d.stats  || {};
+
+  /* ── Header ── */
+  _set("mv_title",    m.name || _mvMemberName);
+  _set("mv_subtitle", (m.role || "Team Member") + " · " + (m.status || "Active"));
+
+  /* ── Info card ── */
+  _set("mv_name",     m.name || "—");
+  _set("mv_role",     m.role || "—");
+  _set("mv_email",    m.email || "—");
+  _set("mv_phone",    m.phone || "—");
+  _set("mv_avgPages", (s.avgPages || 0).toLocaleString() + " pages/task");
+
+  var sb = document.getElementById("mv_statusBadge");
+  if (sb) {
+    sb.className = "badge " + (m.status === "Active" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500");
+    sb.innerText = m.status || "Active";
+  }
+  var spb = document.getElementById("mv_specBadge");
+  if (spb) spb.innerText = m.specialization || "—";
+
+  /* ── Stat cards ── */
+  _set("mv_totalAssigned",   (s.totalAssigned   || 0).toLocaleString());
+  _set("mv_completedPages",  (s.completedPages  || 0).toLocaleString());
+  _set("mv_inProgressPages", (s.inProgressPages || 0).toLocaleString());
+  _set("mv_totalPages",      (s.totalPages      || 0).toLocaleString());
+
+  /* ── Populate filter dropdowns (only on first load) ── */
+  _mvPopulateDropdowns(d.projectOptions || [], d.langOptions || []);
+
+  /* ── Monthly chart ── */
+  _mvRenderMonthly(d.monthly || []);
+
+  /* ── Breakdown bars ── */
+  _mvRenderBars("mv_byProject",  d.byProject  || [], "projectName", "pages", "bg-sky-500");
+  _mvRenderBars("mv_byTaskType", d.byTaskType || [], "type",        "pages", "bg-blue-500");
+  _mvRenderBars("mv_byLanguage", d.byLanguage || [], "language",    "pages", "bg-teal-500");
+
+  /* ── Work table ── */
+  _mvRenderTable(d.rows || []);
+}
+
+function _mvPopulateDropdowns(projects, langs) {
+  var pEl = document.getElementById("mv_fProject");
+  if (pEl && pEl.options.length <= 1) {
+    projects.forEach(function(p) {
+      var o = document.createElement("option");
+      o.value = p.id; o.text = p.name;
+      pEl.appendChild(o);
+    });
+  }
+  var lEl = document.getElementById("mv_fLang");
+  if (lEl && lEl.options.length <= 1) {
+    langs.forEach(function(l) {
+      var o = document.createElement("option");
+      o.value = l; o.text = l;
+      lEl.appendChild(o);
+    });
+  }
+}
+
+function _mvRenderMonthly(monthly) {
+  var el = document.getElementById("mv_monthlyChart");
+  if (!el) return;
+  if (!monthly.length) {
+    el.innerHTML = '<p class="text-sm text-slate-400 text-center py-4">No monthly data available.</p>';
+    return;
+  }
+  var max = Math.max.apply(null, monthly.map(function(m) { return m.pages; })) || 1;
+  el.innerHTML = monthly.map(function(m) {
+    var pct = Math.round(m.pages / max * 100);
+    return '<div class="flex items-center gap-3">' +
+      '<span class="text-[11px] text-slate-500 w-20 shrink-0 text-right">' + m.label + '</span>' +
+      '<div class="flex-1 bg-slate-100 rounded-full h-5 overflow-hidden">' +
+        '<div class="bg-sky-500 h-5 rounded-full flex items-center justify-end pr-2 transition-all duration-700" style="width:' + Math.max(pct, 2) + '%">' +
+          (pct > 8 ? '<span class="text-[10px] font-bold text-white">' + m.pages.toLocaleString() + '</span>' : '') +
+        '</div>' +
+      '</div>' +
+      (pct <= 8 ? '<span class="text-[11px] font-bold text-slate-600 shrink-0">' + m.pages.toLocaleString() + '</span>' : '') +
+    '</div>';
+  }).join("");
+}
+
+function _mvRenderBars(containerId, items, labelKey, valueKey, colorClass) {
+  var el = document.getElementById(containerId);
+  if (!el) return;
+  if (!items.length) {
+    el.innerHTML = '<p class="text-sm text-slate-400 text-center py-4">No data.</p>';
+    return;
+  }
+  var max = Math.max.apply(null, items.map(function(i) { return i[valueKey]; })) || 1;
+  el.innerHTML = items.slice(0, 8).map(function(i) {
+    var sub = (i.count !== undefined)
+      ? (i[valueKey].toLocaleString() + " pages · " + i.count + " task" + (i.count !== 1 ? "s" : ""))
+      : (i[valueKey].toLocaleString() + " pages");
+    return buildBar(i[labelKey], i[valueKey], max, colorClass, sub);
+  }).join("<div class='mt-3'></div>");
+}
+
+function _mvRenderTable(rows) {
+  var tbody   = document.getElementById("mv_workTable");
+  var countEl = document.getElementById("mv_tableCount");
+  if (!tbody) return;
+  if (countEl) countEl.innerText = rows.length + " record" + (rows.length !== 1 ? "s" : "");
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="8" class="py-12 text-center text-slate-400 text-sm">No work records found for the selected filters.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map(function(r) {
+    var sc = getStatusClass(r.status || "Pending");
+    var tc = r.type === "revision" ? "bg-purple-100 text-purple-700" : getTaskClass(r.taskType || "Main DTP");
+    return '<tr>' +
+      '<td class="font-mono text-[11px] text-gray-400">' + (r.id || "—") + '</td>' +
+      '<td class="text-sm font-semibold text-gray-800 max-w-[160px] truncate">' + (r.projectName || "—") + '</td>' +
+      '<td><span class="badge ' + tc + '">' + (r.taskType || "—") + '</span></td>' +
+      '<td class="text-sm text-gray-600">' + (r.language || "—") + '</td>' +
+      '<td class="text-center text-sm font-black text-sky-700">' + (r.pages || 0).toLocaleString() + '</td>' +
+      '<td><span class="badge ' + sc + '">' + (r.status || "—") + '</span></td>' +
+      '<td class="text-sm text-gray-500">' + (r.startDate || "—") + '</td>' +
+      '<td class="text-sm text-gray-500">' + (r.completedDate || "—") + '</td>' +
+    '</tr>';
+  }).join("");
+}
+</script>

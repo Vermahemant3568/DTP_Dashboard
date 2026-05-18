@@ -37,6 +37,7 @@ function _renderVendorsTable(data) {
       '<td><span class="badge '+sc+'">'+(r[9]||"Active")+'</span></td>'+
       '<td class="text-right">'+
         '<div class="flex justify-end gap-1">'+
+          btnView(r[1],"viewVendorPerformance")+
           btnEdit(r[0],"openVendorModal")+
           btnDelete(r[0],"deleteVendorById")+
         '</div>'+
@@ -107,5 +108,10 @@ function deleteVendorById(id) {
       .withSuccessHandler(function(){ hideLoader(); showToast("Vendor deleted.","warning"); loadVendors(); })
       .deleteVendor(id);
   }, true);
+}
+
+/* Navigate to vendor performance view by vendor name */
+function viewVendorPerformance(vendorName) {
+  loadPage("vendorView", { vendorName: vendorName });
 }
 </script>

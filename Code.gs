@@ -111,6 +111,12 @@ function _sheetRows(name) {
 
 function _inMonth(v, month, year) {
   if (!v) return false;
+  /* Handle dd/MM/yyyy format produced by _fmt */
+  if (typeof v === "string") {
+    var dmy = v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (dmy) v = new Date(Number(dmy[3]), Number(dmy[2]) - 1, Number(dmy[1]));
+    else v = new Date(v);
+  }
   const d = v instanceof Date ? v : new Date(v);
   return !isNaN(d) && d.getMonth() === month && d.getFullYear() === year;
 }
@@ -158,7 +164,11 @@ function getMonthlySummary(params) {
 
     /* filter tasks by start date falling in target month */
     const monthTasks = tasks.filter(r => _inMonth(r[TC.START_DATE], month, year));
-    const monthRevs  = revisions.filter(r => _inMonth(r[RC.REV_DATE], month, year));
+    /* filter revisions by rev date — fall back to createdAt if rev date is blank */
+    const monthRevs  = revisions.filter(r => {
+      var dateVal = r[RC.REV_DATE] || r[RC.CREATED_AT];
+      return _inMonth(dateVal, month, year);
+    });
 
     /* ── by task type ── */
     const TASK_TYPES = ["Main DTP", "Pre-Engineering", "Bilingual Creation", "QC"];
@@ -289,9 +299,47 @@ function getProjectSummary(projectId) {
 }
 
 /* ================================================================
-   PROJECTS WITH TASK COUNT — used by ManageProjects grouped view
-   Returns each project row with an extra field: taskCount
+   DASHBOARD DATA — single call returns monthly summary + filtered
+   raw rows for tasks, revisions, projects for the selected month.
+   Projects are filtered by receivedDate falling in the month.
+   Tasks filtered by startDate, revisions by revDate/createdAt.
 ================================================================ */
+function getDashboardData(params) {
+  try {
+    const now   = new Date();
+    const year  = (params && params.year)  ? Number(params.year)  : now.getFullYear();
+    const month = (params && params.month) ? Number(params.month) - 1 : now.getMonth();
+
+    /* ── raw filtered rows ── */
+    const allTasks     = _sheetRows(SH_TASKS).map(_fmtRow);
+    const allRevisions = _sheetRows(SH_REVISIONS).map(_fmtRow);
+    const allProjects  = _sheetRows(SH_PROJECTS).map(_fmtRow);
+
+    const monthTasks = allTasks.filter(r => _inMonth(r[TC.START_DATE], month, year));
+    const monthRevs  = allRevisions.filter(r => {
+      var dv = r[RC.REV_DATE] || r[RC.CREATED_AT];
+      return _inMonth(dv, month, year);
+    });
+    const monthProjects = allProjects.filter(r => {
+      var dv = r[PC.RECEIVED_DATE] || r[PC.CREATED_AT];
+      return _inMonth(dv, month, year);
+    });
+
+    /* ── monthly summary (reuse existing logic) ── */
+    const summary = getMonthlySummary(params);
+
+    return {
+      summary:   summary,
+      tasks:     monthTasks,
+      revisions: monthRevs,
+      projects:  monthProjects,
+      allProjects: allProjects   /* needed for active pipeline — status-based not date-based */
+    };
+  } catch(e) {
+    console.error("getDashboardData:", e);
+    return { summary: {}, tasks: [], revisions: [], projects: [], allProjects: [] };
+  }
+}
 function getProjectsWithTaskCount() {
   try {
     const projects = _sheetRows(SH_PROJECTS).map(_fmtRow);

@@ -1,0 +1,195 @@
+<div class="space-y-6 page-enter" id="vendorViewRoot">
+
+  <!-- BACK + HEADER -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+    <div class="flex items-center gap-3">
+      <button onclick="loadPage('vendors')"
+        class="flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-slate-800 transition-colors">
+        ← Back
+      </button>
+      <div class="h-4 w-px bg-slate-200"></div>
+      <div>
+        <h2 id="vv_title" class="text-2xl font-bold text-slate-800">Vendor Performance</h2>
+        <p id="vv_subtitle" class="text-sm text-slate-500 mt-0.5">Loading…</p>
+      </div>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+      <!-- Filters -->
+      <select id="vv_fMonth" onchange="vvApplyFilter()" class="input w-36 text-sm">
+        <option value="">All Months</option>
+        <option value="1">January</option><option value="2">February</option>
+        <option value="3">March</option><option value="4">April</option>
+        <option value="5">May</option><option value="6">June</option>
+        <option value="7">July</option><option value="8">August</option>
+        <option value="9">September</option><option value="10">October</option>
+        <option value="11">November</option><option value="12">December</option>
+      </select>
+      <select id="vv_fYear" onchange="vvApplyFilter()" class="input w-28 text-sm"></select>
+      <select id="vv_fProject" onchange="vvApplyFilter()" class="input w-44 text-sm">
+        <option value="">All Projects</option>
+      </select>
+      <select id="vv_fLang" onchange="vvApplyFilter()" class="input w-36 text-sm">
+        <option value="">All Languages</option>
+      </select>
+      <select id="vv_fStatus" onchange="vvApplyFilter()" class="input w-36 text-sm">
+        <option value="">All Statuses</option>
+        <option value="Pending">Pending</option>
+        <option value="In Progress">In Progress</option>
+        <option value="Completed">Completed</option>
+        <option value="On Hold">On Hold</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- VENDOR INFO CARD -->
+  <div id="vv_infoCard" class="section-card p-5 flex flex-wrap gap-6 items-start">
+    <div class="flex items-center gap-4">
+      <div class="h-14 w-14 rounded-2xl bg-emerald-100 flex items-center justify-center text-2xl shrink-0">🤝</div>
+      <div>
+        <h3 id="vv_name" class="text-xl font-bold text-slate-800">—</h3>
+        <p id="vv_contact" class="text-sm text-slate-500 mt-0.5">—</p>
+        <div class="flex items-center gap-2 mt-1">
+          <span id="vv_statusBadge" class="badge bg-green-100 text-green-700">Active</span>
+          <span id="vv_specBadge" class="badge bg-slate-100 text-slate-600">—</span>
+        </div>
+      </div>
+    </div>
+    <div class="flex flex-wrap gap-6 text-sm ml-auto">
+      <div><p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Email</p><p id="vv_email" class="font-semibold text-slate-700 mt-0.5">—</p></div>
+      <div><p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Phone</p><p id="vv_phone" class="font-semibold text-slate-700 mt-0.5">—</p></div>
+      <div><p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Languages</p><p id="vv_langs" class="font-semibold text-slate-700 mt-0.5">—</p></div>
+      <div><p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Rate / Page</p><p id="vv_rate" class="font-semibold text-emerald-700 mt-0.5">—</p></div>
+    </div>
+  </div>
+
+  <!-- STAT CARDS ROW -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="stat-card border-l-4 border-l-emerald-500">
+      <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Total Assigned</p>
+      <h3 id="vv_totalAssigned" class="text-4xl font-black text-emerald-600 mt-2">—</h3>
+      <p class="text-xs text-slate-400 mt-1">tasks + revisions</p>
+    </div>
+    <div class="stat-card border-l-4 border-l-sky-500">
+      <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Completed Pages</p>
+      <h3 id="vv_completedPages" class="text-4xl font-black text-sky-600 mt-2">—</h3>
+      <p class="text-xs text-slate-400 mt-1">all time</p>
+    </div>
+    <div class="stat-card border-l-4 border-l-amber-500">
+      <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Pending Pages</p>
+      <h3 id="vv_pendingPages" class="text-4xl font-black text-amber-500 mt-2">—</h3>
+      <p class="text-xs text-slate-400 mt-1">not yet completed</p>
+    </div>
+    <div class="stat-card border-l-4 border-l-violet-500 bg-gradient-to-br from-violet-50 to-white">
+      <p class="text-[10px] font-bold uppercase tracking-widest text-violet-500">Est. Amount</p>
+      <h3 id="vv_estAmount" class="text-3xl font-black text-violet-700 mt-2">—</h3>
+      <p id="vv_paymentNote" class="text-xs text-slate-400 mt-1">completed pages × rate</p>
+    </div>
+  </div>
+
+  <!-- MONTHLY CHART + PAYMENT STATUS -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    <!-- Monthly Pages Chart -->
+    <div class="lg:col-span-2 section-card">
+      <div class="px-5 py-4 border-b border-gray-100">
+        <h3 class="text-sm font-bold text-slate-700">Monthly Completed Pages</h3>
+        <p class="text-xs text-slate-400 mt-0.5">Last 12 months activity</p>
+      </div>
+      <div id="vv_monthlyChart" class="p-5 space-y-3">
+        <div class="h-4 bg-slate-100 rounded-full animate-pulse"></div>
+        <div class="h-4 bg-slate-100 rounded-full animate-pulse w-3/4"></div>
+      </div>
+    </div>
+
+    <!-- Payment Status -->
+    <div class="section-card">
+      <div class="px-5 py-4 border-b border-gray-100">
+        <h3 class="text-sm font-bold text-slate-700">Payment Summary</h3>
+        <p class="text-xs text-slate-400 mt-0.5">Based on completed work</p>
+      </div>
+      <div class="p-5 space-y-4">
+        <div class="rounded-xl bg-green-50 border border-green-100 p-4">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-green-500">Completed Pages</p>
+          <p id="vv_payCompletedPages" class="text-2xl font-black text-green-700 mt-1">—</p>
+          <p id="vv_payCompletedAmt" class="text-sm font-semibold text-green-600 mt-0.5">—</p>
+        </div>
+        <div class="rounded-xl bg-amber-50 border border-amber-100 p-4">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-amber-500">Pending Pages</p>
+          <p id="vv_payPendingPages" class="text-2xl font-black text-amber-700 mt-1">—</p>
+          <p id="vv_payPendingAmt" class="text-sm font-semibold text-amber-600 mt-0.5">—</p>
+        </div>
+        <div class="rounded-xl bg-slate-50 border border-slate-100 p-4">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Total Pages</p>
+          <p id="vv_payTotalPages" class="text-2xl font-black text-slate-700 mt-1">—</p>
+          <p id="vv_payTotalAmt" class="text-sm font-semibold text-slate-500 mt-0.5">—</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- PROJECT + TASK TYPE + LANGUAGE BREAKDOWN -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    <div class="section-card">
+      <div class="px-5 py-4 border-b border-gray-100">
+        <h3 class="text-sm font-bold text-slate-700">Project-wise Contribution</h3>
+        <p class="text-xs text-slate-400 mt-0.5">Pages per project</p>
+      </div>
+      <div id="vv_byProject" class="p-5 space-y-3">
+        <div class="h-4 bg-slate-100 rounded-full animate-pulse"></div>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <div class="px-5 py-4 border-b border-gray-100">
+        <h3 class="text-sm font-bold text-slate-700">Task-type Contribution</h3>
+        <p class="text-xs text-slate-400 mt-0.5">Pages by work type</p>
+      </div>
+      <div id="vv_byTaskType" class="p-5 space-y-3">
+        <div class="h-4 bg-slate-100 rounded-full animate-pulse"></div>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <div class="px-5 py-4 border-b border-gray-100">
+        <h3 class="text-sm font-bold text-slate-700">Language-wise Work</h3>
+        <p class="text-xs text-slate-400 mt-0.5">Pages per language</p>
+      </div>
+      <div id="vv_byLanguage" class="p-5 space-y-3">
+        <div class="h-4 bg-slate-100 rounded-full animate-pulse"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- DETAILED WORK TABLE -->
+  <div class="section-card overflow-hidden">
+    <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+      <div>
+        <h3 class="text-sm font-bold text-slate-700">Work History</h3>
+        <p id="vv_tableCount" class="text-xs text-slate-400 mt-0.5">All tasks and revisions</p>
+      </div>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Project</th>
+            <th>Type</th>
+            <th>Language</th>
+            <th class="text-center">Pages</th>
+            <th>Status</th>
+            <th>Start Date</th>
+            <th>Completed</th>
+          </tr>
+        </thead>
+        <tbody id="vv_workTable">
+          <tr><td colspan="8" class="py-12 text-center text-slate-400 text-sm">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>

@@ -15,7 +15,9 @@ var PAGE_MAP = {
   addRevision: "AddRevision",
   reports:     "Reports",
   vendors:     "Vendors",
-  team:        "Team"
+  team:        "Team",
+  vendorView:  "VendorView",
+  memberView:  "TeamMemberView"
 };
 
 var _isLoading      = false;
@@ -104,6 +106,14 @@ function _initPage(page, ctx) {
       break;
     case "team":
       if (typeof loadTeam === "function") loadTeam();
+      else hideLoader();
+      break;
+    case "vendorView":
+      if (ctx && ctx.vendorName && typeof loadVendorView === "function") loadVendorView(ctx.vendorName);
+      else hideLoader();
+      break;
+    case "memberView":
+      if (ctx && ctx.memberName && typeof loadMemberView === "function") loadMemberView(ctx.memberName);
       else hideLoader();
       break;
     default:
@@ -254,13 +264,15 @@ function handleRefresh() {
   if (btn)  btn.disabled   = true;
   if (icon) icon.innerText = "...";
   var map = {
-    dashboard: function() { if (typeof refreshDashboardStats === "function") refreshDashboardStats(); },
-    projects:  function() { if (typeof loadProjects  === "function") loadProjects(); },
-    tasks:     function() { if (typeof loadTasks     === "function") loadTasks(); },
-    revisions: function() { if (typeof loadRevisions === "function") loadRevisions(); },
-    reports:   function() { if (typeof loadReports   === "function") loadReports(); },
-    vendors:   function() { if (typeof loadVendors   === "function") loadVendors(); },
-    team:      function() { if (typeof loadTeam      === "function") loadTeam(); }
+    dashboard:  function() { if (typeof refreshDashboardStats === "function") refreshDashboardStats(); },
+    projects:   function() { if (typeof loadProjects  === "function") loadProjects(); },
+    tasks:      function() { if (typeof loadTasks     === "function") loadTasks(); },
+    revisions:  function() { if (typeof loadRevisions === "function") loadRevisions(); },
+    reports:    function() { if (typeof loadReports   === "function") loadReports(); },
+    vendors:    function() { if (typeof loadVendors   === "function") loadVendors(); },
+    team:       function() { if (typeof loadTeam      === "function") loadTeam(); },
+    vendorView: function() { if (typeof _vvFetch      === "function") _vvFetch(); },
+    memberView: function() { if (typeof _mvFetch      === "function") _mvFetch(); }
   };
   if (map[_activePage]) map[_activePage]();
   setTimeout(function() {

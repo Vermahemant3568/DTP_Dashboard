@@ -1,0 +1,164 @@
+<div class="space-y-6 page-enter" id="memberViewRoot">
+
+  <!-- BACK + HEADER -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+    <div class="flex items-center gap-3">
+      <button onclick="loadPage('team')"
+        class="flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-slate-800 transition-colors">
+        ← Back
+      </button>
+      <div class="h-4 w-px bg-slate-200"></div>
+      <div>
+        <h2 id="mv_title" class="text-2xl font-bold text-slate-800">Team Member Performance</h2>
+        <p id="mv_subtitle" class="text-sm text-slate-500 mt-0.5">Loading…</p>
+      </div>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+      <select id="mv_fMonth" onchange="mvApplyFilter()" class="input w-36 text-sm">
+        <option value="">All Months</option>
+        <option value="1">January</option><option value="2">February</option>
+        <option value="3">March</option><option value="4">April</option>
+        <option value="5">May</option><option value="6">June</option>
+        <option value="7">July</option><option value="8">August</option>
+        <option value="9">September</option><option value="10">October</option>
+        <option value="11">November</option><option value="12">December</option>
+      </select>
+      <select id="mv_fYear" onchange="mvApplyFilter()" class="input w-28 text-sm"></select>
+      <select id="mv_fProject" onchange="mvApplyFilter()" class="input w-44 text-sm">
+        <option value="">All Projects</option>
+      </select>
+      <select id="mv_fLang" onchange="mvApplyFilter()" class="input w-36 text-sm">
+        <option value="">All Languages</option>
+      </select>
+      <select id="mv_fTaskType" onchange="mvApplyFilter()" class="input w-40 text-sm">
+        <option value="">All Task Types</option>
+        <option value="Main DTP">Main DTP</option>
+        <option value="Pre-Engineering">Pre-Engineering</option>
+        <option value="Bilingual Creation">Bilingual Creation</option>
+        <option value="QC">QC</option>
+        <option value="Revision">Revision</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- MEMBER INFO CARD -->
+  <div class="section-card p-5 flex flex-wrap gap-6 items-start">
+    <div class="flex items-center gap-4">
+      <div class="h-14 w-14 rounded-2xl bg-sky-100 flex items-center justify-center text-2xl shrink-0">👤</div>
+      <div>
+        <h3 id="mv_name" class="text-xl font-bold text-slate-800">—</h3>
+        <p id="mv_role" class="text-sm text-slate-500 mt-0.5">—</p>
+        <div class="flex items-center gap-2 mt-1">
+          <span id="mv_statusBadge" class="badge bg-green-100 text-green-700">Active</span>
+          <span id="mv_specBadge" class="badge bg-slate-100 text-slate-600">—</span>
+        </div>
+      </div>
+    </div>
+    <div class="flex flex-wrap gap-6 text-sm ml-auto">
+      <div><p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Email</p><p id="mv_email" class="font-semibold text-slate-700 mt-0.5">—</p></div>
+      <div><p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Phone</p><p id="mv_phone" class="font-semibold text-slate-700 mt-0.5">—</p></div>
+      <div><p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Avg Pages/Task</p><p id="mv_avgPages" class="font-semibold text-sky-700 mt-0.5">—</p></div>
+    </div>
+  </div>
+
+  <!-- STAT CARDS -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="stat-card border-l-4 border-l-sky-500">
+      <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Total Assigned</p>
+      <h3 id="mv_totalAssigned" class="text-4xl font-black text-sky-600 mt-2">—</h3>
+      <p class="text-xs text-slate-400 mt-1">tasks + revisions</p>
+    </div>
+    <div class="stat-card border-l-4 border-l-emerald-500">
+      <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Completed Pages</p>
+      <h3 id="mv_completedPages" class="text-4xl font-black text-emerald-600 mt-2">—</h3>
+      <p class="text-xs text-slate-400 mt-1">all time</p>
+    </div>
+    <div class="stat-card border-l-4 border-l-blue-500">
+      <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">In-Progress Pages</p>
+      <h3 id="mv_inProgressPages" class="text-4xl font-black text-blue-500 mt-2">—</h3>
+      <p class="text-xs text-slate-400 mt-1">currently active</p>
+    </div>
+    <div class="stat-card border-l-4 border-l-violet-500">
+      <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Total Pages</p>
+      <h3 id="mv_totalPages" class="text-4xl font-black text-violet-600 mt-2">—</h3>
+      <p class="text-xs text-slate-400 mt-1">all tasks + revisions</p>
+    </div>
+  </div>
+
+  <!-- MONTHLY PRODUCTIVITY CHART -->
+  <div class="section-card">
+    <div class="px-5 py-4 border-b border-gray-100">
+      <h3 class="text-sm font-bold text-slate-700">Monthly Productivity</h3>
+      <p class="text-xs text-slate-400 mt-0.5">Pages completed per month (last 12 months)</p>
+    </div>
+    <div id="mv_monthlyChart" class="p-5 space-y-3">
+      <div class="h-4 bg-slate-100 rounded-full animate-pulse"></div>
+      <div class="h-4 bg-slate-100 rounded-full animate-pulse w-3/4"></div>
+    </div>
+  </div>
+
+  <!-- BREAKDOWN CHARTS -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    <div class="section-card">
+      <div class="px-5 py-4 border-b border-gray-100">
+        <h3 class="text-sm font-bold text-slate-700">Project Contribution</h3>
+        <p class="text-xs text-slate-400 mt-0.5">Pages per project</p>
+      </div>
+      <div id="mv_byProject" class="p-5 space-y-3">
+        <div class="h-4 bg-slate-100 rounded-full animate-pulse"></div>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <div class="px-5 py-4 border-b border-gray-100">
+        <h3 class="text-sm font-bold text-slate-700">Task Type Breakdown</h3>
+        <p class="text-xs text-slate-400 mt-0.5">Pages by task type</p>
+      </div>
+      <div id="mv_byTaskType" class="p-5 space-y-3">
+        <div class="h-4 bg-slate-100 rounded-full animate-pulse"></div>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <div class="px-5 py-4 border-b border-gray-100">
+        <h3 class="text-sm font-bold text-slate-700">Language Contribution</h3>
+        <p class="text-xs text-slate-400 mt-0.5">Pages per language</p>
+      </div>
+      <div id="mv_byLanguage" class="p-5 space-y-3">
+        <div class="h-4 bg-slate-100 rounded-full animate-pulse"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- WORK HISTORY TABLE -->
+  <div class="section-card overflow-hidden">
+    <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+      <div>
+        <h3 class="text-sm font-bold text-slate-700">Work History</h3>
+        <p id="mv_tableCount" class="text-xs text-slate-400 mt-0.5">All tasks and revisions</p>
+      </div>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Project</th>
+            <th>Type</th>
+            <th>Language</th>
+            <th class="text-center">Pages</th>
+            <th>Status</th>
+            <th>Start Date</th>
+            <th>Completed</th>
+          </tr>
+        </thead>
+        <tbody id="mv_workTable">
+          <tr><td colspan="8" class="py-12 text-center text-slate-400 text-sm">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
