@@ -1,0 +1,175 @@
+<script>
+/* ================================================================
+   ScriptViewTask.html
+================================================================ */
+var _vtCurrentTaskId  = "";
+var _vtCurrentProjId  = "";
+
+function loadTaskView(taskId) {
+  if (!taskId) { showToast("No task ID provided.", "error"); return; }
+  showLoader("Loading task...");
+  google.script.run
+    .withFailureHandler(function(e) { hideLoader(); showToast("Could not load task: " + e.message, "error"); })
+    .withSuccessHandler(function(res) {
+      hideLoader();
+      if (!res || !res.task) { showToast("Task not found.", "error"); return; }
+      _renderTaskView(res.task, res.revisions || []);
+    })
+    .getTaskWithRevisions(taskId);
+}
+
+function _renderTaskView(t, revs) {
+  _vtCurrentTaskId = t[0];
+  _vtCurrentProjId = t[1];
+
+  /* Header */
+  _set("vt_taskId",  "Task ID: " + t[0]);
+  _set("vt_title",   (t[3] || "—") + (t[8] ? " — " + t[8] : ""));
+
+  var statusEl = document.getElementById("vt_statusBadge");
+  if (statusEl) { statusEl.innerText = t[12] || "Pending"; statusEl.className = "badge " + getStatusClass(t[12] || "Pending"); }
+
+  var typeEl = document.getElementById("vt_typeBadge");
+  if (typeEl) { typeEl.innerText = t[4] || "—"; typeEl.className = "badge " + getTaskClass(t[4] || "Main DTP"); }
+
+  var workEl = document.getElementById("vt_workBadge");
+  if (workEl) { workEl.innerText = t[5] || "In-House"; workEl.className = "badge " + getWorkClass(t[5] || "In-House"); }
+
+  var prioEl = document.getElementById("vt_priorityBadge");
+  if (prioEl) prioEl.innerText = "Priority: " + (t[13] || "Medium");
+
+  /* Stat cards */
+  var finalPgs = Number(t[10]) || 0;
+  var revPages = revs.reduce(function(s, r) { return s + (Number(r[7]) || 0); }, 0);
+  var rate     = Number(t[22]) || 0;
+  var cur      = t[23] || "";
+  var estAmt   = finalPgs * rate;
+
+  _set("vt_finalPages",   finalPgs.toLocaleString());
+  _set("vt_srcLangCount", (Number(t[9]) || 0) + " src × " + (Number(t[11]) || 0) + " langs");
+  _set("vt_revPages",     revPages.toLocaleString());
+  _set("vt_revCount",     revs.length + " revision" + (revs.length !== 1 ? "s" : ""));
+  _set("vt_estAmount",    rate > 0 ? (cur ? cur + " " : "") + estAmt.toLocaleString() : "—");
+  _set("vt_rateInfo",     rate > 0 ? (cur ? cur + " " : "") + rate + " /page" : "No rate set");
+  _set("vt_paymentStatus", t[24] || "Unpaid");
+
+  /* Task info card */
+  _set("vt_projectName", t[3] || "—");
+  _set("vt_projectId",   t[1] || "—");
+  _set("vt_client",      t[2] || "—");
+  _set("vt_taskType",    t[4] || "—");
+  _set("vt_language",    t[8] || "—");
+  _set("vt_priority",    t[13] || "Medium");
+
+  /* Assignment card */
+  _set("vt_workType",   t[5] || "In-House");
+  _set("vt_assignedTo", t[5] === "Vendor" ? "—" : (t[6] || "—"));
+  _set("vt_vendorName", t[5] === "Vendor" ? (t[7] || "—") : "—");
+  _set("vt_rate",       rate > 0 ? (cur ? cur + " " : "") + rate : "—");
+  _set("vt_currency",   cur || "—");
+
+  /* Timeline card */
+  _set("vt_startDate",     t[14] || "—");
+  _set("vt_deliveryDate",  t[15] || "—");
+  _set("vt_completedDate", t[16] || "—");
+  _set("vt_createdAt",     t[20] || "—");
+  _set("vt_updatedAt",     t[21] || "—");
+
+  /* Page breakdown */
+  _set("vt_sourcePages",  Number(t[9])  || 0);
+  _set("vt_langCount",    Number(t[11]) || 0);
+  _set("vt_finalPages2",  finalPgs.toLocaleString());
+  _set("vt_revPages2",    revPages.toLocaleString());
+
+  /* Links */
+  var slEl = document.getElementById("vt_sourceLink");
+  if (slEl) {
+    if (t[17]) {
+      slEl.innerHTML = '<a href="' + t[17] + '" target="_blank" class="text-blue-600 hover:underline break-all">' + t[17] + '</a>';
+    } else {
+      slEl.innerText = "—";
+    }
+  }
+  var dlEl = document.getElementById("vt_deliverableLink");
+  if (dlEl) {
+    if (t[18]) {
+      dlEl.innerHTML = '<a href="' + t[18] + '" target="_blank" class="text-blue-600 hover:underline break-all">' + t[18] + '</a>';
+    } else {
+      dlEl.innerText = "—";
+    }
+  }
+
+  _set("vt_notes", t[19] || "—");
+
+  /* Wire header buttons */
+  var editBtn = document.getElementById("vt_editBtn");
+  if (editBtn) editBtn.onclick = function() { loadPage("addTask", { editId: _vtCurrentTaskId }); };
+
+  var addRevBtn = document.getElementById("vt_addRevBtn");
+  if (addRevBtn) addRevBtn.onclick = function() { loadPage("addRevision", { projectId: _vtCurrentProjId }); };
+
+  var addRevBtn2 = document.getElementById("vt_addRevBtn2");
+  if (addRevBtn2) addRevBtn2.onclick = function() { loadPage("addRevision", { projectId: _vtCurrentProjId }); };
+
+  /* Revisions table */
+  _renderVtRevisions(revs);
+}
+
+function _renderVtRevisions(revs) {
+  var tbody   = document.getElementById("vt_revisionsTable");
+  var totalEl = document.getElementById("vt_revPageTotal");
+  if (!tbody) return;
+
+  var total = revs.reduce(function(s, r) { return s + (Number(r[7]) || 0); }, 0);
+  if (totalEl) totalEl.innerText = total.toLocaleString() + " pages";
+
+  if (!revs.length) {
+    tbody.innerHTML = '<tr><td colspan="9" class="py-10 text-center text-slate-400 text-sm">' +
+      '<div class="flex flex-col items-center gap-2">' +
+        '<span class="text-3xl">🔁</span>' +
+        '<p>No revisions linked to this task yet.</p>' +
+        '<button onclick="loadPage(\'addRevision\',{projectId:_vtCurrentProjId})" ' +
+          'class="mt-1 text-xs font-semibold text-purple-600 hover:underline">+ Add a revision</button>' +
+      '</div>' +
+    '</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = revs.map(function(r) {
+    var sc  = getStatusClass(r[11] || "Pending");
+    var wc  = getWorkClass(r[8]   || "In-House");
+    var who = r[8] === "Vendor" ? (r[10] || r[9] || "—") : (r[9] || "—");
+    var pc  = r[20] === "Paid" ? "bg-green-100 text-green-700" :
+              r[20] === "Partial" ? "bg-amber-100 text-amber-700" : "bg-red-50 text-red-500";
+    return '<tr>' +
+      '<td class="font-mono text-[11px] text-gray-400">' + r[0] + '</td>' +
+      '<td>' +
+        '<div class="text-sm font-semibold text-gray-700">' + (r[4] || "—") + '</div>' +
+        '<div class="text-xs text-gray-400">' + (r[5] || "—") + '</div>' +
+      '</td>' +
+      '<td><span class="badge bg-purple-100 text-purple-700">' + (r[6] || "—") + '</span></td>' +
+      '<td class="text-sm text-gray-700">' + who + '</td>' +
+      '<td><span class="badge ' + sc + '">' + (r[11] || "Pending") + '</span></td>' +
+      '<td class="text-center font-bold text-purple-600 text-sm">' + (Number(r[7]) || 0).toLocaleString() + '</td>' +
+      '<td class="text-xs text-gray-500">' + (r[12] || "—") + '</td>' +
+      '<td><span class="badge ' + pc + '">' + (r[20] || "Unpaid") + '</span></td>' +
+      '<td class="text-right">' +
+        '<div class="flex justify-end gap-1">' +
+          btnEdit(r[0],   "editRevisionFull") +
+          btnDelete(r[0], "_vtDeleteRevision") +
+        '</div>' +
+      '</td>' +
+    '</tr>';
+  }).join("");
+}
+
+function _vtDeleteRevision(id) {
+  customConfirm("Delete this revision? This cannot be undone.", function() {
+    showLoader("Deleting...");
+    google.script.run
+      .withFailureHandler(function(e) { hideLoader(); showToast("Delete failed: " + e.message, "error"); })
+      .withSuccessHandler(function() { hideLoader(); showToast("Revision deleted.", "warning"); loadTaskView(_vtCurrentTaskId); })
+      .deleteRevision(id);
+  }, true);
+}
+</script>

@@ -31,6 +31,22 @@ function getTaskById(id) {
   }
 }
 
+function getTaskWithRevisions(taskId) {
+  try {
+    var sh    = _sh(SH_TASKS);
+    var found = _findRow(sh, taskId);
+    if (!found) return null;
+    var task = _fmtRow(found.row);
+    var revisions = _sheetRows(SH_REVISIONS)
+      .filter(function(r) { return String(r[RC.TASK_ID]).trim() === String(taskId).trim(); })
+      .map(_fmtRow);
+    return { task: task, revisions: revisions };
+  } catch (e) {
+    console.error("getTaskWithRevisions:", e);
+    return null;
+  }
+}
+
 function getTasksByProjectId(projectId) {
   try {
     const pid = String(projectId).trim();
@@ -124,42 +140,48 @@ function updateTask(id, d) {
     const found = _findRow(sh, id);
     if (!found) throw new Error("Task not found: " + id);
     const now = new Date();
+    const r   = found.row;
 
-    /* Auto-calculate finalPages = sourcePages × langCount if not manually provided */
-    var srcPages  = Number(d.sourcePages) || 0;
-    var langCount = Number(d.langCount)   || 0;
-    var finalPgs  = Number(d.finalPages)  || 0;
-    if (langCount > 0 && (!d.finalPages || Number(d.finalPages) === 0)) {
+    /* Only recalculate finalPages if sourcePages or langCount was explicitly sent */
+    var srcPages  = ("sourcePages" in d) ? (Number(d.sourcePages) || 0) : (Number(r[TC.SOURCE_PAGES]) || 0);
+    var langCount = ("langCount"   in d) ? (Number(d.langCount)   || 0) : (Number(r[TC.LANG_COUNT])   || 0);
+    var finalPgs;
+    if ("finalPages" in d && d.finalPages !== "" && d.finalPages !== null) {
+      finalPgs = Number(d.finalPages) || 0;
+    } else if (("sourcePages" in d || "langCount" in d) && langCount > 0) {
       finalPgs = srcPages * langCount;
+    } else {
+      finalPgs = Number(r[TC.FINAL_PAGES]) || 0;
     }
 
     sh.getRange(found.index, 2, 1, 24).setValues([[
-      found.row[TC.PROJECT_ID],
-      d.clientName   || found.row[TC.CLIENT]        || "",
-      d.projectName  || found.row[TC.PROJECT_NAME]  || "",
-      d.taskType          || "Main DTP",
-      d.workType          || "In-House",
-      d.assignedTo        || "",
-      d.vendorName        || "",
-      d.language          || "",
+      r[TC.PROJECT_ID],
+      r[TC.CLIENT],
+      r[TC.PROJECT_NAME],
+      ("taskType"        in d) ? (d.taskType        || r[TC.TASK_TYPE])        : r[TC.TASK_TYPE],
+      ("workType"        in d) ? (d.workType        || r[TC.WORK_TYPE])        : r[TC.WORK_TYPE],
+      ("assignedTo"      in d) ? d.assignedTo                                  : r[TC.ASSIGNED_TO],
+      ("vendorName"      in d) ? d.vendorName                                  : r[TC.VENDOR_NAME],
+      ("language"        in d) ? d.language                                    : r[TC.LANGUAGE],
       srcPages,
       finalPgs,
       langCount,
-      d.status            || "Pending",
-      d.priority          || "Medium",
-      d.startDate         || found.row[TC.START_DATE] || now,
-      d.deliveryDate      || "",
-      d.completedDate     || "",
-      d.sourceLink        || "",
-      d.deliverableLink   || "",
-      d.notes             || "",
-      found.row[TC.CREATED_AT],
+      ("status"          in d) ? (d.status          || r[TC.STATUS])           : r[TC.STATUS],
+      ("priority"        in d) ? (d.priority        || r[TC.PRIORITY])         : r[TC.PRIORITY],
+      ("startDate"       in d) ? (d.startDate       || r[TC.START_DATE])       : r[TC.START_DATE],
+      ("deliveryDate"    in d) ? d.deliveryDate                                : r[TC.DELIVERY_DATE],
+      ("completedDate"   in d) ? d.completedDate                               : r[TC.COMPLETED_DATE],
+      ("sourceLink"      in d) ? d.sourceLink                                  : r[TC.SOURCE_LINK],
+      ("deliverableLink" in d) ? d.deliverableLink                             : r[TC.DELIVERABLE_LINK],
+      ("notes"           in d) ? d.notes                                       : r[TC.NOTES],
+      r[TC.CREATED_AT],
       now,
-      Number(d.ratePerPage)  || found.row[TC.RATE_PER_PAGE]  || 0,
-      d.currency             || found.row[TC.CURRENCY]        || "",
-      d.paymentStatus        || found.row[TC.PAYMENT_STATUS]  || "Unpaid"
+      ("ratePerPage"     in d) ? (Number(d.ratePerPage) || r[TC.RATE_PER_PAGE] || 0) : (Number(r[TC.RATE_PER_PAGE]) || 0),
+      ("currency"        in d) ? d.currency                                    : r[TC.CURRENCY],
+      ("paymentStatus"   in d) ? (d.paymentStatus   || r[TC.PAYMENT_STATUS])   : r[TC.PAYMENT_STATUS]
     ]]);
-    return { success: true };
+    /* Return the full updated row so the frontend can patch in-memory cache */
+    return { success: true, updated: _fmtRow(_findRow(sh, id).row) };
   } catch (e) {
     console.error("updateTask:", e);
     throw e;

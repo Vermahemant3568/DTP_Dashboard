@@ -28,10 +28,9 @@ function _renderProjectsTable(data) {
     var pc = r[9] === "Urgent" ? "bg-red-100 text-red-700" :
              r[9] === "High"   ? "bg-orange-100 text-orange-700" :
              r[9] === "Low"    ? "bg-gray-100 text-gray-500" : "bg-blue-100 text-blue-700";
-    /* r[15] = taskCount, r[16] = taskPages (appended by getProjectsWithTaskCount) */
     var taskCount = Number(r[15]) || 0;
     var taskPages = Number(r[16]) || 0;
-    return '<tr>' +
+    return '<tr data-id="' + r[0] + '">' +
       '<td class="font-mono text-[11px] text-gray-400">' + r[0] + '</td>' +
       '<td><div class="font-semibold text-gray-900 text-sm">' + (r[1] || "—") + '</div>' +
           '<div class="text-xs text-gray-500">' + (r[2] || "—") + '</div></td>' +
@@ -99,6 +98,9 @@ function deleteProjectById(id) {
   }, true);
 }
 
+/* ── snapshot of original values when project edit form loads ── */
+var _projOriginal = {};
+
 /* ── PROJECT FORM SUBMIT ── */
 (function() {
   var _projSubmitting = false;
@@ -108,7 +110,7 @@ function deleteProjectById(id) {
     if (_projSubmitting) return;
 
     var editId = document.getElementById("contentArea").dataset.editProjectId || "";
-    var d = {
+    var current = {
       clientName:      _val("proj_clientName"),
       projectName:     _val("proj_projectName"),
       coordinator:     _val("proj_coordinator"),
@@ -121,45 +123,71 @@ function deleteProjectById(id) {
       sourcePages:     _val("proj_sourcePages"),
       notes:           _val("proj_notes")
     };
-    if (!d.clientName || !d.projectName) { showToast("Client Name and Project Name are required.", "error"); return; }
+    if (!current.clientName || !current.projectName) { showToast("Client Name and Project Name are required.", "error"); return; }
 
     var btn   = document.getElementById("projSubmitBtn");
     var lblEl = document.getElementById("projSubmitLabel");
-    _projSubmitting = true;
-    btn.disabled = true;
-    if (lblEl) lblEl.innerText = "Saving...";
-    showLoader(editId ? "Updating project..." : "Creating project...");
 
     if (editId) {
+      /* Build diff — only send changed fields */
+      var diff = {};
+      Object.keys(current).forEach(function(k) {
+        if (String(current[k]) !== String(_projOriginal[k] !== undefined ? _projOriginal[k] : "")) {
+          diff[k] = current[k];
+        }
+      });
+      if (!Object.keys(diff).length) { showToast("No changes detected.", "info"); return; }
+      _projSubmitting = true;
+      btn.disabled = true;
+      if (lblEl) lblEl.innerText = "Saving...";
+      showLoader("Updating project...");
       google.script.run
         .withFailureHandler(function(er){ _projSubmitting=false; hideLoader(); btn.disabled=false; if(lblEl) lblEl.innerText="Update Project"; showToast("Error: "+er.message,"error"); })
-        .withSuccessHandler(function(){ _projSubmitting=false; hideLoader(); showToast("Project updated!","success"); loadPage("projects"); })
-        .updateProject(editId, d);
-    } else {
-      google.script.run
-        .withFailureHandler(function(er){ _projSubmitting=false; hideLoader(); btn.disabled=false; if(lblEl) lblEl.innerText="Register Project"; showToast("Error: "+er.message,"error"); })
         .withSuccessHandler(function(res){
           _projSubmitting=false;
           hideLoader();
-          /* Hide the form, show the success panel */
-          var form       = document.getElementById("projectForm");
-          var panel      = document.getElementById("proj_successPanel");
-          var nameEl     = document.getElementById("proj_successName");
-          var idEl       = document.getElementById("proj_successId");
-          var addTaskBtn = document.getElementById("proj_addTaskBtn");
-          if (form)  form.style.display  = "none";
-          if (panel) panel.style.display = "block";
-          if (nameEl) nameEl.innerText = d.projectName + " — " + d.clientName;
-          if (idEl)   idEl.innerText   = "Project ID: " + (res.id || "");
-          /* Wire the Add Task button to open AddTask pre-linked to this project */
-          if (addTaskBtn) {
-            addTaskBtn.onclick = function() {
-              loadPage("addTask", { projectId: res.id });
-            };
+          showToast("Project updated!","success");
+          /* Patch in-memory cache and re-render only the changed row */
+          if (res && res.updated) {
+            var idx = ALL_PROJECTS.findIndex(function(r){ return r[0]===editId; });
+            if (idx !== -1) {
+              /* Preserve appended taskCount/taskPages columns */
+              var tc = ALL_PROJECTS[idx][15];
+              var tp = ALL_PROJECTS[idx][16];
+              ALL_PROJECTS[idx] = res.updated;
+              ALL_PROJECTS[idx][15] = tc;
+              ALL_PROJECTS[idx][16] = tp;
+              _patchProjectRow(editId, ALL_PROJECTS[idx]);
+            }
           }
+          loadPage("projects");
         })
-        .addProject(d);
+        .updateProject(editId, diff);
+      return;
     }
+
+    /* ── NEW PROJECT ── */
+    _projSubmitting = true;
+    btn.disabled = true;
+    if (lblEl) lblEl.innerText = "Saving...";
+    showLoader("Creating project...");
+    google.script.run
+      .withFailureHandler(function(er){ _projSubmitting=false; hideLoader(); btn.disabled=false; if(lblEl) lblEl.innerText="Register Project"; showToast("Error: "+er.message,"error"); })
+      .withSuccessHandler(function(res){
+        _projSubmitting=false;
+        hideLoader();
+        var form       = document.getElementById("projectForm");
+        var panel      = document.getElementById("proj_successPanel");
+        var nameEl     = document.getElementById("proj_successName");
+        var idEl       = document.getElementById("proj_successId");
+        var addTaskBtn = document.getElementById("proj_addTaskBtn");
+        if (form)  form.style.display  = "none";
+        if (panel) panel.style.display = "block";
+        if (nameEl) nameEl.innerText = current.projectName + " — " + current.clientName;
+        if (idEl)   idEl.innerText   = "Project ID: " + (res.id || "");
+        if (addTaskBtn) addTaskBtn.onclick = function() { loadPage("addTask", { projectId: res.id }); };
+      })
+      .addProject(current);
   });
 })();
 
@@ -172,5 +200,22 @@ function _resetProjectForm() {
   var lblEl = document.getElementById("projSubmitLabel");
   if (btn)   btn.disabled = false;
   if (lblEl) lblEl.innerText = "Register Project";
+}
+
+/* Patch a single row in the projects table without full re-render */
+function _patchProjectRow(id, r) {
+  var row = document.querySelector('#projectsTable tr[data-id="' + id + '"]');
+  if (!row) return;
+  var sc = getStatusClass(r[10] || "Active");
+  var pc = r[9] === "Urgent" ? "bg-red-100 text-red-700" :
+           r[9] === "High"   ? "bg-orange-100 text-orange-700" :
+           r[9] === "Low"    ? "bg-gray-100 text-gray-500" : "bg-blue-100 text-blue-700";
+  var cells = row.cells;
+  if (!cells || cells.length < 9) return;
+  cells[1].innerHTML = '<div class="font-semibold text-gray-900 text-sm">' + (r[1]||"—") + '</div><div class="text-xs text-gray-500">' + (r[2]||"—") + '</div>';
+  cells[2].innerHTML = (r[4]||"—") + ' / ' + (r[5]||"—") + '<div class="text-gray-400">' + (r[6]||0) + ' langs</div>';
+  cells[3].textContent = r[3] || "—";
+  cells[4].innerHTML = '<span class="badge ' + pc + '">' + (r[9]||"Medium") + '</span>';
+  cells[5].innerHTML = '<span class="badge ' + sc + '">' + (r[10]||"Active") + '</span>';
 }
 </script>

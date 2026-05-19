@@ -43,7 +43,7 @@ function _renderTasksTable(data) {
     var sc  = getStatusClass(r[12] || "Pending");
     var tc  = getTaskClass(r[4]   || "Main DTP");
     var who = r[5]==="Vendor" ? (r[7]||r[6]||"—") : (r[6]||"—");
-    return '<tr>' +
+    return '<tr data-id="' + r[0] + '">' +
       '<td class="font-mono text-[11px] text-gray-400">' + r[0] + '</td>' +
       '<td><div class="font-semibold text-gray-900 text-sm">' + (r[3]||"—") + '</div>' +
           '<div class="text-xs text-gray-500">' + (r[2]||"—") + '</div></td>' +
@@ -55,6 +55,7 @@ function _renderTasksTable(data) {
       '<td class="text-xs text-gray-500">' + (r[15]||"—") + '</td>' +
       '<td class="text-right">' +
         '<div class="flex justify-end gap-1">' +
+          btnView(r[0],   "viewTaskById") +
           btnStatus(r[0], "openTaskQuickEdit") +
           btnEdit(r[0],   "editTaskFull") +
           btnDelete(r[0], "deleteTaskById") +
@@ -90,7 +91,31 @@ function openTaskQuickEdit(id) {
   document.getElementById("editModal").style.display    = "flex";
 }
 
+function viewTaskById(id) { loadPage("viewTask", { taskId: id }); }
+
 function editTaskFull(id) { loadPage("addTask",{editId:id}); }
+
+/* Patch a single row in the tasks table without full re-render */
+function _patchTaskRow(id, r) {
+  var row = document.querySelector('#tasksTable tr[data-id="' + id + '"]');
+  if (!row) return; /* row not visible (filtered out) — skip */
+  var sc  = getStatusClass(r[12] || "Pending");
+  var tc  = getTaskClass(r[4]   || "Main DTP");
+  var who = r[5]==="Vendor" ? (r[7]||r[6]||"—") : (r[6]||"—");
+  var cells = row.cells;
+  if (!cells || cells.length < 8) return;
+  cells[0].innerHTML = '<span class="font-mono text-[11px] text-gray-400">' + r[0] + '</span>';
+  cells[1].innerHTML = '<div class="font-semibold text-gray-900 text-sm">' + (r[3]||"—") + '</div><div class="text-xs text-gray-500">' + (r[2]||"—") + '</div>';
+  cells[2].innerHTML = '<span class="badge ' + tc + '">' + (r[4]||"—") + '</span>';
+  cells[3].textContent = r[8] || "—";
+  cells[4].textContent = who;
+  cells[5].innerHTML = '<span class="badge ' + sc + '">' + (r[12]||"Pending") + '</span>';
+  cells[6].textContent = Number(r[10]) || 0;
+  cells[7].textContent = r[15] || "—";
+}
+
+/* ── snapshot of original values when edit form loads ── */
+var _taskOriginal = {};
 
 function loadTaskForEdit(id) {
   showLoader("Loading task...");
@@ -128,7 +153,6 @@ function loadTaskForEdit(id) {
       _setVal("task_vendorName",t[7]);
       if (typeof _syncTaskAssignmentFields==="function") _syncTaskAssignmentFields();
       if (typeof onTaskTypeChange==="function") onTaskTypeChange();
-      /* For edit mode, just show the project ID as linked without re-lookup */
       _taskProjectLinked = true;
       _taskProjectIsNew  = false;
       var prev = document.getElementById("task_projectPreview");
@@ -138,6 +162,19 @@ function loadTaskForEdit(id) {
       _set("task_preview_name",   t[3] || "—");
       _set("task_preview_client", "Client: " + (t[2] || "—"));
       _set("task_preview_langs",  "Project ID: " + (t[1] || "—") + " · Language: " + (t[8] || "—"));
+      /* Snapshot original values for diff on submit */
+      var wtEl = document.querySelector('input[name="task_workType"]:checked');
+      _taskOriginal = {
+        taskType: t[4]||"Main DTP", workType: t[5]||"In-House",
+        assignedTo: t[6]||"", vendorName: t[7]||"", language: t[8]||"",
+        sourcePages: String(t[9]||""), langCount: String(t[11]||""),
+        finalPages: String(t[10]||""), status: t[12]||"Pending",
+        priority: t[13]||"Medium", startDate: formatForInput(t[14]),
+        deliveryDate: formatForInput(t[15]), completedDate: formatForInput(t[16]),
+        sourceLink: t[17]||"", deliverableLink: t[18]||"", notes: t[19]||"",
+        ratePerPage: String(t[22]||""), currency: t[23]||"",
+        paymentStatus: t[24]||"Unpaid"
+      };
     })
     .getTaskById(id);
 }
@@ -364,27 +401,27 @@ function _autoFillRateFromMember() {
   var sel = document.getElementById("task_assignedTo");
   if (!sel) return;
   var opt = sel.options[sel.selectedIndex];
-  var rate = opt ? (opt.getAttribute("data-rate") || "") : "";
-  var cur  = opt ? (opt.getAttribute("data-currency") || "") : "";
-  if (rate) _setVal("task_ratePerPage", rate);
-  if (cur)  _setVal("task_currency",    cur);
+  var rate = opt ? opt.getAttribute("data-rate") : null;
+  var cur  = opt ? opt.getAttribute("data-currency") : null;
+  if (rate !== null && rate !== "") _setVal("task_ratePerPage", rate);
+  if (cur  !== null && cur  !== "") _setVal("task_currency",    cur);
 }
 
 function _autoFillRateFromVendor() {
   var sel = document.getElementById("task_vendorName");
   if (!sel) return;
   var opt = sel.options[sel.selectedIndex];
-  var rate = opt ? (opt.getAttribute("data-rate") || "") : "";
-  var cur  = opt ? (opt.getAttribute("data-currency") || "") : "";
-  if (rate) _setVal("task_ratePerPage", rate);
-  if (cur)  _setVal("task_currency",    cur);
+  var rate = opt ? opt.getAttribute("data-rate") : null;
+  var cur  = opt ? opt.getAttribute("data-currency") : null;
+  if (rate !== null && rate !== "") _setVal("task_ratePerPage", rate);
+  if (cur  !== null && cur  !== "") _setVal("task_currency",    cur);
 }
 
 /* Show Assigned To for In-House, Vendor Name for Vendor */
 function _syncTaskAssignmentFields() {
   var wtEl = document.querySelector('input[name="task_workType"]:checked');
   var wt   = wtEl ? wtEl.value : "In-House";
-  var aRow = document.getElementById("task_assignedTo") && document.getElementById("task_assignedTo").closest("div");
+  var aRow = document.getElementById("task_assignedToRow");
   var vRow = document.getElementById("task_vendorRow");
   if (aRow) aRow.style.display = wt === "In-House" ? "" : "none";
   if (vRow) vRow.style.display = wt === "Vendor"   ? "" : "none";
@@ -435,14 +472,54 @@ var _taskSubmitting = false;
 
     /* ── EDIT MODE ── */
     if (editId) {
+      var wtEl2  = document.querySelector('input[name="task_workType"]:checked');
+      var wt2    = wtEl2 ? wtEl2.value : "In-House";
+      var current = {
+        taskType: _val("task_taskType"), workType: wt2,
+        assignedTo: _val("task_assignedTo"), vendorName: _val("task_vendorName"),
+        language: _val("task_language"), sourcePages: _val("task_sourcePages"),
+        langCount: _val("task_langCount"), finalPages: _val("task_finalPages"),
+        status: _val("task_status"), priority: _val("task_priority"),
+        startDate: _val("task_startDate"), deliveryDate: _val("task_deliveryDate"),
+        completedDate: _val("task_completedDate"), sourceLink: _val("task_sourceLink"),
+        deliverableLink: _val("task_deliverableLink"), notes: _val("task_notes"),
+        ratePerPage: _val("task_ratePerPage"), currency: _val("task_currency"),
+        paymentStatus: _val("task_paymentStatus") || "Unpaid"
+      };
+      /* Build diff — only send fields that actually changed */
+      var diff = {};
+      Object.keys(current).forEach(function(k) {
+        if (String(current[k]) !== String(_taskOriginal[k] !== undefined ? _taskOriginal[k] : "")) {
+          diff[k] = current[k];
+        }
+      });
+      if (!Object.keys(diff).length) {
+        showToast("No changes detected.", "info");
+        return;
+      }
+      if (!current.taskType) { showToast("Task Type is required.", "error"); return; }
       _taskSubmitting = true;
       btn.disabled = true;
       if (lblEl) lblEl.innerText = "Saving...";
       showLoader("Updating task...");
       google.script.run
         .withFailureHandler(function(er){ _taskSubmitting=false; hideLoader(); btn.disabled=false; if(lblEl) lblEl.innerText="Update Task"; showToast("Error: "+er.message,"error"); })
-        .withSuccessHandler(function(){ _taskSubmitting=false; hideLoader(); showToast("Task updated!","success"); loadPage("tasks"); })
-        .updateTask(editId, taskData);
+        .withSuccessHandler(function(res){
+          _taskSubmitting=false;
+          hideLoader();
+          showToast("Task updated!","success");
+          /* Patch in-memory cache and re-render only the changed row + stats */
+          if (res && res.updated) {
+            var idx = ALL_TASKS.findIndex(function(r){ return r[0]===editId; });
+            if (idx !== -1) {
+              ALL_TASKS[idx] = res.updated;
+              _patchTaskRow(editId, res.updated);
+              _renderTaskStats(ALL_TASKS);
+            }
+          }
+          loadPage("tasks");
+        })
+        .updateTask(editId, diff);
       return;
     }
 

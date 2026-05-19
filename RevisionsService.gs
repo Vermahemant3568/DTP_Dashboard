@@ -122,30 +122,32 @@ function updateRevision(id, d) {
     var found = _findRow(sh, id);
     if (!found) throw new Error("Revision not found: " + id);
     var now = new Date();
+    var r   = found.row;
 
     sh.getRange(found.index, 2, 1, 20).setValues([[
-      found.row[RC.PROJECT_ID],
-      found.row[RC.TASK_ID],
-      found.row[RC.PROJECT_NAME],
-      d.revisionNumber  || found.row[RC.REV_NUMBER] || "",
-      d.revisionType    || "Client Feedback",
-      d.language        || "",
-      Number(d.revisionPages) || 0,
-      d.workType        || "In-House",
-      d.assignedTo      || "",
-      d.vendorName      || "",
-      d.status          || "Pending",
-      d.revisionDate    || "",
-      d.deliveryDate    || "",
-      d.completedDate   || "",
-      d.notes           || "",
-      found.row[RC.CREATED_AT],
+      r[RC.PROJECT_ID],
+      r[RC.TASK_ID],
+      r[RC.PROJECT_NAME],
+      ("revisionNumber" in d) ? (d.revisionNumber || r[RC.REV_NUMBER])      : r[RC.REV_NUMBER],
+      ("revisionType"   in d) ? (d.revisionType   || r[RC.REV_TYPE])        : r[RC.REV_TYPE],
+      ("language"       in d) ? d.language                                  : r[RC.LANGUAGE],
+      ("revisionPages"  in d) ? (Number(d.revisionPages) || 0)              : (Number(r[RC.REV_PAGES]) || 0),
+      ("workType"       in d) ? (d.workType        || r[RC.WORK_TYPE])      : r[RC.WORK_TYPE],
+      ("assignedTo"     in d) ? d.assignedTo                                : r[RC.ASSIGNED_TO],
+      ("vendorName"     in d) ? d.vendorName                                : r[RC.VENDOR_NAME],
+      ("status"         in d) ? (d.status          || r[RC.STATUS])         : r[RC.STATUS],
+      ("revisionDate"   in d) ? d.revisionDate                              : r[RC.REV_DATE],
+      ("deliveryDate"   in d) ? d.deliveryDate                              : r[RC.DELIVERY_DATE],
+      ("completedDate"  in d) ? d.completedDate                             : r[RC.COMPLETED_DATE],
+      ("notes"          in d) ? d.notes                                     : r[RC.NOTES],
+      r[RC.CREATED_AT],
       now,
-      Number(d.ratePerPage)  || found.row[RC.RATE_PER_PAGE]  || 0,
-      d.currency             || found.row[RC.CURRENCY]        || "",
-      d.paymentStatus        || found.row[RC.PAYMENT_STATUS]  || "Unpaid"
+      ("ratePerPage"    in d) ? (Number(d.ratePerPage) || r[RC.RATE_PER_PAGE] || 0) : (Number(r[RC.RATE_PER_PAGE]) || 0),
+      ("currency"       in d) ? d.currency                                  : r[RC.CURRENCY],
+      ("paymentStatus"  in d) ? (d.paymentStatus   || r[RC.PAYMENT_STATUS]) : r[RC.PAYMENT_STATUS]
     ]]);
-    return { success: true };
+    /* Return the full updated row so the frontend can patch in-memory cache */
+    return { success: true, updated: _fmtRow(_findRow(sh, id).row) };
   } catch (e) {
     console.error("updateRevision:", e);
     throw e;

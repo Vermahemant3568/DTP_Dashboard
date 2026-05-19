@@ -91,6 +91,16 @@ function editCurrentProject() {
           _setVal("proj_status",          p[10]);
           _setVal("proj_receivedDate",    formatForInput(p[11]));
           _setVal("proj_notes",           p[12]);
+          /* Snapshot for diff */
+          if (typeof _projOriginal !== "undefined") {
+            _projOriginal = {
+              clientName: p[1]||"", projectName: p[2]||"", coordinator: p[3]||"",
+              sourceLanguage: p[4]||"", targetLanguages: p[5]||"",
+              langCount: String(p[6]||""), sourcePages: String(p[7]||""),
+              priority: p[9]||"Medium", status: p[10]||"Active",
+              receivedDate: formatForInput(p[11]), notes: p[12]||""
+            };
+          }
           hideLoader();
         })
         .loadPageFile("AddProject");
@@ -138,6 +148,7 @@ function _renderVpTasks(tasks) {
       '<td class="text-xs text-gray-500">' + (r[15] || "—") + '</td>' +
       '<td class="text-right">' +
         '<div class="flex justify-end gap-1">' +
+          btnView(r[0], "viewTaskById") +
           btnEdit(r[0], "editTaskFull") +
           btnDelete(r[0], "_vpDeleteTask") +
         '</div>' +

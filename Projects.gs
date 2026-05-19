@@ -99,23 +99,24 @@ function updateProject(id, d) {
     }
 
     const now = new Date();
+    const r   = found.row;
     sh.getRange(found.index, 2, 1, 14).setValues([[
-      d.clientName      || "",
-      d.projectName     || "",
-      d.coordinator     || "",
-      d.sourceLanguage  !== undefined && d.sourceLanguage !== "" ? d.sourceLanguage  : (found.row[PC.SOURCE_LANG]  || ""),
-      d.targetLanguages !== undefined && d.targetLanguages !== "" ? d.targetLanguages : (found.row[PC.TARGET_LANGS] || ""),
-      d.langCount   !== undefined && d.langCount   !== "" ? Number(d.langCount)   : (found.row[PC.LANG_COUNT]   || 0),
-      d.sourcePages !== undefined && d.sourcePages !== "" ? Number(d.sourcePages) : (found.row[PC.SOURCE_PAGES] || 0),
-      found.row[PC.WORD_COUNT] || 0,
-      d.priority        || "Medium",
-      d.status          || "Active",
-      d.receivedDate    || "",
-      d.notes           !== undefined ? d.notes : (found.row[PC.NOTES] || ""),
-      found.row[PC.CREATED_AT],
+      ("clientName"      in d) ? (d.clientName      || r[PC.CLIENT])        : r[PC.CLIENT],
+      ("projectName"     in d) ? (d.projectName     || r[PC.PROJECT_NAME])  : r[PC.PROJECT_NAME],
+      ("coordinator"     in d) ? d.coordinator                              : r[PC.COORDINATOR],
+      ("sourceLanguage"  in d) ? d.sourceLanguage                           : r[PC.SOURCE_LANG],
+      ("targetLanguages" in d) ? d.targetLanguages                          : r[PC.TARGET_LANGS],
+      ("langCount"       in d) ? (Number(d.langCount)   || 0)               : (Number(r[PC.LANG_COUNT])   || 0),
+      ("sourcePages"     in d) ? (Number(d.sourcePages) || 0)               : (Number(r[PC.SOURCE_PAGES]) || 0),
+      r[PC.WORD_COUNT] || 0,
+      ("priority"        in d) ? (d.priority        || r[PC.PRIORITY])      : r[PC.PRIORITY],
+      ("status"          in d) ? (d.status          || r[PC.STATUS])        : r[PC.STATUS],
+      ("receivedDate"    in d) ? d.receivedDate                             : r[PC.RECEIVED_DATE],
+      ("notes"           in d) ? d.notes                                    : r[PC.NOTES],
+      r[PC.CREATED_AT],
       now
     ]]);
-    return { success: true };
+    return { success: true, updated: _fmtRow(_findRow(sh, id).row) };
   } catch (e) {
     console.error("updateProject:", e);
     throw e;

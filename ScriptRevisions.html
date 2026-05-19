@@ -41,7 +41,7 @@ function _renderRevisionsTable(data) {
     var taskCell = r[2]
       ? '<span class="font-mono text-[10px] text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">' + r[2] + '</span>'
       : '<span class="text-slate-300 text-xs">—</span>';
-    return '<tr>' +
+    return '<tr data-id="' + r[0] + '">' +
       '<td class="font-mono text-[11px] text-gray-400">' + r[0] + '</td>' +
       '<td><div class="font-semibold text-gray-900 text-sm">' + (r[3]||r[1]||"—") + '</div>' +
           '<div class="font-mono text-[10px] text-gray-400">' + r[1] + '</div></td>' +
@@ -96,6 +96,9 @@ function editRevisionFull(id) { loadPage("addRevision", { editId: id }); }
 /* ================================================================
    LOAD FOR EDIT — called from _initAddRevisionForm when editId present
 ================================================================ */
+/* ── snapshot of original values when edit form loads ── */
+var _revOriginal = {};
+
 function loadRevisionForEdit(id) {
   showLoader("Loading revision...");
   google.script.run
@@ -167,6 +170,17 @@ function loadRevisionForEdit(id) {
       _setVal("rev_vendorName", r[10]);
       if (typeof _syncRevAssignmentFields === "function") _syncRevAssignmentFields();
       _updateRevEstimate();
+      /* Snapshot original values for diff on submit */
+      var wtEl2 = document.querySelector('input[name="rev_workType"]:checked');
+      _revOriginal = {
+        revisionNumber: r[4]||"", revisionType: r[5]||"Client Feedback",
+        language: r[6]||"", revisionPages: String(r[7]||""),
+        workType: r[8]||"In-House", assignedTo: r[9]||"", vendorName: r[10]||"",
+        status: r[11]||"Pending", revisionDate: formatForInput(r[12]),
+        deliveryDate: formatForInput(r[13]), notes: r[15]||"",
+        ratePerPage: String(r[18]||""), currency: r[19]||"",
+        paymentStatus: r[20]||"Unpaid"
+      };
     })
     .getRevisionById(id);
 }
@@ -181,6 +195,24 @@ function deleteRevisionById(id) {
   }, true);
 }
 
+/* Patch a single row in the revisions table without full re-render */
+function _patchRevisionRow(id, r) {
+  var row = document.querySelector('#revisionsTable tr[data-id="' + id + '"]');
+  if (!row) return;
+  var sc  = getStatusClass(r[11]||"Pending");
+  var wc  = getWorkClass(r[8]||"In-House");
+  var who = r[8]==="Vendor" ? (r[10]||r[9]||"—") : (r[9]||"—");
+  var cells = row.cells;
+  if (!cells || cells.length < 10) return;
+  cells[3].innerHTML = '<div class="text-sm font-semibold text-gray-700">' + (r[4]||"—") + '</div><div class="text-xs text-gray-400">' + (r[5]||"—") + '</div>';
+  cells[4].innerHTML = '<span class="badge bg-purple-100 text-purple-700">' + (r[6]||"—") + '</span>';
+  cells[5].textContent = who;
+  cells[6].innerHTML = '<span class="badge ' + wc + '">' + (r[8]||"In-House") + '</span>';
+  cells[7].innerHTML = '<span class="badge ' + sc + '">' + (r[11]||"Pending") + '</span>';
+  cells[8].textContent = Number(r[7]) || 0;
+  cells[9].textContent = r[12] || "—";
+}
+
 /* ================================================================
    STATE
 ================================================================ */
@@ -188,6 +220,7 @@ var _revProjectLinked = false;
 var _revTaskLinked    = false;
 var _revLinkedTaskId  = "";
 var _revSearchTimer   = null;
+var _revTaskCache     = [];  /* stores loaded tasks so onclick can reference by index */
 
 /* ================================================================
    PROJECT SEARCH & LOOKUP
@@ -302,13 +335,15 @@ function _loadRevTasksForProject(projectId) {
         return;
       }
       if (listEl) {
+        _revTaskCache = tasks;
         listEl.style.display = "block";
-        listEl.innerHTML = tasks.map(function(t) {
+        listEl.innerHTML = tasks.map(function(t, idx) {
           var who = t[5]==="Vendor" ? (t[7]||"—") : (t[6]||"—");
-          var rateStr = t[22] ? (t[23]||"")+" "+Number(t[22]).toLocaleString()+"/pg" : "No rate";
+          var rateStr = (t[22] !== "" && t[22] !== null && t[22] !== undefined && Number(t[22]) > 0)
+            ? (t[23]||"")+" "+Number(t[22]).toLocaleString()+"/pg" : "No rate";
           var sc = getStatusClass(t[12]||"Pending");
           var tc = getTaskClass(t[4]||"Main DTP");
-          return '<button type="button" onclick="_selectRevTask(' + JSON.stringify(t) + ')"' +
+          return '<button type="button" onclick="_selectRevTask(' + idx + ')"' +
             ' class="w-full text-left p-3 rounded-xl border-2 border-gray-100 hover:border-blue-400 hover:bg-blue-50 transition-all">' +
             '<div class="flex items-center justify-between gap-2 flex-wrap">' +
               '<div class="flex items-center gap-2">' +
@@ -330,7 +365,9 @@ function _loadRevTasksForProject(projectId) {
     .getTasksByProjectId(projectId);
 }
 
-function _selectRevTask(t) {
+function _selectRevTask(idxOrObj) {
+  var t = (typeof idxOrObj === "number") ? _revTaskCache[idxOrObj] : idxOrObj;
+  if (!t) { showToast("Task data not found.", "error"); return; }
   _revTaskLinked   = true;
   _revLinkedTaskId = t[0];
 
@@ -469,10 +506,10 @@ function _autoFillRevRateFromMember() {
   var sel = document.getElementById("rev_assignedTo");
   if (!sel) return;
   var opt = sel.options[sel.selectedIndex];
-  var rate = opt ? (opt.getAttribute("data-rate")||"") : "";
-  var cur  = opt ? (opt.getAttribute("data-currency")||"") : "";
-  if (rate) _setVal("rev_ratePerPage", rate);
-  if (cur)  _setVal("rev_currency",    cur);
+  var rate = opt ? opt.getAttribute("data-rate") : null;
+  var cur  = opt ? opt.getAttribute("data-currency") : null;
+  if (rate !== null && rate !== "") _setVal("rev_ratePerPage", rate);
+  if (cur  !== null && cur  !== "") _setVal("rev_currency",    cur);
   _updateRevEstimate();
 }
 
@@ -480,18 +517,17 @@ function _autoFillRevRateFromVendor() {
   var sel = document.getElementById("rev_vendorName");
   if (!sel) return;
   var opt = sel.options[sel.selectedIndex];
-  var rate = opt ? (opt.getAttribute("data-rate")||"") : "";
-  var cur  = opt ? (opt.getAttribute("data-currency")||"") : "";
-  if (rate) _setVal("rev_ratePerPage", rate);
-  if (cur)  _setVal("rev_currency",    cur);
+  var rate = opt ? opt.getAttribute("data-rate") : null;
+  var cur  = opt ? opt.getAttribute("data-currency") : null;
+  if (rate !== null && rate !== "") _setVal("rev_ratePerPage", rate);
+  if (cur  !== null && cur  !== "") _setVal("rev_currency",    cur);
   _updateRevEstimate();
 }
 
 function _syncRevAssignmentFields() {
   var wtEl = document.querySelector('input[name="rev_workType"]:checked');
   var wt   = wtEl ? wtEl.value : "In-House";
-  var aEl  = document.getElementById("rev_assignedTo");
-  var aRow = aEl && aEl.closest("div");
+  var aRow = document.getElementById("rev_assignedToRow");
   var vRow = document.getElementById("rev_vendorRow");
   if (aRow) aRow.style.display = wt === "In-House" ? "" : "none";
   if (vRow) vRow.style.display = wt === "Vendor"   ? "" : "none";
@@ -547,10 +583,45 @@ function _syncRevAssignmentFields() {
     showLoader("Saving revision...");
 
     if (editId) {
+      var wtEl2 = document.querySelector('input[name="rev_workType"]:checked');
+      var wt2   = wtEl2 ? wtEl2.value : "In-House";
+      var current = {
+        revisionNumber: _val("rev_revisionNumber"), revisionType: _val("rev_revisionType"),
+        language: _val("rev_language"), revisionPages: _val("rev_pages"),
+        workType: wt2, assignedTo: _val("rev_assignedTo"), vendorName: _val("rev_vendorName"),
+        status: _val("rev_status"), revisionDate: _val("rev_revisionDate"),
+        deliveryDate: _val("rev_deliveryDate"), notes: _val("rev_notes"),
+        ratePerPage: _val("rev_ratePerPage"), currency: _val("rev_currency"),
+        paymentStatus: _val("rev_paymentStatus") || "Unpaid"
+      };
+      var diff = {};
+      Object.keys(current).forEach(function(k) {
+        if (String(current[k]) !== String(_revOriginal[k] !== undefined ? _revOriginal[k] : "")) {
+          diff[k] = current[k];
+        }
+      });
+      if (!Object.keys(diff).length) { showToast("No changes detected.", "info"); return; }
+      _revSubmitting = true;
+      btn.disabled = true;
+      if (lblEl) lblEl.innerText = "Saving...";
+      showLoader("Updating revision...");
       google.script.run
         .withFailureHandler(function(er){ _revSubmitting=false; hideLoader(); btn.disabled=false; if(lblEl) lblEl.innerText="Update Revision"; showToast("Error: "+er.message,"error"); })
-        .withSuccessHandler(function(){ _revSubmitting=false; hideLoader(); showToast("Revision updated!","success"); loadPage("revisions"); })
-        .updateRevision(editId, d);
+        .withSuccessHandler(function(res){
+          _revSubmitting=false;
+          hideLoader();
+          showToast("Revision updated!","success");
+          if (res && res.updated) {
+            var idx = ALL_REVISIONS.findIndex(function(r){ return r[0]===editId; });
+            if (idx !== -1) {
+              ALL_REVISIONS[idx] = res.updated;
+              _patchRevisionRow(editId, res.updated);
+              _renderRevStats(ALL_REVISIONS);
+            }
+          }
+          loadPage("revisions");
+        })
+        .updateRevision(editId, diff);
     } else {
       google.script.run
         .withFailureHandler(function(er){ _revSubmitting=false; hideLoader(); btn.disabled=false; if(lblEl) lblEl.innerText="Save Revision"; showToast("Error: "+er.message,"error"); })

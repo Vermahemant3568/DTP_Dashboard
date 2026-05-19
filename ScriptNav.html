@@ -11,6 +11,7 @@ var PAGE_MAP = {
   viewProject: "ViewProject",
   addTask:     "AddTask",
   tasks:       "ManageTasks",
+  viewTask:    "ViewTask",
   revisions:   "Revisions",
   addRevision: "AddRevision",
   vendors:     "Vendors",
@@ -79,6 +80,10 @@ function _initPage(page, ctx) {
       break;
     case "viewProject":
       if (ctx && typeof renderViewProject === "function") renderViewProject(ctx);
+      else hideLoader();
+      break;
+    case "viewTask":
+      if (ctx && ctx.taskId && typeof loadTaskView === "function") loadTaskView(ctx.taskId);
       else hideLoader();
       break;
     case "addTask":
@@ -237,20 +242,42 @@ function saveQuickEdit() {
   if (editType === "project") {
     google.script.run
       .withFailureHandler(function(e) { hideLoader(); showToast("Update failed: " + e.message, "error"); })
-      .withSuccessHandler(function() { hideLoader(); closeEditModal(); showToast("Status updated!", "success"); if (typeof loadProjects === "function") loadProjects(); })
+      .withSuccessHandler(function() {
+        hideLoader(); closeEditModal(); showToast("Status updated!", "success");
+        /* Patch in-memory + DOM */
+        var idx = ALL_PROJECTS.findIndex(function(r){ return r[0]===id; });
+        if (idx !== -1) {
+          ALL_PROJECTS[idx][10] = status;
+          _patchProjectRow(id, ALL_PROJECTS[idx]);
+        } else if (typeof loadProjects === "function") { loadProjects(); }
+      })
       .updateProjectStatus(id, status);
   } else if (editType === "revision") {
     google.script.run
       .withFailureHandler(function(e) { hideLoader(); showToast("Update failed: " + e.message, "error"); })
-      .withSuccessHandler(function() { hideLoader(); closeEditModal(); showToast("Revision updated!", "success"); if (typeof loadRevisions === "function") loadRevisions(); })
+      .withSuccessHandler(function() {
+        hideLoader(); closeEditModal(); showToast("Revision updated!", "success");
+        var idx = ALL_REVISIONS.findIndex(function(r){ return r[0]===id; });
+        if (idx !== -1) {
+          ALL_REVISIONS[idx][11] = status;
+          if (delivery) ALL_REVISIONS[idx][13] = delivery;
+          _patchRevisionRow(id, ALL_REVISIONS[idx]);
+          _renderRevStats(ALL_REVISIONS);
+        } else if (typeof loadRevisions === "function") { loadRevisions(); }
+      })
       .updateRevisionStatus(id, status, delivery);
   } else {
     google.script.run
       .withFailureHandler(function(e) { hideLoader(); showToast("Update failed: " + e.message, "error"); })
       .withSuccessHandler(function() {
         hideLoader(); closeEditModal(); showToast("Task updated!", "success");
-        if (_activePage === "tasks"    && typeof loadTasks    === "function") loadTasks();
-        if (_activePage === "projects" && typeof loadProjects === "function") loadProjects();
+        var idx = ALL_TASKS.findIndex(function(r){ return r[0]===id; });
+        if (idx !== -1) {
+          ALL_TASKS[idx][12] = status;
+          if (delivery) ALL_TASKS[idx][15] = delivery;
+          _patchTaskRow(id, ALL_TASKS[idx]);
+          _renderTaskStats(ALL_TASKS);
+        } else if (typeof loadTasks === "function") { loadTasks(); }
       })
       .updateTaskStatus(id, status, delivery);
   }
@@ -268,6 +295,7 @@ function handleRefresh() {
     revisions:  function() { if (typeof loadRevisions === "function") loadRevisions(); },
     vendors:    function() { if (typeof loadVendors   === "function") loadVendors(); },
     team:       function() { if (typeof loadTeam      === "function") loadTeam(); },
+    viewTask:   function() { if (typeof loadTaskView === "function" && _vtCurrentTaskId) loadTaskView(_vtCurrentTaskId); },
     vendorView: function() { if (typeof _vvFetch      === "function") _vvFetch(); },
     memberView: function() { if (typeof _mvFetch      === "function") _mvFetch(); }
   };

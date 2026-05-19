@@ -1,0 +1,246 @@
+<div class="space-y-6 page-enter">
+
+  <!-- HEADER -->
+  <div class="flex items-start justify-between gap-4">
+    <div class="flex items-center gap-3">
+      <button onclick="loadPage('tasks')" class="p-2 rounded-xl hover:bg-gray-100 text-gray-500 transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+      </button>
+      <div>
+        <h2 id="vt_taskId" class="text-xs font-mono text-gray-400">—</h2>
+        <h1 id="vt_title" class="text-2xl font-bold text-gray-800 mt-0.5">Task Details</h1>
+        <div class="flex items-center gap-2 mt-2 flex-wrap">
+          <span id="vt_statusBadge" class="badge">—</span>
+          <span id="vt_typeBadge"   class="badge">—</span>
+          <span id="vt_workBadge"   class="badge">—</span>
+          <span id="vt_priorityBadge" class="badge bg-gray-100 text-gray-600">—</span>
+        </div>
+      </div>
+    </div>
+    <div class="flex flex-wrap gap-2 shrink-0">
+      <button id="vt_editBtn"
+        class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-xl hover:bg-amber-100 transition-colors">
+        ✏️ Edit Task
+      </button>
+      <button id="vt_addRevBtn"
+        class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-purple-700 bg-purple-50 border border-purple-200 rounded-xl hover:bg-purple-100 transition-colors">
+        🔁 Add Revision
+      </button>
+    </div>
+  </div>
+
+  <!-- STAT CARDS -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="stat-card border-l-4 border-l-blue-500">
+      <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Final Pages</p>
+      <p id="vt_finalPages" class="text-3xl font-black text-blue-600 mt-1">—</p>
+      <p id="vt_srcLangCount" class="text-xs text-slate-400 mt-1">— src × — langs</p>
+    </div>
+    <div class="stat-card border-l-4 border-l-purple-500">
+      <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Revision Pages</p>
+      <p id="vt_revPages" class="text-3xl font-black text-purple-600 mt-1">—</p>
+      <p id="vt_revCount" class="text-xs text-slate-400 mt-1">— revisions</p>
+    </div>
+    <div class="stat-card border-l-4 border-l-emerald-500">
+      <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Est. Amount</p>
+      <p id="vt_estAmount" class="text-3xl font-black text-emerald-600 mt-1">—</p>
+      <p id="vt_rateInfo" class="text-xs text-slate-400 mt-1">— /page</p>
+    </div>
+    <div class="stat-card border-l-4 border-l-amber-500">
+      <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Payment</p>
+      <p id="vt_paymentStatus" class="text-3xl font-black text-amber-500 mt-1">—</p>
+      <p id="vt_paymentSub" class="text-xs text-slate-400 mt-1">payment status</p>
+    </div>
+  </div>
+
+  <!-- DETAIL CARDS ROW -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+
+    <!-- Task Info -->
+    <div class="section-card">
+      <div class="section-header border-l-blue-500 bg-blue-50">
+        <h3 class="text-sm font-semibold text-blue-700">Task Information</h3>
+      </div>
+      <div class="section-body">
+        <dl class="space-y-3">
+          <div>
+            <dt class="text-xs text-gray-400">Project</dt>
+            <dd id="vt_projectName" class="text-sm font-semibold text-gray-900 mt-0.5">—</dd>
+            <dd id="vt_projectId"   class="text-xs font-mono text-gray-400 mt-0.5">—</dd>
+          </div>
+          <div>
+            <dt class="text-xs text-gray-400">Client</dt>
+            <dd id="vt_client" class="text-sm font-medium text-gray-900 mt-0.5">—</dd>
+          </div>
+          <div>
+            <dt class="text-xs text-gray-400">Task Type</dt>
+            <dd id="vt_taskType" class="text-sm font-medium text-gray-900 mt-0.5">—</dd>
+          </div>
+          <div>
+            <dt class="text-xs text-gray-400">Language</dt>
+            <dd id="vt_language" class="text-sm font-medium text-gray-900 mt-0.5">—</dd>
+          </div>
+          <div>
+            <dt class="text-xs text-gray-400">Priority</dt>
+            <dd id="vt_priority" class="text-sm font-medium text-gray-900 mt-0.5">—</dd>
+          </div>
+        </dl>
+      </div>
+    </div>
+
+    <!-- Assignment & Rate -->
+    <div class="section-card">
+      <div class="section-header border-l-indigo-500 bg-indigo-50">
+        <h3 class="text-sm font-semibold text-indigo-700">Assignment & Rate</h3>
+      </div>
+      <div class="section-body">
+        <dl class="space-y-3">
+          <div>
+            <dt class="text-xs text-gray-400">Work Type</dt>
+            <dd id="vt_workType" class="text-sm font-medium text-gray-900 mt-0.5">—</dd>
+          </div>
+          <div>
+            <dt class="text-xs text-gray-400">Assigned To</dt>
+            <dd id="vt_assignedTo" class="text-sm font-medium text-gray-900 mt-0.5">—</dd>
+          </div>
+          <div>
+            <dt class="text-xs text-gray-400">Vendor</dt>
+            <dd id="vt_vendorName" class="text-sm font-medium text-gray-900 mt-0.5">—</dd>
+          </div>
+          <div>
+            <dt class="text-xs text-gray-400">Rate Per Page</dt>
+            <dd id="vt_rate" class="text-sm font-semibold text-emerald-700 mt-0.5">—</dd>
+          </div>
+          <div>
+            <dt class="text-xs text-gray-400">Currency</dt>
+            <dd id="vt_currency" class="text-sm font-medium text-gray-900 mt-0.5">—</dd>
+          </div>
+        </dl>
+      </div>
+    </div>
+
+    <!-- Timeline -->
+    <div class="section-card">
+      <div class="section-header border-l-green-500 bg-green-50">
+        <h3 class="text-sm font-semibold text-green-700">Timeline</h3>
+      </div>
+      <div class="section-body">
+        <dl class="space-y-3">
+          <div>
+            <dt class="text-xs text-gray-400">Start Date</dt>
+            <dd id="vt_startDate" class="text-sm font-medium text-gray-900 mt-0.5">—</dd>
+          </div>
+          <div>
+            <dt class="text-xs text-gray-400">Delivery Date</dt>
+            <dd id="vt_deliveryDate" class="text-sm font-medium text-gray-900 mt-0.5">—</dd>
+          </div>
+          <div>
+            <dt class="text-xs text-gray-400">Completed Date</dt>
+            <dd id="vt_completedDate" class="text-sm font-medium text-gray-900 mt-0.5">—</dd>
+          </div>
+          <div>
+            <dt class="text-xs text-gray-400">Created At</dt>
+            <dd id="vt_createdAt" class="text-xs text-gray-400 mt-0.5">—</dd>
+          </div>
+          <div>
+            <dt class="text-xs text-gray-400">Updated At</dt>
+            <dd id="vt_updatedAt" class="text-xs text-gray-400 mt-0.5">—</dd>
+          </div>
+        </dl>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- PAGES BREAKDOWN -->
+  <div class="section-card">
+    <div class="section-header border-l-purple-500 bg-purple-50">
+      <h3 class="text-sm font-semibold text-purple-700">Page Breakdown</h3>
+    </div>
+    <div class="section-body">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+        <div class="p-3 bg-gray-50 rounded-xl">
+          <p class="text-xs text-gray-400 font-semibold uppercase tracking-wide">Source Pages</p>
+          <p id="vt_sourcePages" class="text-2xl font-black text-gray-700 mt-1">—</p>
+        </div>
+        <div class="p-3 bg-gray-50 rounded-xl">
+          <p class="text-xs text-gray-400 font-semibold uppercase tracking-wide">Languages</p>
+          <p id="vt_langCount" class="text-2xl font-black text-gray-700 mt-1">—</p>
+        </div>
+        <div class="p-3 bg-blue-50 rounded-xl">
+          <p class="text-xs text-blue-500 font-semibold uppercase tracking-wide">Final Pages</p>
+          <p id="vt_finalPages2" class="text-2xl font-black text-blue-700 mt-1">—</p>
+        </div>
+        <div class="p-3 bg-purple-50 rounded-xl">
+          <p class="text-xs text-purple-500 font-semibold uppercase tracking-wide">Revision Pages</p>
+          <p id="vt_revPages2" class="text-2xl font-black text-purple-700 mt-1">—</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LINKS & NOTES -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+    <div class="section-card">
+      <div class="section-header border-l-gray-400 bg-gray-50">
+        <h3 class="text-sm font-semibold text-gray-700">File Links</h3>
+      </div>
+      <div class="section-body space-y-3">
+        <div>
+          <p class="text-xs text-gray-400 font-semibold">Source File</p>
+          <p id="vt_sourceLink" class="text-sm mt-1">—</p>
+        </div>
+        <div>
+          <p class="text-xs text-gray-400 font-semibold">Deliverable File</p>
+          <p id="vt_deliverableLink" class="text-sm mt-1">—</p>
+        </div>
+      </div>
+    </div>
+    <div class="section-card">
+      <div class="section-header border-l-gray-400 bg-gray-50">
+        <h3 class="text-sm font-semibold text-gray-700">Notes</h3>
+      </div>
+      <div class="section-body">
+        <p id="vt_notes" class="text-sm text-gray-600 whitespace-pre-wrap leading-relaxed min-h-[60px]">—</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- REVISIONS TABLE -->
+  <div class="section-card overflow-hidden">
+    <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+      <div>
+        <h3 class="text-sm font-bold text-slate-700">Revisions for this Task</h3>
+        <p class="text-xs text-slate-400">All revision rounds linked to this task</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <span id="vt_revPageTotal" class="text-xs font-bold text-purple-600 bg-purple-50 px-3 py-1 rounded-full border border-purple-100">0 pages</span>
+        <button id="vt_addRevBtn2"
+          class="inline-flex items-center gap-1 text-xs font-semibold text-purple-600 hover:text-purple-800 bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg transition-colors">
+          + Add Revision
+        </button>
+      </div>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Rev ID</th>
+            <th>Rev # / Type</th>
+            <th>Language</th>
+            <th>Assigned / Vendor</th>
+            <th>Status</th>
+            <th class="text-center">Pages</th>
+            <th>Rev Date</th>
+            <th>Payment</th>
+            <th class="text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="vt_revisionsTable">
+          <tr><td colspan="9" class="py-10 text-center text-slate-400 text-sm">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
