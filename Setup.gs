@@ -2,6 +2,8 @@
    Setup.gs — Run once to create all 6 sheets
    Sheets: Projects | Tasks | Revisions | Vendors | Team | MonthlySnapshot
    Run setupDatabase() from Apps Script editor to initialize.
+   Run addMissingColumns() to safely add new columns to existing sheets
+   without touching any existing data.
    Run migrateOldProjectsToTasks() AFTER setupDatabase() if you have
    existing data in the old Projects sheet format.
 ================================================================ */
@@ -26,7 +28,8 @@ function setupDatabase() {
       "Language", "Source Pages", "Final Pages", "Lang Count",
       "Status", "Priority", "Start Date", "Delivery Date",
       "Completed Date", "Source Link", "Deliverable Link", "Notes",
-      "Created At", "Updated At"
+      "Created At", "Updated At",
+      "Rate Per Page", "Currency", "Payment Status"
     ],
 
     /* ── 3. REVISIONS — rework rounds ── */
@@ -48,7 +51,8 @@ function setupDatabase() {
     /* ── 5. TEAM — employee master list ── */
     Team: [
       "Member ID", "Name", "Role", "Email",
-      "Phone", "Specialization", "Status", "Created At"
+      "Phone", "Specialization", "Status", "Rate Per Page",
+      "Currency", "Created At"
     ],
 
     /* ── 6. MONTHLY SNAPSHOT — pre-computed summaries ── */
@@ -95,12 +99,111 @@ function setupDatabase() {
     "✅ Database setup complete.\n\n" +
     "Sheets created:\n" +
     "• Projects (15 cols)\n" +
-    "• Tasks (22 cols)\n" +
+    "• Tasks (25 cols)\n" +
     "• Revisions (18 cols)\n" +
     "• Vendors (12 cols)\n" +
     "• Team (8 cols)\n" +
     "• MonthlySnapshot (9 cols)\n\n" +
     "If you have existing data, run migrateOldProjectsToTasks() next."
+  );
+}
+
+/* ================================================================
+   ADD MISSING COLUMNS
+   Safe to run on a live sheet with existing data.
+   Checks the current header row of each sheet and appends only the
+   columns that are not already present. Never deletes or moves data.
+   Run this after any schema update (e.g. adding Rate Per Page etc.).
+================================================================ */
+function addMissingColumns() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  /* Full expected header list per sheet — order matters, new cols at end */
+  const EXPECTED = {
+    Tasks: [
+      "Task ID", "Project ID", "Client Name", "Project Name",
+      "Task Type", "Work Type", "Assigned To", "Vendor Name",
+      "Language", "Source Pages", "Final Pages", "Lang Count",
+      "Status", "Priority", "Start Date", "Delivery Date",
+      "Completed Date", "Source Link", "Deliverable Link", "Notes",
+      "Created At", "Updated At",
+      "Rate Per Page", "Currency", "Payment Status"
+    ],
+    Projects: [
+      "Project ID", "Client Name", "Project Name", "Project Coordinator",
+      "Source Language", "Target Languages", "Target Lang Count", "Source Pages",
+      "Word Count", "Priority", "Status", "Received Date",
+      "Notes", "Created At", "Updated At"
+    ],
+    Revisions: [
+      "Revision ID", "Project ID", "Task ID", "Project Name",
+      "Revision Number", "Revision Type", "Language", "Revision Pages",
+      "Work Type", "Assigned To", "Vendor Name", "Status",
+      "Revision Date", "Delivery Date", "Completed Date", "Notes",
+      "Created At", "Updated At",
+      "Rate Per Page", "Currency", "Payment Status"
+    ],
+    Vendors: [
+      "Vendor ID", "Vendor Name", "Contact Person", "Email",
+      "Phone", "Specialization", "Languages", "Rate Per Page",
+      "Currency", "Status", "Notes", "Created At"
+    ],
+    Team: [
+      "Member ID", "Name", "Role", "Email",
+      "Phone", "Specialization", "Status", "Rate Per Page",
+      "Currency", "Created At"
+    ]
+  };
+
+  const COLORS = {
+    Tasks:     "#1e3a5f",
+    Projects:  "#0f172a",
+    Revisions: "#3b0764",
+    Vendors:   "#064e3b",
+    Team:      "#1c1917"
+  };
+
+  var report = [];
+
+  Object.keys(EXPECTED).forEach(function(sheetName) {
+    var sheet = ss.getSheetByName(sheetName);
+    if (!sheet) {
+      report.push("⚠️  " + sheetName + ": sheet not found — skipped.");
+      return;
+    }
+
+    var lastCol      = sheet.getLastColumn();
+    var existingHdrs = lastCol > 0
+      ? sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(function(v) { return String(v).trim(); })
+      : [];
+
+    var expected  = EXPECTED[sheetName];
+    var color     = COLORS[sheetName] || "#0f172a";
+    var added     = [];
+
+    expected.forEach(function(hdr) {
+      if (!existingHdrs.includes(hdr)) {
+        /* Append this header in the next available column */
+        var newCol = sheet.getLastColumn() + 1;
+        var cell   = sheet.getRange(1, newCol);
+        cell.setValue(hdr)
+            .setFontWeight("bold")
+            .setBackground(color)
+            .setFontColor("#ffffff");
+        sheet.autoResizeColumn(newCol);
+        added.push(hdr);
+      }
+    });
+
+    if (added.length) {
+      report.push("✅ " + sheetName + ": added " + added.length + " column(s) — " + added.join(", "));
+    } else {
+      report.push("✔️  " + sheetName + ": all columns already present.");
+    }
+  });
+
+  SpreadsheetApp.getUi().alert(
+    "Column Migration Complete\n\n" + report.join("\n")
   );
 }
 

@@ -1,13 +1,14 @@
 /* ================================================================
    Tasks.gs — Task CRUD (every unit of DTP work)
-   Sheet: Tasks (22 columns)
+   Sheet: Tasks (25 columns)
    Col map: TC constants defined in Code.gs
    0=TaskID, 1=ProjectID, 2=Client, 3=ProjectName,
    4=TaskType, 5=WorkType, 6=AssignedTo, 7=VendorName,
    8=Language, 9=SourcePages, 10=FinalPages, 11=LangCount,
    12=Status, 13=Priority, 14=StartDate, 15=DeliveryDate,
    16=CompletedDate, 17=SourceLink, 18=DeliverableLink,
-   19=Notes, 20=CreatedAt, 21=UpdatedAt
+   19=Notes, 20=CreatedAt, 21=UpdatedAt,
+   22=RatePerPage, 23=Currency, 24=PaymentStatus
 ================================================================ */
 
 function getTasks() {
@@ -87,14 +88,17 @@ function addTask(d) {
       langCount,
       d.status            || "Pending",
       d.priority          || "Medium",
-      d.startDate         || "",
+      d.startDate         || now,
       d.deliveryDate      || "",
       d.completedDate     || "",
       d.sourceLink        || "",
       d.deliverableLink   || "",
       d.notes             || "",
       now,
-      now
+      now,
+      Number(d.ratePerPage)  || 0,
+      d.currency             || "",
+      d.paymentStatus        || "Unpaid"
     ]);
 
     /* Update parent project status to Active if it was Pending */
@@ -129,8 +133,8 @@ function updateTask(id, d) {
       finalPgs = srcPages * langCount;
     }
 
-    sh.getRange(found.index, 2, 1, 21).setValues([[
-      found.row[TC.PROJECT_ID],          // preserve projectId
+    sh.getRange(found.index, 2, 1, 24).setValues([[
+      found.row[TC.PROJECT_ID],
       d.clientName   || found.row[TC.CLIENT]        || "",
       d.projectName  || found.row[TC.PROJECT_NAME]  || "",
       d.taskType          || "Main DTP",
@@ -143,14 +147,17 @@ function updateTask(id, d) {
       langCount,
       d.status            || "Pending",
       d.priority          || "Medium",
-      d.startDate         || "",
+      d.startDate         || found.row[TC.START_DATE] || now,
       d.deliveryDate      || "",
       d.completedDate     || "",
       d.sourceLink        || "",
       d.deliverableLink   || "",
       d.notes             || "",
-      found.row[TC.CREATED_AT],          // preserve createdAt
-      now
+      found.row[TC.CREATED_AT],
+      now,
+      Number(d.ratePerPage)  || found.row[TC.RATE_PER_PAGE]  || 0,
+      d.currency             || found.row[TC.CURRENCY]        || "",
+      d.paymentStatus        || found.row[TC.PAYMENT_STATUS]  || "Unpaid"
     ]]);
     return { success: true };
   } catch (e) {

@@ -1,12 +1,13 @@
 /* ================================================================
    RevisionsService.gs — Revision CRUD
-   Sheet: Revisions (18 columns)
+   Sheet: Revisions (21 columns)
    Col map: RC constants defined in Code.gs
    0=RevID, 1=ProjectID, 2=TaskID, 3=ProjectName,
    4=RevNumber, 5=RevType, 6=Language, 7=RevPages,
    8=WorkType, 9=AssignedTo, 10=VendorName, 11=Status,
    12=RevDate, 13=DeliveryDate, 14=CompletedDate, 15=Notes,
-   16=CreatedAt, 17=UpdatedAt
+   16=CreatedAt, 17=UpdatedAt,
+   18=RatePerPage, 19=Currency, 20=PaymentStatus
 ================================================================ */
 
 function getRevisions() {
@@ -46,6 +47,7 @@ function addRevision(d) {
     var sh = _sh(SH_REVISIONS);
     if (!sh) throw new Error("Revisions sheet not found.");
 
+    /* Resolve project name */
     var projectName = d.projectName || "";
     if (d.projectId && !projectName) {
       var projSh    = _sh(SH_PROJECTS);
@@ -53,10 +55,31 @@ function addRevision(d) {
       if (projFound) projectName = projFound.row[PC.PROJECT_NAME] || "";
     }
 
+    /* If a taskId is provided, inherit any missing fields from the task */
+    if (d.taskId) {
+      var taskSh    = _sh(SH_TASKS);
+      var taskFound = _findRow(taskSh, d.taskId);
+      if (taskFound) {
+        var tr = taskFound.row;
+        if (!d.language   || d.language   === "") d.language   = tr[TC.LANGUAGE]    || "";
+        if (!d.workType   || d.workType   === "") d.workType   = tr[TC.WORK_TYPE]   || "In-House";
+        if (!d.assignedTo || d.assignedTo === "") d.assignedTo = tr[TC.ASSIGNED_TO] || "";
+        if (!d.vendorName || d.vendorName === "") d.vendorName = tr[TC.VENDOR_NAME] || "";
+        if ((!d.ratePerPage || Number(d.ratePerPage) === 0) && tr[TC.RATE_PER_PAGE]) {
+          d.ratePerPage = tr[TC.RATE_PER_PAGE];
+          d.currency    = d.currency || tr[TC.CURRENCY] || "";
+        }
+      }
+    }
+
+    /* Auto-assign revision number scoped to project+task */
     var revNumber = d.revisionNumber || "";
     if (!revNumber && d.projectId) {
-      var existing = _sheetRows(SH_REVISIONS)
-        .filter(function(r) { return String(r[RC.PROJECT_ID]).trim() === String(d.projectId).trim(); });
+      var existing = _sheetRows(SH_REVISIONS).filter(function(r) {
+        var sameProj = String(r[RC.PROJECT_ID]).trim() === String(d.projectId).trim();
+        var sameTask = d.taskId ? String(r[RC.TASK_ID]).trim() === String(d.taskId).trim() : true;
+        return sameProj && sameTask;
+      });
       revNumber = "R" + (existing.length + 1);
     }
 
@@ -81,7 +104,10 @@ function addRevision(d) {
       d.completedDate   || "",
       d.notes           || "",
       now,
-      now
+      now,
+      Number(d.ratePerPage)  || 0,
+      d.currency             || "",
+      d.paymentStatus        || "Unpaid"
     ]);
     return { success: true, id: id };
   } catch (e) {
@@ -97,7 +123,7 @@ function updateRevision(id, d) {
     if (!found) throw new Error("Revision not found: " + id);
     var now = new Date();
 
-    sh.getRange(found.index, 2, 1, 17).setValues([[
+    sh.getRange(found.index, 2, 1, 20).setValues([[
       found.row[RC.PROJECT_ID],
       found.row[RC.TASK_ID],
       found.row[RC.PROJECT_NAME],
@@ -114,7 +140,10 @@ function updateRevision(id, d) {
       d.completedDate   || "",
       d.notes           || "",
       found.row[RC.CREATED_AT],
-      now
+      now,
+      Number(d.ratePerPage)  || found.row[RC.RATE_PER_PAGE]  || 0,
+      d.currency             || found.row[RC.CURRENCY]        || "",
+      d.paymentStatus        || found.row[RC.PAYMENT_STATUS]  || "Unpaid"
     ]]);
     return { success: true };
   } catch (e) {

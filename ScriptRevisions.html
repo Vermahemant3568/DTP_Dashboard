@@ -18,9 +18,9 @@ function loadRevisions() {
 }
 
 function _renderRevStats(data) {
-  var pages  =data.reduce(function(s,r){ return s+(Number(r[7])||0); },0);
-  var pending=data.filter(function(r){ return r[11]==="Pending"; }).length;
-  var done   =data.filter(function(r){ return r[11]==="Completed"; }).length;
+  var pages  = data.reduce(function(s,r){ return s+(Number(r[7])||0); },0);
+  var pending= data.filter(function(r){ return r[11]==="Pending"; }).length;
+  var done   = data.filter(function(r){ return r[11]==="Completed"; }).length;
   _set("rev_stat_total",  data.length);
   _set("rev_stat_pages",  pages.toLocaleString());
   _set("rev_stat_pending",pending);
@@ -28,79 +28,92 @@ function _renderRevStats(data) {
 }
 
 function _renderRevisionsTable(data) {
-  var tbody=document.getElementById("revisionsTable");
+  var tbody = document.getElementById("revisionsTable");
   if (!tbody) return;
-  if (!data.length){
-    tbody.innerHTML='<tr><td colspan="10" class="py-16 text-center text-slate-400 text-sm">No revisions found.</td></tr>';
+  if (!data.length) {
+    tbody.innerHTML = '<tr><td colspan="11" class="py-16 text-center text-slate-400 text-sm">No revisions found.</td></tr>';
     return;
   }
-  tbody.innerHTML=data.map(function(r){
-    var sc =getStatusClass(r[11]||"Pending");
-    var wc =getWorkClass(r[8]  ||"In-House");
-    var who=r[8]==="Vendor"?(r[10]||r[9]||"—"):(r[9]||"—");
-    return '<tr>'+
-      '<td class="font-mono text-[11px] text-gray-400">'+r[0]+'</td>'+
-      '<td><div class="font-semibold text-gray-900 text-sm">'+(r[3]||r[1]||"—")+'</div>'+
-          '<div class="font-mono text-[10px] text-gray-400">'+r[1]+'</div></td>'+
-      '<td><div class="text-sm font-semibold text-gray-700">'+(r[4]||"—")+'</div>'+
-          '<div class="text-xs text-gray-400">'+(r[5]||"—")+'</div></td>'+
-      '<td><span class="badge bg-purple-100 text-purple-700">'+(r[6]||"—")+'</span></td>'+
-      '<td class="text-sm text-gray-600">'+who+'</td>'+
-      '<td><span class="badge '+wc+'">'+(r[8]||"In-House")+'</span></td>'+
-      '<td><span class="badge '+sc+'">'+(r[11]||"Pending")+'</span></td>'+
-      '<td class="text-center font-bold text-purple-600 text-sm">'+(Number(r[7])||0)+'</td>'+
-      '<td class="text-xs text-gray-500">'+(r[12]||"—")+'</td>'+
-      '<td class="text-right">'+
-        '<div class="flex justify-end gap-1">'+
-          btnStatus(r[0],"openRevisionQuickEdit")+
-          btnDelete(r[0],"deleteRevisionById")+
-        '</div>'+
-      '</td>'+
+  tbody.innerHTML = data.map(function(r) {
+    var sc  = getStatusClass(r[11]||"Pending");
+    var wc  = getWorkClass(r[8]||"In-House");
+    var who = r[8]==="Vendor" ? (r[10]||r[9]||"—") : (r[9]||"—");
+    var taskCell = r[2]
+      ? '<span class="font-mono text-[10px] text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">' + r[2] + '</span>'
+      : '<span class="text-slate-300 text-xs">—</span>';
+    return '<tr>' +
+      '<td class="font-mono text-[11px] text-gray-400">' + r[0] + '</td>' +
+      '<td><div class="font-semibold text-gray-900 text-sm">' + (r[3]||r[1]||"—") + '</div>' +
+          '<div class="font-mono text-[10px] text-gray-400">' + r[1] + '</div></td>' +
+      '<td>' + taskCell + '</td>' +
+      '<td><div class="text-sm font-semibold text-gray-700">' + (r[4]||"—") + '</div>' +
+          '<div class="text-xs text-gray-400">' + (r[5]||"—") + '</div></td>' +
+      '<td><span class="badge bg-purple-100 text-purple-700">' + (r[6]||"—") + '</span></td>' +
+      '<td class="text-sm text-gray-600">' + who + '</td>' +
+      '<td><span class="badge ' + wc + '">' + (r[8]||"In-House") + '</span></td>' +
+      '<td><span class="badge ' + sc + '">' + (r[11]||"Pending") + '</span></td>' +
+      '<td class="text-center font-bold text-purple-600 text-sm">' + (Number(r[7])||0) + '</td>' +
+      '<td class="text-xs text-gray-500">' + (r[12]||"—") + '</td>' +
+      '<td class="text-right">' +
+        '<div class="flex justify-end gap-1">' +
+          btnStatus(r[0], "openRevisionQuickEdit") +
+          btnEdit(r[0],   "editRevisionFull") +
+          btnDelete(r[0], "deleteRevisionById") +
+        '</div>' +
+      '</td>' +
     '</tr>';
   }).join("");
 }
 
 function filterRevisions() {
-  var q  =(_val("rev_search")      ||"").toLowerCase();
-  var st =_val("rev_statusFilter") ||"";
-  var rt =_val("rev_typeFilter")   ||"";
-  var wt =_val("rev_workFilter")   ||"";
-  var filtered=ALL_REVISIONS.filter(function(r){
-    var mq=!q  ||[r[0],r[1],r[3],r[6]].some(function(v){ return String(v).toLowerCase().includes(q); });
-    var ms=!st ||r[11]===st;
-    var mr=!rt ||r[5] ===rt;
-    var mw=!wt ||r[8] ===wt;
+  var q  = (_val("rev_search")||"").toLowerCase();
+  var st = _val("rev_statusFilter")||"";
+  var rt = _val("rev_typeFilter")||"";
+  var wt = _val("rev_workFilter")||"";
+  var filtered = ALL_REVISIONS.filter(function(r){
+    var mq = !q  || [r[0],r[1],r[2],r[3],r[6]].some(function(v){ return String(v).toLowerCase().includes(q); });
+    var ms = !st || r[11]===st;
+    var mr = !rt || r[5]===rt;
+    var mw = !wt || r[8]===wt;
     return mq&&ms&&mr&&mw;
   });
   _renderRevisionsTable(filtered);
 }
 
 function openRevisionQuickEdit(id) {
-  var rev=ALL_REVISIONS.find(function(r){ return r[0]===id; });
-  if (!rev){ showToast("Revision not found.","error"); return; }
-  document.getElementById("m_itemId").innerText   =id;
-  document.getElementById("m_itemName").innerText =(rev[3]||rev[1]||"—")+" · "+(rev[6]||"");
-  document.getElementById("m_status").value       =rev[11]||"Pending";
-  document.getElementById("m_deliveryDate").value =formatForInput(rev[13]);
-  document.getElementById("editModal").dataset.editType="revision";
-  document.getElementById("editModal").style.display   ="flex";
+  var rev = ALL_REVISIONS.find(function(r){ return r[0]===id; });
+  if (!rev) { showToast("Revision not found.","error"); return; }
+  document.getElementById("m_itemId").innerText   = id;
+  document.getElementById("m_itemName").innerText = (rev[3]||rev[1]||"—") + " · " + (rev[6]||"");
+  document.getElementById("m_status").value       = rev[11]||"Pending";
+  document.getElementById("m_deliveryDate").value = formatForInput(rev[13]);
+  document.getElementById("editModal").dataset.editType = "revision";
+  document.getElementById("editModal").style.display    = "flex";
 }
 
+function editRevisionFull(id) { loadPage("addRevision", { editId: id }); }
+
+/* ================================================================
+   LOAD FOR EDIT — called from _initAddRevisionForm when editId present
+================================================================ */
 function loadRevisionForEdit(id) {
   showLoader("Loading revision...");
   google.script.run
     .withFailureHandler(function(e){ hideLoader(); showToast("Could not load revision: "+e.message,"error"); })
     .withSuccessHandler(function(res){
       hideLoader();
-      if (!res||!res.revision){ showToast("Revision not found.","error"); return; }
+      if (!res||!res.revision) { showToast("Revision not found.","error"); return; }
       var r = res.revision;
       var titleEl = document.getElementById("addRevTitle");
       var lblEl   = document.getElementById("revSubmitLabel");
       if (titleEl) titleEl.innerText = "Edit Revision";
       if (lblEl)   lblEl.innerText   = "Update Revision";
-      /* Set project link */
+
+      /* Show project as linked */
       _setVal("rev_projectId", r[1]);
       _revProjectLinked = true;
+      _revTaskLinked    = true;
+      _revLinkedTaskId  = r[2] || "";
       var prev = document.getElementById("rev_projectPreview");
       var notF = document.getElementById("rev_projectNotFound");
       if (prev) prev.style.display = "block";
@@ -108,7 +121,33 @@ function loadRevisionForEdit(id) {
       _set("rev_preview_name",   r[3] || "—");
       _set("rev_preview_client", "Project ID: " + (r[1] || "—"));
       _set("rev_preview_langs",  "Language: " + (r[6] || "—"));
-      /* Fill form fields */
+
+      /* Show task step and detail step */
+      _showRevStep("rev_taskStep");
+      _showRevStep("rev_detailStep");
+      _showRevStep("rev_submitBar");
+
+      /* Show task preview if task was linked */
+      if (r[2]) {
+        var tp = document.getElementById("rev_taskPreview");
+        if (tp) {
+          tp.style.display = "block";
+          _set("rev_tp_id",     r[2]);
+          _set("rev_tp_lang",   r[6]||"—");
+          _set("rev_tp_wt",     r[8]||"—");
+          _set("rev_tp_who",    r[8]==="Vendor" ? (r[10]||"—") : (r[9]||"—"));
+          _set("rev_tp_rate",   r[18] ? (r[19]||"")+" "+Number(r[18]).toLocaleString() : "—");
+          _set("rev_tp_type",   "—");
+          _set("rev_tp_pages",  "—");
+          _set("rev_tp_status", "—");
+        }
+        var tl = document.getElementById("rev_taskList");
+        if (tl) tl.style.display = "none";
+        var tld = document.getElementById("rev_taskLoading");
+        if (tld) tld.style.display = "none";
+      }
+
+      /* Fill all form fields */
       _setVal("rev_revisionNumber", r[4]);
       _setVal("rev_revisionType",   r[5]);
       _setVal("rev_language",       r[6]);
@@ -117,12 +156,17 @@ function loadRevisionForEdit(id) {
       _setVal("rev_revisionDate",   formatForInput(r[12]));
       _setVal("rev_deliveryDate",   formatForInput(r[13]));
       _setVal("rev_notes",          r[15]);
+      _setVal("rev_ratePerPage",    r[18]);
+      _setVal("rev_currency",       r[19]);
+      _setVal("rev_paymentStatus",  r[20] || "Unpaid");
+
       var wt = r[8] || "In-House";
       var radio = document.querySelector('input[name="rev_workType"][value="'+wt+'"]');
-      if (radio){ radio.checked=true; _updateWorkTypeBtns("rev_workType","rev_wt_inhouse_btn","rev_wt_vendor_btn"); }
+      if (radio) { radio.checked = true; _updateWorkTypeBtns("rev_workType","rev_wt_inhouse_btn","rev_wt_vendor_btn"); }
       _setVal("rev_assignedTo", r[9]);
       _setVal("rev_vendorName", r[10]);
-      if (typeof _syncRevAssignmentFields==="function") _syncRevAssignmentFields();
+      if (typeof _syncRevAssignmentFields === "function") _syncRevAssignmentFields();
+      _updateRevEstimate();
     })
     .getRevisionById(id);
 }
@@ -137,9 +181,17 @@ function deleteRevisionById(id) {
   }, true);
 }
 
-var _revProjectLinked  = false;
-var _revSearchTimer    = null;
+/* ================================================================
+   STATE
+================================================================ */
+var _revProjectLinked = false;
+var _revTaskLinked    = false;
+var _revLinkedTaskId  = "";
+var _revSearchTimer   = null;
 
+/* ================================================================
+   PROJECT SEARCH & LOOKUP
+================================================================ */
 function _revProjectSearchDebounce() {
   if (_revSearchTimer) clearTimeout(_revSearchTimer);
   _revSearchTimer = setTimeout(function() {
@@ -147,7 +199,7 @@ function _revProjectSearchDebounce() {
     if (!q || q.length < 2) { _hideRevSuggestions(); return; }
     if (q.startsWith("PRJ-")) { lookupRevisionProject(); return; }
     google.script.run
-      .withFailureHandler(function() {})
+      .withFailureHandler(function(){})
       .withSuccessHandler(function(results) { _showRevSuggestions(results || []); })
       .searchProjects(q);
   }, 350);
@@ -160,8 +212,8 @@ function _showRevSuggestions(results) {
   box.innerHTML = results.map(function(p) {
     return '<button type="button" onclick="_selectRevProjectSuggestion(\'' + p[0] + '\')"' +
       ' class="w-full text-left px-4 py-2.5 hover:bg-purple-50 transition-colors">' +
-      '<div class="text-sm font-semibold text-gray-800">' + (p[2] || "—") + '</div>' +
-      '<div class="text-xs text-gray-400">' + (p[1] || "—") + ' · ID: ' + p[0] + ' · ' + (p[6] || 0) + ' langs</div>' +
+      '<div class="text-sm font-semibold text-gray-800">' + (p[2]||"—") + '</div>' +
+      '<div class="text-xs text-gray-400">' + (p[1]||"—") + ' · ID: ' + p[0] + ' · ' + (p[6]||0) + ' langs</div>' +
       '</button>';
   }).join("");
   box.style.display = "block";
@@ -180,13 +232,14 @@ function _selectRevProjectSuggestion(id) {
 
 function _clearRevProjectLink() {
   _revProjectLinked = false;
+  _revTaskLinked    = false;
+  _revLinkedTaskId  = "";
   _setVal("rev_projectId", "");
-  var prev = document.getElementById("rev_projectPreview");
-  var notF = document.getElementById("rev_projectNotFound");
-  var box  = document.getElementById("rev_searchSuggestions");
-  if (prev) prev.style.display = "none";
-  if (notF) notF.style.display = "none";
-  if (box)  box.style.display  = "none";
+  ["rev_projectPreview","rev_projectNotFound","rev_searchSuggestions",
+   "rev_taskStep","rev_detailStep","rev_submitBar"].forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) el.style.display = "none";
+  });
 }
 
 function lookupRevisionProject() {
@@ -195,8 +248,8 @@ function lookupRevisionProject() {
   if (!id) { showToast("Enter a Project ID or name first.", "warning"); return; }
   showLoader("Looking up project...");
   google.script.run
-    .withFailureHandler(function(e) { hideLoader(); showToast("Lookup failed: " + e.message, "error"); })
-    .withSuccessHandler(function(res) {
+    .withFailureHandler(function(e){ hideLoader(); showToast("Lookup failed: "+e.message,"error"); })
+    .withSuccessHandler(function(res){
       hideLoader();
       var prev = document.getElementById("rev_projectPreview");
       var notF = document.getElementById("rev_projectNotFound");
@@ -212,38 +265,228 @@ function lookupRevisionProject() {
       if (notF) notF.style.display = "none";
       if (prev) prev.style.display = "block";
       _set("rev_preview_name",   p[2]);
-      _set("rev_preview_client", "Client: " + (p[1] || "—"));
-      _set("rev_preview_langs",  "Languages: " + (p[5] || "—") + " (" + (p[6] || 0) + " langs)");
+      _set("rev_preview_client", "Client: " + (p[1]||"—"));
+      _set("rev_preview_langs",  "Languages: " + (p[5]||"—") + " (" + (p[6]||0) + " langs)");
+      /* Load tasks for this project */
+      _loadRevTasksForProject(p[0]);
     })
     .getProjectById(id);
 }
 
+/* ================================================================
+   TASK LOADING & SELECTION
+================================================================ */
+function _loadRevTasksForProject(projectId) {
+  _showRevStep("rev_taskStep");
+  var loadingEl = document.getElementById("rev_taskLoading");
+  var listEl    = document.getElementById("rev_taskList");
+  var noEl      = document.getElementById("rev_noTasks");
+  var prevEl    = document.getElementById("rev_taskPreview");
+  if (loadingEl) loadingEl.style.display = "block";
+  if (listEl)    listEl.style.display    = "none";
+  if (noEl)      noEl.style.display      = "none";
+  if (prevEl)    prevEl.style.display    = "none";
+  /* Hide detail step until task is selected */
+  ["rev_detailStep","rev_submitBar"].forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) el.style.display = "none";
+  });
+
+  google.script.run
+    .withFailureHandler(function(){ if (loadingEl) loadingEl.style.display = "none"; })
+    .withSuccessHandler(function(tasks){
+      if (loadingEl) loadingEl.style.display = "none";
+      tasks = tasks || [];
+      if (!tasks.length) {
+        if (noEl) noEl.style.display = "block";
+        return;
+      }
+      if (listEl) {
+        listEl.style.display = "block";
+        listEl.innerHTML = tasks.map(function(t) {
+          var who = t[5]==="Vendor" ? (t[7]||"—") : (t[6]||"—");
+          var rateStr = t[22] ? (t[23]||"")+" "+Number(t[22]).toLocaleString()+"/pg" : "No rate";
+          var sc = getStatusClass(t[12]||"Pending");
+          var tc = getTaskClass(t[4]||"Main DTP");
+          return '<button type="button" onclick="_selectRevTask(' + JSON.stringify(t) + ')"' +
+            ' class="w-full text-left p-3 rounded-xl border-2 border-gray-100 hover:border-blue-400 hover:bg-blue-50 transition-all">' +
+            '<div class="flex items-center justify-between gap-2 flex-wrap">' +
+              '<div class="flex items-center gap-2">' +
+                '<span class="badge ' + tc + '">' + (t[4]||"—") + '</span>' +
+                '<span class="text-sm font-semibold text-gray-800">' + (t[8]||"—") + '</span>' +
+                '<span class="badge ' + sc + ' text-[9px]">' + (t[12]||"Pending") + '</span>' +
+              '</div>' +
+              '<div class="flex items-center gap-3 text-xs text-gray-500">' +
+                '<span>👤 ' + who + '</span>' +
+                '<span class="font-semibold text-emerald-700">' + rateStr + '</span>' +
+                '<span class="font-mono text-gray-400">' + t[0] + '</span>' +
+              '</div>' +
+            '</div>' +
+            '<div class="text-xs text-gray-400 mt-1">' + (Number(t[10])||0) + ' pages · ' + (t[5]||"In-House") + '</div>' +
+          '</button>';
+        }).join("");
+      }
+    })
+    .getTasksByProjectId(projectId);
+}
+
+function _selectRevTask(t) {
+  _revTaskLinked   = true;
+  _revLinkedTaskId = t[0];
+
+  /* Show task preview */
+  var prevEl = document.getElementById("rev_taskPreview");
+  var listEl = document.getElementById("rev_taskList");
+  if (listEl)  listEl.style.display  = "none";
+  if (prevEl) {
+    prevEl.style.display = "block";
+    var who = t[5]==="Vendor" ? (t[7]||"—") : (t[6]||"—");
+    _set("rev_tp_id",     t[0]);
+    _set("rev_tp_type",   t[4]||"—");
+    _set("rev_tp_lang",   t[8]||"—");
+    _set("rev_tp_who",    who);
+    _set("rev_tp_pages",  (Number(t[10])||0) + " pages");
+    _set("rev_tp_wt",     t[5]||"In-House");
+    _set("rev_tp_rate",   t[22] ? (t[23]||"")+" "+Number(t[22]).toLocaleString()+"/pg" : "—");
+    _set("rev_tp_status", t[12]||"—");
+  }
+
+  /* Auto-fill revision detail fields from task */
+  _setVal("rev_language",    t[8]  || "");
+  _setVal("rev_ratePerPage", t[22] || "");
+  _setVal("rev_currency",    t[23] || "");
+
+  /* Set work type radio to match task */
+  var wt    = t[5] || "In-House";
+  var radio = document.querySelector('input[name="rev_workType"][value="'+wt+'"]');
+  if (radio) { radio.checked = true; _updateWorkTypeBtns("rev_workType","rev_wt_inhouse_btn","rev_wt_vendor_btn"); }
+
+  /* Auto-select assignee/vendor in dropdowns */
+  _syncRevAssignmentFields();
+  if (wt === "In-House") {
+    var aEl = document.getElementById("rev_assignedTo");
+    if (aEl && t[6]) {
+      for (var i = 0; i < aEl.options.length; i++) {
+        if (aEl.options[i].value === t[6]) { aEl.selectedIndex = i; break; }
+      }
+    }
+  } else {
+    var vEl = document.getElementById("rev_vendorName");
+    if (vEl && t[7]) {
+      for (var j = 0; j < vEl.options.length; j++) {
+        if (vEl.options[j].value === t[7]) { vEl.selectedIndex = j; break; }
+      }
+    }
+  }
+
+  /* Show detail step and submit bar */
+  _showRevStep("rev_detailStep");
+  _showRevStep("rev_submitBar");
+  _updateRevEstimate();
+
+  /* Scroll to detail step */
+  var ds = document.getElementById("rev_detailStep");
+  if (ds) ds.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function _clearRevTaskLink() {
+  _revTaskLinked   = false;
+  _revLinkedTaskId = "";
+  var prevEl = document.getElementById("rev_taskPreview");
+  var listEl = document.getElementById("rev_taskList");
+  if (prevEl) prevEl.style.display = "none";
+  if (listEl) listEl.style.display = "block";
+  ["rev_detailStep","rev_submitBar"].forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) el.style.display = "none";
+  });
+}
+
+function _showRevStep(id) {
+  var el = document.getElementById(id);
+  if (el) el.style.display = "";
+}
+
+/* ================================================================
+   LIVE ESTIMATE PREVIEW
+================================================================ */
+function _updateRevEstimate() {
+  var pages = Number(_val("rev_pages"))       || 0;
+  var rate  = Number(_val("rev_ratePerPage")) || 0;
+  var cur   = _val("rev_currency") || "";
+  var el    = document.getElementById("rev_estAmountPreview");
+  if (!el) return;
+  if (pages > 0 && rate > 0) {
+    el.innerText = (cur ? cur + " " : "") + (pages * rate).toLocaleString();
+  } else {
+    el.innerText = "—";
+  }
+}
+
+/* ================================================================
+   DROPDOWNS
+================================================================ */
 function loadRevisionDropdowns(cb) {
   google.script.run
-    .withFailureHandler(function(){ if(typeof cb==="function") cb(); })
+    .withFailureHandler(function(){ if (typeof cb==="function") cb(); })
     .withSuccessHandler(function(d){
-      if (d){
-        var tOpts=(d.team||[]).map(function(m){
-          var sub=[m.role,m.specialization].filter(Boolean).join(" · ");
-          return '<option value="'+m.name+'">'+m.name+(sub?' ('+sub+')':'')+'</option>';
+      if (d) {
+        var tOpts = (d.team||[]).map(function(m){
+          var sub = [m.role, m.specialization].filter(Boolean).join(" · ");
+          return '<option value="'+m.name+'" data-rate="'+(m.ratePerPage||0)+'" data-currency="'+(m.currency||'')+'">'+
+            m.name+(sub?' ('+sub+')':'')+'</option>';
         }).join("");
-        var vOpts=(d.vendors||[]).map(function(v){
-          var sub=[v.specialization,v.languages].filter(Boolean).join(" · ");
-          return '<option value="'+v.name+'">'+v.name+(sub?' ('+sub+')':'')+'</option>';
+        var vOpts = (d.vendors||[]).map(function(v){
+          var sub = [v.specialization, v.languages].filter(Boolean).join(" · ");
+          return '<option value="'+v.name+'" data-rate="'+(v.ratePerPage||0)+'" data-currency="'+(v.currency||'')+'">'+
+            v.name+(sub?' ('+sub+')':'')+'</option>';
         }).join("");
-        var aEl=document.getElementById("rev_assignedTo");
-        var vEl=document.getElementById("rev_vendorName");
-        if (aEl) aEl.innerHTML='<option value="">— Select Team Member —</option>'+tOpts;
-        if (vEl) vEl.innerHTML='<option value="">— Select Vendor —</option>'+vOpts;
+        var aEl = document.getElementById("rev_assignedTo");
+        var vEl = document.getElementById("rev_vendorName");
+        if (aEl) {
+          aEl.innerHTML = '<option value="">— Select Team Member —</option>' + tOpts;
+          aEl.addEventListener("change", _autoFillRevRateFromMember);
+        }
+        if (vEl) {
+          vEl.innerHTML = '<option value="">— Select Vendor —</option>' + vOpts;
+          vEl.addEventListener("change", _autoFillRevRateFromVendor);
+        }
       }
-      /* Apply initial show/hide based on current work type selection */
       _syncRevAssignmentFields();
-      if(typeof cb==="function") cb();
+
+      /* Wire live estimate on pages/rate change */
+      ["rev_pages","rev_ratePerPage","rev_currency"].forEach(function(id){
+        var el = document.getElementById(id);
+        if (el) el.addEventListener("input", _updateRevEstimate);
+      });
+
+      if (typeof cb === "function") cb();
     })
     .getDropdownData();
 }
 
-/* Show Assigned To for In-House, Vendor Name for Vendor */
+function _autoFillRevRateFromMember() {
+  var sel = document.getElementById("rev_assignedTo");
+  if (!sel) return;
+  var opt = sel.options[sel.selectedIndex];
+  var rate = opt ? (opt.getAttribute("data-rate")||"") : "";
+  var cur  = opt ? (opt.getAttribute("data-currency")||"") : "";
+  if (rate) _setVal("rev_ratePerPage", rate);
+  if (cur)  _setVal("rev_currency",    cur);
+  _updateRevEstimate();
+}
+
+function _autoFillRevRateFromVendor() {
+  var sel = document.getElementById("rev_vendorName");
+  if (!sel) return;
+  var opt = sel.options[sel.selectedIndex];
+  var rate = opt ? (opt.getAttribute("data-rate")||"") : "";
+  var cur  = opt ? (opt.getAttribute("data-currency")||"") : "";
+  if (rate) _setVal("rev_ratePerPage", rate);
+  if (cur)  _setVal("rev_currency",    cur);
+  _updateRevEstimate();
+}
+
 function _syncRevAssignmentFields() {
   var wtEl = document.querySelector('input[name="rev_workType"]:checked');
   var wt   = wtEl ? wtEl.value : "In-House";
@@ -254,25 +497,32 @@ function _syncRevAssignmentFields() {
   if (vRow) vRow.style.display = wt === "Vendor"   ? "" : "none";
 }
 
+/* ================================================================
+   FORM SUBMIT
+================================================================ */
 (function(){
   var _revSubmitting = false;
-  document.addEventListener("submit",function(e){
-    if (!e.target||e.target.id!=="revisionForm") return;
+  document.addEventListener("submit", function(e){
+    if (!e.target || e.target.id !== "revisionForm") return;
     e.preventDefault();
     if (_revSubmitting) return;
-    var editId=document.getElementById("contentArea").dataset.editRevId||"";
-    var projId=_val("rev_projectId");
-    var prev  =document.getElementById("rev_projectPreview");
-    if (!projId){ showToast("Project ID is required.","error"); return; }
+
+    var editId = document.getElementById("contentArea").dataset.editRevId || "";
+    var projId = _val("rev_projectId");
+    if (!projId)          { showToast("Project ID is required.","error"); return; }
     if (!_revProjectLinked){ showToast("Please lookup and verify the Project ID first.","warning"); return; }
-    var lang =_val("rev_language");
-    var pages=_val("rev_pages");
+
+    var lang  = _val("rev_language");
+    var pages = _val("rev_pages");
     if (!lang)                    { showToast("Language is required.","error"); return; }
     if (!pages||Number(pages)<=0) { showToast("Enter valid revision pages.","error"); return; }
-    var wtEl=document.querySelector('input[name="rev_workType"]:checked');
-    var wt  =wtEl?wtEl.value:"In-House";
-    var d={
+
+    var wtEl = document.querySelector('input[name="rev_workType"]:checked');
+    var wt   = wtEl ? wtEl.value : "In-House";
+
+    var d = {
       projectId:     projId,
+      taskId:        _revLinkedTaskId || "",
       revisionNumber:_val("rev_revisionNumber"),
       revisionType:  _val("rev_revisionType"),
       language:      lang,
@@ -283,19 +533,24 @@ function _syncRevAssignmentFields() {
       status:        _val("rev_status"),
       revisionDate:  _val("rev_revisionDate"),
       deliveryDate:  _val("rev_deliveryDate"),
-      notes:         _val("rev_notes")
+      notes:         _val("rev_notes"),
+      ratePerPage:   _val("rev_ratePerPage"),
+      currency:      _val("rev_currency"),
+      paymentStatus: _val("rev_paymentStatus") || "Unpaid"
     };
-    var btn  =document.getElementById("revSubmitBtn");
-    var lblEl=document.getElementById("revSubmitLabel");
-    _revSubmitting=true;
-    btn.disabled=true;
-    if (lblEl) lblEl.innerText="Saving...";
+
+    var btn   = document.getElementById("revSubmitBtn");
+    var lblEl = document.getElementById("revSubmitLabel");
+    _revSubmitting = true;
+    btn.disabled = true;
+    if (lblEl) lblEl.innerText = "Saving...";
     showLoader("Saving revision...");
-    if (editId){
+
+    if (editId) {
       google.script.run
-        .withFailureHandler(function(er){ _revSubmitting=false; hideLoader(); btn.disabled=false; if(lblEl) lblEl.innerText="Save Revision"; showToast("Error: "+er.message,"error"); })
+        .withFailureHandler(function(er){ _revSubmitting=false; hideLoader(); btn.disabled=false; if(lblEl) lblEl.innerText="Update Revision"; showToast("Error: "+er.message,"error"); })
         .withSuccessHandler(function(){ _revSubmitting=false; hideLoader(); showToast("Revision updated!","success"); loadPage("revisions"); })
-        .updateRevision(editId,d);
+        .updateRevision(editId, d);
     } else {
       google.script.run
         .withFailureHandler(function(er){ _revSubmitting=false; hideLoader(); btn.disabled=false; if(lblEl) lblEl.innerText="Save Revision"; showToast("Error: "+er.message,"error"); })

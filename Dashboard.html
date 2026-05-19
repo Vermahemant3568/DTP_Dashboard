@@ -79,10 +79,6 @@
   <div>
     <div class="flex items-center justify-between mb-3">
       <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">This Month — <span id="dash_monthName" class="text-slate-500 normal-case font-semibold">Current Month</span></p>
-      <div class="flex items-center gap-3 text-xs text-slate-400">
-        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-sky-500 inline-block"></span>In-House</span>
-        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block"></span>Vendor</span>
-      </div>
     </div>
     <div class="grid grid-cols-2 lg:grid-cols-7 gap-3">
 
@@ -192,110 +188,5 @@
     </div>
   </div>
 
-  <!-- ── ROW 3: IN-HOUSE vs VENDOR + TASK TYPE BREAKDOWN ── -->
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-    <div class="section-card">
-      <div class="px-5 py-4 border-b border-gray-100">
-        <h3 class="text-sm font-bold text-slate-700">In-House vs Vendor Split</h3>
-        <p class="text-xs text-slate-400 mt-0.5">Work type distribution this month</p>
-      </div>
-      <div id="dash_workBars" class="p-5 space-y-4">
-        <div class="h-4 bg-slate-100 rounded-full animate-pulse"></div>
-        <div class="h-4 bg-slate-100 rounded-full animate-pulse w-2/3"></div>
-      </div>
-    </div>
-
-    <div class="section-card">
-      <div class="px-5 py-4 border-b border-gray-100">
-        <h3 class="text-sm font-bold text-slate-700">Volume by Task Type</h3>
-        <p class="text-xs text-slate-400 mt-0.5">Page distribution across workflow stages</p>
-      </div>
-      <div id="dash_taskBars" class="p-5 space-y-3">
-        <div class="h-4 bg-slate-100 rounded-full animate-pulse"></div>
-        <div class="h-4 bg-slate-100 rounded-full animate-pulse w-3/4"></div>
-        <div class="h-4 bg-slate-100 rounded-full animate-pulse w-1/2"></div>
-      </div>
-    </div>
-
-  </div>
-
-  <!-- ── ROW 4: TOP TASKS + RECENT REVISIONS ── -->
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-    <div class="section-card overflow-hidden">
-      <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-        <div>
-          <h3 class="text-sm font-bold text-slate-700">Top Tasks by Pages</h3>
-          <p class="text-xs text-slate-400">Highest page count tasks (all time)</p>
-        </div>
-        <button onclick="loadPage('tasks')" class="text-xs text-sky-600 hover:underline font-semibold">View all →</button>
-      </div>
-      <div id="dash_topTasks" class="divide-y divide-slate-50">
-        <div class="p-6 text-center text-slate-300 text-sm animate-pulse">Loading…</div>
-      </div>
-    </div>
-
-    <div class="section-card overflow-hidden">
-      <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-        <div>
-          <h3 class="text-sm font-bold text-slate-700">Recent Revisions</h3>
-          <p class="text-xs text-slate-400">Latest revision activity</p>
-        </div>
-        <button onclick="loadPage('revisions')" class="text-xs text-purple-600 hover:underline font-semibold">View all →</button>
-      </div>
-      <div id="dash_recentRevisions" class="divide-y divide-slate-50">
-        <div class="p-6 text-center text-slate-300 text-sm animate-pulse">Loading…</div>
-      </div>
-    </div>
-
-  </div>
-
-  <!-- ── ROW 5: TEAM + VENDORS ── -->
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-    <div class="section-card overflow-hidden">
-      <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-        <div>
-          <h3 class="text-sm font-bold text-slate-700">Top Team Members This Month</h3>
-          <p class="text-xs text-slate-400">By total pages produced</p>
-        </div>
-        <button onclick="loadPage('team')" class="text-xs text-sky-600 hover:underline font-semibold">View all →</button>
-      </div>
-      <div id="dash_topEmployees" class="p-5 space-y-3">
-        <div class="h-4 bg-slate-100 rounded-full animate-pulse"></div>
-        <div class="h-4 bg-slate-100 rounded-full animate-pulse w-3/4"></div>
-      </div>
-    </div>
-
-    <div class="section-card overflow-hidden">
-      <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-        <div>
-          <h3 class="text-sm font-bold text-slate-700">Top Vendors This Month</h3>
-          <p class="text-xs text-slate-400">By total pages outsourced</p>
-        </div>
-        <button onclick="loadPage('vendors')" class="text-xs text-amber-600 hover:underline font-semibold">View all →</button>
-      </div>
-      <div id="dash_topVendors" class="p-5 space-y-3">
-        <div class="h-4 bg-slate-100 rounded-full animate-pulse"></div>
-        <div class="h-4 bg-slate-100 rounded-full animate-pulse w-3/4"></div>
-      </div>
-    </div>
-
-  </div>
-
-  <!-- ── ROW 6: ACTIVE PROJECTS PIPELINE ── -->
-  <div class="section-card overflow-hidden">
-    <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-      <div>
-        <h3 class="text-sm font-bold text-slate-700">Active Projects Pipeline</h3>
-        <p class="text-xs text-slate-400">Projects currently in progress with task & page counts</p>
-      </div>
-      <button onclick="loadPage('projects')" class="text-xs text-sky-600 hover:underline font-semibold">View all →</button>
-    </div>
-    <div id="dash_activePipeline" class="divide-y divide-slate-50">
-      <div class="p-6 text-center text-slate-300 text-sm animate-pulse">Loading…</div>
-    </div>
-  </div>
 
 </div>

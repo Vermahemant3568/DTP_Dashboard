@@ -83,15 +83,14 @@ function _vvRender(d) {
   _set("vv_pendingPages",   (s.pendingPages   || 0).toLocaleString());
   _set("vv_estAmount",      (v.currency || "INR") + " " + (s.estimatedAmount || 0).toLocaleString());
 
-  /* ── Payment summary ── */
-  var rate = s.ratePerPage || 0;
-  var cur  = v.currency || "INR";
+  /* ── Payment summary (task-level rates) ── */
+  var cur = v.currency || "INR";
   _set("vv_payCompletedPages", (s.completedPages || 0).toLocaleString() + " pages");
-  _set("vv_payCompletedAmt",   cur + " " + ((s.completedPages || 0) * rate).toLocaleString());
+  _set("vv_payCompletedAmt",   cur + " " + (s.estimatedAmount || 0).toLocaleString());
   _set("vv_payPendingPages",   (s.pendingPages   || 0).toLocaleString() + " pages");
-  _set("vv_payPendingAmt",     cur + " " + ((s.pendingPages   || 0) * rate).toLocaleString());
+  _set("vv_payPendingAmt",     cur + " " + (s.pendingAmount   || 0).toLocaleString());
   _set("vv_payTotalPages",     (s.totalPages     || 0).toLocaleString() + " pages");
-  _set("vv_payTotalAmt",       cur + " " + ((s.totalPages     || 0) * rate).toLocaleString());
+  _set("vv_payTotalAmt",       cur + " " + (s.totalAmount     || 0).toLocaleString());
 
   /* ── Populate filter dropdowns (only on first load) ── */
   _vvPopulateDropdowns(d.projectOptions || [], d.langOptions || []);
@@ -169,20 +168,28 @@ function _vvRenderTable(rows) {
   if (!tbody) return;
   if (countEl) countEl.innerText = rows.length + " record" + (rows.length !== 1 ? "s" : "");
   if (!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="8" class="py-12 text-center text-slate-400 text-sm">No work records found for the selected filters.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10" class="py-12 text-center text-slate-400 text-sm">No work records found for the selected filters.</td></tr>';
     return;
   }
   tbody.innerHTML = rows.map(function(r) {
     var sc  = getStatusClass(r.status || "Pending");
     var tc  = r.type === "revision" ? "bg-purple-100 text-purple-700" : getTaskClass(r.taskType || "Main DTP");
+    var pc  = r.paymentStatus === "Paid"    ? "bg-green-100 text-green-700" :
+              r.paymentStatus === "Partial" ? "bg-yellow-100 text-yellow-700" :
+              r.paymentStatus === "N/A"     ? "bg-gray-100 text-gray-400" :
+                                             "bg-red-50 text-red-600";
+    var rateStr = r.ratePerPage ? (r.currency || "") + " " + Number(r.ratePerPage).toLocaleString() : "—";
+    var amtStr  = r.estimatedAmount ? (r.currency || "") + " " + Number(r.estimatedAmount).toLocaleString() : "—";
     return '<tr>' +
       '<td class="font-mono text-[11px] text-gray-400">' + (r.id || "—") + '</td>' +
-      '<td class="text-sm font-semibold text-gray-800 max-w-[160px] truncate">' + (r.projectName || "—") + '</td>' +
+      '<td class="text-sm font-semibold text-gray-800 max-w-[140px] truncate">' + (r.projectName || "—") + '</td>' +
       '<td><span class="badge ' + tc + '">' + (r.taskType || "—") + '</span></td>' +
       '<td class="text-sm text-gray-600">' + (r.language || "—") + '</td>' +
       '<td class="text-center text-sm font-black text-sky-700">' + (r.pages || 0).toLocaleString() + '</td>' +
+      '<td class="text-sm text-gray-600 text-right">' + rateStr + '</td>' +
+      '<td class="text-sm font-semibold text-emerald-700 text-right">' + amtStr + '</td>' +
       '<td><span class="badge ' + sc + '">' + (r.status || "—") + '</span></td>' +
-      '<td class="text-sm text-gray-500">' + (r.startDate || "—") + '</td>' +
+      '<td><span class="badge ' + pc + '">' + (r.paymentStatus || "—") + '</span></td>' +
       '<td class="text-sm text-gray-500">' + (r.completedDate || "—") + '</td>' +
     '</tr>';
   }).join("");

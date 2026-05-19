@@ -118,6 +118,9 @@ function loadTaskForEdit(id) {
       _setVal("task_sourceLink",     t[17]);
       _setVal("task_deliverableLink",t[18]);
       _setVal("task_notes",          t[19]);
+      _setVal("task_ratePerPage",    t[22]);
+      _setVal("task_currency",       t[23]);
+      _setVal("task_paymentStatus",  t[24] || "Unpaid");
       var wt=t[5]||"In-House";
       var radio=document.querySelector('input[name="task_workType"][value="'+wt+'"]');
       if (radio){ radio.checked=true; _updateWorkTypeBtns("task_workType","wt_inhouse_btn","wt_vendor_btn"); }
@@ -323,15 +326,19 @@ function loadTaskDropdowns(cb) {
     .withFailureHandler(function(){ if (typeof cb==="function") cb(); })
     .withSuccessHandler(function(d){
       if (d) {
-        /* Team members — show name + role + specialization */
+        /* Cache for auto-fill */
+        window._taskTeamData   = d.team   || [];
+        window._taskVendorData = d.vendors || [];
+
         var tOpts = (d.team || []).map(function(m) {
           var sub = [m.role, m.specialization].filter(Boolean).join(" · ");
-          return '<option value="' + m.name + '">' + m.name + (sub ? ' (' + sub + ')' : '') + '</option>';
+          return '<option value="' + m.name + '" data-rate="' + (m.ratePerPage||0) + '" data-currency="' + (m.currency||"") + '">' +
+            m.name + (sub ? ' (' + sub + ')' : '') + '</option>';
         }).join("");
-        /* Vendors — show name + specialization + languages */
         var vOpts = (d.vendors || []).map(function(v) {
           var sub = [v.specialization, v.languages].filter(Boolean).join(" · ");
-          return '<option value="' + v.name + '">' + v.name + (sub ? ' (' + sub + ')' : '') + '</option>';
+          return '<option value="' + v.name + '" data-rate="' + (v.ratePerPage||0) + '" data-currency="' + (v.currency||"") + '">' +
+            v.name + (sub ? ' (' + sub + ')' : '') + '</option>';
         }).join("");
 
         var aEl = document.getElementById("task_assignedTo");
@@ -339,16 +346,38 @@ function loadTaskDropdowns(cb) {
         if (aEl) {
           aEl.innerHTML = '<option value="">— Select Team Member —</option>' + tOpts;
           if (!tOpts) aEl.innerHTML += '<option value="" disabled>No active team members found</option>';
+          aEl.addEventListener("change", _autoFillRateFromMember);
         }
         if (vEl) {
           vEl.innerHTML = '<option value="">— Select Vendor —</option>' + vOpts;
           if (!vOpts) vEl.innerHTML += '<option value="" disabled>No active vendors found</option>';
+          vEl.addEventListener("change", _autoFillRateFromVendor);
         }
       }
       _syncTaskAssignmentFields();
       if (typeof cb==="function") cb();
     })
     .getDropdownData();
+}
+
+function _autoFillRateFromMember() {
+  var sel = document.getElementById("task_assignedTo");
+  if (!sel) return;
+  var opt = sel.options[sel.selectedIndex];
+  var rate = opt ? (opt.getAttribute("data-rate") || "") : "";
+  var cur  = opt ? (opt.getAttribute("data-currency") || "") : "";
+  if (rate) _setVal("task_ratePerPage", rate);
+  if (cur)  _setVal("task_currency",    cur);
+}
+
+function _autoFillRateFromVendor() {
+  var sel = document.getElementById("task_vendorName");
+  if (!sel) return;
+  var opt = sel.options[sel.selectedIndex];
+  var rate = opt ? (opt.getAttribute("data-rate") || "") : "";
+  var cur  = opt ? (opt.getAttribute("data-currency") || "") : "";
+  if (rate) _setVal("task_ratePerPage", rate);
+  if (cur)  _setVal("task_currency",    cur);
 }
 
 /* Show Assigned To for In-House, Vendor Name for Vendor */
@@ -393,7 +422,10 @@ var _taskSubmitting = false;
       completedDate:   _val("task_completedDate"),
       sourceLink:      _val("task_sourceLink"),
       deliverableLink: _val("task_deliverableLink"),
-      notes:           _val("task_notes")
+      notes:           _val("task_notes"),
+      ratePerPage:     _val("task_ratePerPage"),
+      currency:        _val("task_currency"),
+      paymentStatus:   _val("task_paymentStatus") || "Unpaid"
     };
 
     if (!taskData.taskType) { showToast("Task Type is required.","error"); return; }

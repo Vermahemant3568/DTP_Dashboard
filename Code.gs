@@ -19,7 +19,8 @@ const TC = {
   LANGUAGE:8, SOURCE_PAGES:9, FINAL_PAGES:10, LANG_COUNT:11,
   STATUS:12, PRIORITY:13, START_DATE:14, DELIVERY_DATE:15,
   COMPLETED_DATE:16, SOURCE_LINK:17, DELIVERABLE_LINK:18, NOTES:19,
-  CREATED_AT:20, UPDATED_AT:21
+  CREATED_AT:20, UPDATED_AT:21,
+  RATE_PER_PAGE:22, CURRENCY:23, PAYMENT_STATUS:24
 };
 
 /* ── REVISION column indices (0-based) ── */
@@ -28,7 +29,8 @@ const RC = {
   REV_NUMBER:4, REV_TYPE:5, LANGUAGE:6, REV_PAGES:7,
   WORK_TYPE:8, ASSIGNED_TO:9, VENDOR_NAME:10, STATUS:11,
   REV_DATE:12, DELIVERY_DATE:13, COMPLETED_DATE:14, NOTES:15,
-  CREATED_AT:16, UPDATED_AT:17
+  CREATED_AT:16, UPDATED_AT:17,
+  RATE_PER_PAGE:18, CURRENCY:19, PAYMENT_STATUS:20
 };
 
 /* ── PROJECT column indices (0-based) ── */
@@ -150,7 +152,8 @@ function getAllData() {
 
 /* ================================================================
    MONTHLY SUMMARY
-   Accepts optional { year, month } — defaults to current month.
+   Accepts optional { year, month, tasks, revisions } —
+   tasks/revisions can be pre-loaded arrays to avoid double reads.
    Returns full breakdown by task type, work type, employee, vendor.
 ================================================================ */
 function getMonthlySummary(params) {
@@ -159,11 +162,16 @@ function getMonthlySummary(params) {
     const year  = (params && params.year)  ? Number(params.year)  : now.getFullYear();
     const month = (params && params.month) ? Number(params.month) - 1 : now.getMonth(); // 0-based
 
-    const tasks     = _sheetRows(SH_TASKS);
-    const revisions = _sheetRows(SH_REVISIONS);
+    /* Accept pre-loaded rows to avoid double spreadsheet reads */
+    const tasks     = (params && params._tasks)     ? params._tasks     : _sheetRows(SH_TASKS);
+    const revisions = (params && params._revisions) ? params._revisions : _sheetRows(SH_REVISIONS);
 
-    /* filter tasks by start date falling in target month */
-    const monthTasks = tasks.filter(r => _inMonth(r[TC.START_DATE], month, year));
+    /* filter tasks by startDate — fall back to createdAt if startDate is blank,
+       so tasks without a start date are still counted in the month they were created */
+    const monthTasks = tasks.filter(r => {
+      var dateVal = r[TC.START_DATE] || r[TC.CREATED_AT];
+      return _inMonth(dateVal, month, year);
+    });
     /* filter revisions by rev date — fall back to createdAt if rev date is blank */
     const monthRevs  = revisions.filter(r => {
       var dateVal = r[RC.REV_DATE] || r[RC.CREATED_AT];
@@ -184,71 +192,17 @@ function getMonthlySummary(params) {
     });
 
     /* ── revisions pages (tracked separately, included in grand totals) ── */
-    const revIH  = monthRevs.filter(r => r[RC.WORK_TYPE] === "In-House").reduce((s, r) => s + (Number(r[RC.REV_PAGES]) || 0), 0);
-    const revVD  = monthRevs.filter(r => r[RC.WORK_TYPE] === "Vendor").reduce((s, r)   => s + (Number(r[RC.REV_PAGES]) || 0), 0);
+    const revIH    = monthRevs.filter(r => r[RC.WORK_TYPE] === "In-House").reduce((s, r) => s + (Number(r[RC.REV_PAGES]) || 0), 0);
+    const revVD    = monthRevs.filter(r => r[RC.WORK_TYPE] === "Vendor").reduce((s, r)   => s + (Number(r[RC.REV_PAGES]) || 0), 0);
     const revTotal = revIH + revVD;
-    /* Store revision totals separately so reports/dashboard can access them */
     byTaskType.revisions = { label: "Revisions", total: revTotal, inHouse: revIH, vendor: revVD, count: monthRevs.length };
 
-    /* ── grand totals ── */
+    /* ── grand totals (tasks + revisions) ── */
     const allTaskPages = monthTasks.reduce((s, r) => s + (Number(r[TC.FINAL_PAGES]) || 0), 0);
     const allRevPages  = monthRevs.reduce((s, r)  => s + (Number(r[RC.REV_PAGES])   || 0), 0);
     const grandTotal   = allTaskPages + allRevPages;
     const totalInHouse = monthTasks.filter(r => r[TC.WORK_TYPE] === "In-House").reduce((s, r) => s + (Number(r[TC.FINAL_PAGES]) || 0), 0) + revIH;
     const totalVendor  = monthTasks.filter(r => r[TC.WORK_TYPE] === "Vendor").reduce((s, r)   => s + (Number(r[TC.FINAL_PAGES]) || 0), 0) + revVD;
-
-    /* ── by employee (In-House tasks only) ── */
-    const empMap = {};
-    monthTasks.filter(r => r[TC.WORK_TYPE] === "In-House").forEach(function(r) {
-      const name = r[TC.ASSIGNED_TO] || "";
-      if (!name) return;  // skip blank assigned-to
-      if (!empMap[name]) empMap[name] = { pages: 0, tasks: 0 };
-      empMap[name].pages += Number(r[TC.FINAL_PAGES]) || 0;
-      empMap[name].tasks++;
-    });
-    monthRevs.filter(r => r[RC.WORK_TYPE] === "In-House").forEach(function(r) {
-      const name = r[RC.ASSIGNED_TO] || "";
-      if (!name) return;
-      if (!empMap[name]) empMap[name] = { pages: 0, tasks: 0 };
-      empMap[name].pages += Number(r[RC.REV_PAGES]) || 0;
-      empMap[name].tasks++;
-    });
-    const byEmployee = Object.keys(empMap).map(n => ({ name: n, pages: empMap[n].pages, tasks: empMap[n].tasks }))
-                             .sort((a, b) => b.pages - a.pages);
-
-    /* ── by vendor (Vendor tasks only) ── */
-    const vendMap = {};
-    monthTasks.filter(r => r[TC.WORK_TYPE] === "Vendor").forEach(function(r) {
-      const name = r[TC.VENDOR_NAME] || "";
-      if (!name) return;  // skip blank vendor name
-      if (!vendMap[name]) vendMap[name] = { pages: 0, tasks: 0 };
-      vendMap[name].pages += Number(r[TC.FINAL_PAGES]) || 0;
-      vendMap[name].tasks++;
-    });
-    monthRevs.filter(r => r[RC.WORK_TYPE] === "Vendor").forEach(function(r) {
-      const name = r[RC.VENDOR_NAME] || "";
-      if (!name) return;
-      if (!vendMap[name]) vendMap[name] = { pages: 0, tasks: 0 };
-      vendMap[name].pages += Number(r[RC.REV_PAGES]) || 0;
-      vendMap[name].tasks++;
-    });
-    const byVendor = Object.keys(vendMap).map(n => ({ name: n, pages: vendMap[n].pages, tasks: vendMap[n].tasks }))
-                           .sort((a, b) => b.pages - a.pages);
-
-    /* ── by language ── */
-    const langMap = {};
-    monthTasks.forEach(function(r) {
-      const lang = r[TC.LANGUAGE] || "Unknown";
-      if (!langMap[lang]) langMap[lang] = 0;
-      langMap[lang] += Number(r[TC.FINAL_PAGES]) || 0;
-    });
-    monthRevs.forEach(function(r) {
-      const lang = r[RC.LANGUAGE] || "Unknown";
-      if (!langMap[lang]) langMap[lang] = 0;
-      langMap[lang] += Number(r[RC.REV_PAGES]) || 0;
-    });
-    const byLanguage = Object.keys(langMap).map(n => ({ language: n, pages: langMap[n] }))
-                             .sort((a, b) => b.pages - a.pages);
 
     const monthLabel = Utilities.formatDate(
       new Date(year, month, 1), Session.getScriptTimeZone(), "MMMM yyyy"
@@ -257,7 +211,6 @@ function getMonthlySummary(params) {
     return {
       month: monthLabel, year: year, monthIndex: month + 1,
       byTaskType, grandTotal, totalInHouse, totalVendor,
-      byEmployee, byVendor, byLanguage,
       taskCount: monthTasks.length, revisionCount: monthRevs.length
     };
   } catch (e) {
@@ -299,10 +252,14 @@ function getProjectSummary(projectId) {
 }
 
 /* ================================================================
-   DASHBOARD DATA — single call returns monthly summary + filtered
-   raw rows for tasks, revisions, projects for the selected month.
-   Projects are filtered by receivedDate falling in the month.
-   Tasks filtered by startDate, revisions by revDate/createdAt.
+   DASHBOARD DATA — single spreadsheet read for everything.
+   Returns:
+     summary      — monthly page/task breakdown (for ROW 2 cards + charts)
+     monthTasks   — tasks whose startDate is in selected month
+     monthRevs    — revisions whose revDate is in selected month
+     monthProjects— projects received in selected month
+     allProjects  — every project (for active pipeline, status-based)
+     allTimeTotals— counts/pages across ALL time (for ROW 1 summary cards)
 ================================================================ */
 function getDashboardData(params) {
   try {
@@ -310,34 +267,51 @@ function getDashboardData(params) {
     const year  = (params && params.year)  ? Number(params.year)  : now.getFullYear();
     const month = (params && params.month) ? Number(params.month) - 1 : now.getMonth();
 
-    /* ── raw filtered rows ── */
+    /* ── Single read of every sheet ── */
     const allTasks     = _sheetRows(SH_TASKS).map(_fmtRow);
     const allRevisions = _sheetRows(SH_REVISIONS).map(_fmtRow);
     const allProjects  = _sheetRows(SH_PROJECTS).map(_fmtRow);
 
-    const monthTasks = allTasks.filter(r => _inMonth(r[TC.START_DATE], month, year));
-    const monthRevs  = allRevisions.filter(r => {
-      var dv = r[RC.REV_DATE] || r[RC.CREATED_AT];
-      return _inMonth(dv, month, year);
-    });
-    const monthProjects = allProjects.filter(r => {
-      var dv = r[PC.RECEIVED_DATE] || r[PC.CREATED_AT];
-      return _inMonth(dv, month, year);
+    /* ── Monthly summary ── */
+    const summary = getMonthlySummary({
+      year:        year,
+      month:       month + 1,
+      _tasks:      _sheetRows(SH_TASKS),
+      _revisions:  _sheetRows(SH_REVISIONS)
     });
 
-    /* ── monthly summary (reuse existing logic) ── */
-    const summary = getMonthlySummary(params);
+    /* ── All-time totals for ROW 1 summary cards ── */
+    const totalAllTasks     = allTasks.length;
+    const totalAllRevisions = allRevisions.length;
+    const totalAllProjects  = allProjects.length;
+    const activeProjects    = allProjects.filter(r => r[PC.STATUS] === "Active").length;
+    const completedProjects = allProjects.filter(r => r[PC.STATUS] === "Completed").length;
+    const pendingTasks      = allTasks.filter(r => r[TC.STATUS] === "Pending").length;
+    const inProgressTasks   = allTasks.filter(r => r[TC.STATUS] === "In Progress").length;
+    const pendingRevisions  = allRevisions.filter(r => r[RC.STATUS] === "Pending" || r[RC.STATUS] === "In Progress").length;
+    const totalRevPages     = allRevisions.reduce((s, r) => s + (Number(r[RC.REV_PAGES]) || 0), 0);
+    const inProgressPages   = allTasks
+      .filter(r => r[TC.STATUS] === "In Progress")
+      .reduce((s, r) => s + (Number(r[TC.FINAL_PAGES]) || 0), 0);
 
     return {
-      summary:   summary,
-      tasks:     monthTasks,
-      revisions: monthRevs,
-      projects:  monthProjects,
-      allProjects: allProjects   /* needed for active pipeline — status-based not date-based */
+      summary,
+      allTimeTotals: {
+        totalProjects:    totalAllProjects,
+        activeProjects,
+        completedProjects,
+        totalTasks:       totalAllTasks,
+        pendingTasks,
+        inProgressTasks,
+        totalRevisions:   totalAllRevisions,
+        pendingRevisions,
+        totalRevPages,
+        inProgressPages
+      }
     };
   } catch(e) {
     console.error("getDashboardData:", e);
-    return { summary: {}, tasks: [], revisions: [], projects: [], allProjects: [] };
+    return { summary: {}, tasks: [], revisions: [], projects: [], allProjects: [], allTimeTotals: {} };
   }
 }
 function getProjectsWithTaskCount() {
@@ -388,6 +362,8 @@ function getDropdownData() {
         name:           r[1] || "",
         role:           r[2] || "",
         specialization: r[5] || "",
+        ratePerPage:    r[7] || 0,
+        currency:       r[8] || "",
         status:         r[6] || "Active"
       }))
       .filter(m => m.status === "Active");

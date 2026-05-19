@@ -13,7 +13,6 @@ var PAGE_MAP = {
   tasks:       "ManageTasks",
   revisions:   "Revisions",
   addRevision: "AddRevision",
-  reports:     "Reports",
   vendors:     "Vendors",
   team:        "Team",
   vendorView:  "VendorView",
@@ -96,10 +95,6 @@ function _initPage(page, ctx) {
     case "addRevision":
       _initAddRevisionForm(ctx);
       break;
-    case "reports":
-      if (typeof loadReports === "function") loadReports();
-      else hideLoader();
-      break;
     case "vendors":
       if (typeof loadVendors === "function") loadVendors();
       else hideLoader();
@@ -122,6 +117,9 @@ function _initPage(page, ctx) {
 }
 
 function _initAddTaskForm(ctx) {
+  /* Auto-fill today as start date for new tasks */
+  var sdEl = document.getElementById("task_startDate");
+  if (sdEl && !sdEl.value) sdEl.value = todayISO();
   if (typeof initTaskPageCalc === "function") initTaskPageCalc();
   _wireWorkTypeRadios("task_workType", "wt_inhouse_btn", "wt_vendor_btn");
   if (typeof loadTaskDropdowns === "function") {
@@ -268,7 +266,6 @@ function handleRefresh() {
     projects:   function() { if (typeof loadProjects  === "function") loadProjects(); },
     tasks:      function() { if (typeof loadTasks     === "function") loadTasks(); },
     revisions:  function() { if (typeof loadRevisions === "function") loadRevisions(); },
-    reports:    function() { if (typeof loadReports   === "function") loadReports(); },
     vendors:    function() { if (typeof loadVendors   === "function") loadVendors(); },
     team:       function() { if (typeof loadTeam      === "function") loadTeam(); },
     vendorView: function() { if (typeof _vvFetch      === "function") _vvFetch(); },

@@ -203,6 +203,21 @@
           <label class="label">Specialization</label>
           <input id="tm_spec" class="input" placeholder="e.g. InDesign, Illustrator">
         </div>
+        <div>
+          <label class="label">Rate Per Page</label>
+          <input type="number" id="tm_rate" class="input" placeholder="0.00" min="0" step="0.01">
+        </div>
+        <div>
+          <label class="label">Currency</label>
+          <select id="tm_currency" class="input">
+            <option value="">—</option>
+            <option>INR</option>
+            <option>USD</option>
+            <option>EUR</option>
+            <option>GBP</option>
+            <option>AED</option>
+          </select>
+        </div>
         <div class="col-span-2">
           <label class="label">Status</label>
           <select id="tm_status" class="input">
@@ -231,7 +246,6 @@
   <?!= include('ScriptTasks'); ?>
   <?!= include('ScriptRevisions'); ?>
   <?!= include('ScriptViewProject'); ?>
-  <?!= include('ScriptReports'); ?>
   <?!= include('ScriptVendors'); ?>
   <?!= include('ScriptTeam'); ?>
   <?!= include('ScriptVendorView'); ?>

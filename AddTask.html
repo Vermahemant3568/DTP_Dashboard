@@ -202,6 +202,23 @@
               <option>Urgent</option>
             </select>
           </div>
+          <div>
+            <label class="label">Rate Per Page
+              <span class="ml-1 text-[11px] font-normal text-indigo-400">(auto-filled from profile)</span>
+            </label>
+            <div class="flex gap-2">
+              <select id="task_currency" class="input w-24">
+                <option value="">—</option>
+                <option>INR</option>
+                <option>USD</option>
+                <option>EUR</option>
+                <option>GBP</option>
+                <option>AED</option>
+              </select>
+              <input type="number" id="task_ratePerPage" class="input flex-1" placeholder="e.g. 12.50" min="0" step="0.01">
+            </div>
+            <p class="text-xs text-gray-400 mt-1">Rate assigned for this specific task</p>
+          </div>
         </div>
         <div id="task_typeHint" class="mt-4 hidden p-3 bg-indigo-50 border border-indigo-100 rounded-xl text-sm text-indigo-700"></div>
       </div>
@@ -253,7 +270,7 @@
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
             <label class="label">Start Date</label>
-            <input type="date" id="task_startDate" class="input">
+            <input type="date" id="task_startDate" class="input" required>
           </div>
           <div>
             <label class="label">Delivery Date</label>
@@ -270,6 +287,15 @@
               <option>In Progress</option>
               <option>Completed</option>
               <option>On Hold</option>
+            </select>
+          </div>
+          <div>
+            <label class="label">Payment Status</label>
+            <select id="task_paymentStatus" class="input">
+              <option value="Unpaid">Unpaid</option>
+              <option value="Paid">Paid</option>
+              <option value="Partial">Partial</option>
+              <option value="N/A">N/A</option>
             </select>
           </div>
         </div>

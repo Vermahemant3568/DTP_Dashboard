@@ -21,17 +21,19 @@ function _renderTeamTable(data) {
   var tbody=document.getElementById("teamTable");
   if (!tbody) return;
   if (!data.length){
-    tbody.innerHTML='<tr><td colspan="7" class="py-16 text-center text-slate-400 text-sm">No team members yet.</td></tr>';
+    tbody.innerHTML='<tr><td colspan="8" class="py-16 text-center text-slate-400 text-sm">No team members yet.</td></tr>';
     return;
   }
   tbody.innerHTML=data.map(function(r){
     var sc=r[6]==="Active"?"bg-green-100 text-green-700":"bg-gray-100 text-gray-500";
+    var rateStr = r[7] ? (r[8]||"")+" "+(Number(r[7]).toLocaleString()) : "—";
     return '<tr>'+
       '<td class="font-mono text-[11px] text-gray-400">'+r[0]+'</td>'+
       '<td class="font-semibold text-gray-900 text-sm">'+(r[1]||"—")+'</td>'+
       '<td class="text-sm text-gray-600">'+(r[2]||"—")+'</td>'+
       '<td class="text-sm text-gray-600">'+(r[3]||"—")+'</td>'+
       '<td class="text-sm text-gray-600">'+(r[5]||"—")+'</td>'+
+      '<td class="text-sm font-semibold text-emerald-700 text-center">'+rateStr+'</td>'+
       '<td><span class="badge '+sc+'">'+(r[6]||"Active")+'</span></td>'+
       '<td class="text-right">'+
         '<div class="flex justify-end gap-1">'+
@@ -54,10 +56,11 @@ function openTeamModal(id) {
     if (m){
       _setVal("tm_name",m[1]); _setVal("tm_role",m[2]); _setVal("tm_email",m[3]);
       _setVal("tm_phone",m[4]); _setVal("tm_spec",m[5]); _setVal("tm_status",m[6]);
+      _setVal("tm_rate",m[7]); _setVal("tm_currency",m[8]);
     }
   } else {
-    ["tm_name","tm_role","tm_email","tm_phone","tm_spec"].forEach(function(i){ _setVal(i,""); });
-    _setVal("tm_status","Active");
+    ["tm_name","tm_role","tm_email","tm_phone","tm_spec","tm_rate"].forEach(function(i){ _setVal(i,""); });
+    _setVal("tm_currency",""); _setVal("tm_status","Active");
   }
   modal.style.display="flex";
 }
@@ -77,7 +80,9 @@ function saveTeamMember() {
     email:         _val("tm_email"),
     phone:         _val("tm_phone"),
     specialization:_val("tm_spec"),
-    status:        _val("tm_status")
+    status:        _val("tm_status"),
+    ratePerPage:   _val("tm_rate"),
+    currency:      _val("tm_currency")
   };
   showLoader("Saving...");
   if (_editTeamId){

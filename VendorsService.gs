@@ -104,6 +104,8 @@ function addTeamMember(d) {
       d.phone            || "",
       d.specialization   || "",
       d.status           || "Active",
+      Number(d.ratePerPage) || 0,
+      d.currency         || "",
       now
     ]);
     return { success: true, id: id };
@@ -118,14 +120,16 @@ function updateTeamMember(id, d) {
     var sh    = _sh(SH_TEAM);
     var found = _findRow(sh, id);
     if (!found) throw new Error("Team member not found: " + id);
-    sh.getRange(found.index, 2, 1, 7).setValues([[
+    sh.getRange(found.index, 2, 1, 9).setValues([[
       d.name             || "",
       d.role             || "",
       d.email            || "",
       d.phone            || "",
       d.specialization   || "",
       d.status           || "Active",
-      found.row[7]
+      Number(d.ratePerPage) || 0,
+      d.currency         || "",
+      found.row[9]
     ]]);
     return { success: true };
   } catch (e) {
@@ -217,7 +221,16 @@ function getVendorPerformance(vendorName, filters) {
     var pendingPages    = totalPages - completedPages;
     var ratePerPage     = vendorRow ? (Number(vendorRow[7]) || 0) : 0;
     var currency        = vendorRow ? (vendorRow[8] || "INR") : "INR";
-    var estimatedAmount = completedPages * ratePerPage;
+    var estimatedAmount = vTasks.filter(function(r){ return r[TC.STATUS]==="Completed"; })
+                               .reduce(function(s,r){ return s+(Number(r[TC.FINAL_PAGES])||0)*(Number(r[TC.RATE_PER_PAGE])||0); },0) +
+                         vRevs.filter(function(r){ return r[RC.STATUS]==="Completed"; })
+                              .reduce(function(s,r){ return s+(Number(r[RC.REV_PAGES])||0)*(Number(r[RC.RATE_PER_PAGE])||0); },0);
+    var pendingAmount   = vTasks.filter(function(r){ return r[TC.STATUS]!=="Completed"; })
+                               .reduce(function(s,r){ return s+(Number(r[TC.FINAL_PAGES])||0)*(Number(r[TC.RATE_PER_PAGE])||0); },0) +
+                         vRevs.filter(function(r){ return r[RC.STATUS]!=="Completed"; })
+                              .reduce(function(s,r){ return s+(Number(r[RC.REV_PAGES])||0)*(Number(r[RC.RATE_PER_PAGE])||0); },0);
+    var totalAmount     = vTasks.reduce(function(s,r){ return s+(Number(r[TC.FINAL_PAGES])||0)*(Number(r[TC.RATE_PER_PAGE])||0); },0) +
+                         vRevs.reduce(function(s,r){ return s+(Number(r[RC.REV_PAGES])||0)*(Number(r[RC.RATE_PER_PAGE])||0); },0);
 
     /* ── Filtered stats ── */
     var filtPages = fTasks.reduce(function(s,r){ return s+(Number(r[TC.FINAL_PAGES])||0); }, 0) +
@@ -303,20 +316,30 @@ function getVendorPerformance(vendorName, filters) {
 
     /* ── Detailed task rows (filtered, for table) ── */
     var taskRows = fTasks.map(function(r) {
+      var rate  = Number(r[TC.RATE_PER_PAGE]) || 0;
+      var pages = Number(r[TC.FINAL_PAGES])   || 0;
       return {
         id: r[TC.ID], projectId: r[TC.PROJECT_ID], projectName: r[TC.PROJECT_NAME],
         taskType: r[TC.TASK_TYPE], language: r[TC.LANGUAGE],
-        pages: Number(r[TC.FINAL_PAGES]) || 0, status: r[TC.STATUS],
+        pages: pages, status: r[TC.STATUS],
         startDate: r[TC.START_DATE], completedDate: r[TC.COMPLETED_DATE],
+        ratePerPage: rate, currency: r[TC.CURRENCY] || currency,
+        estimatedAmount: pages * rate,
+        paymentStatus: r[TC.PAYMENT_STATUS] || "Unpaid",
         type: "task"
       };
     });
     var revRows = fRevs.map(function(r) {
+      var rate  = Number(r[RC.RATE_PER_PAGE]) || 0;
+      var pages = Number(r[RC.REV_PAGES])     || 0;
       return {
         id: r[RC.ID], projectId: r[RC.PROJECT_ID], projectName: r[RC.PROJECT_NAME],
         taskType: "Revision", language: r[RC.LANGUAGE],
-        pages: Number(r[RC.REV_PAGES]) || 0, status: r[RC.STATUS],
+        pages: pages, status: r[RC.STATUS],
         startDate: r[RC.REV_DATE] || r[RC.CREATED_AT], completedDate: r[RC.COMPLETED_DATE],
+        ratePerPage: rate, currency: r[RC.CURRENCY] || currency,
+        estimatedAmount: pages * rate,
+        paymentStatus: r[RC.PAYMENT_STATUS] || "Unpaid",
         type: "revision"
       };
     });
@@ -350,7 +373,7 @@ function getVendorPerformance(vendorName, filters) {
       } : { name: name, ratePerPage: 0, currency: "INR" },
       stats: {
         totalAssigned, totalCompleted, totalPages, completedPages,
-        pendingPages, ratePerPage, currency, estimatedAmount, filtPages
+        pendingPages, ratePerPage, currency, estimatedAmount, pendingAmount, totalAmount, filtPages
       },
       monthly, byProject, byTaskType, byLanguage,
       rows: allRows,
@@ -434,6 +457,16 @@ function getTeamMemberPerformance(memberName, filters) {
                          mRevs.filter(function(r){ return r[RC.STATUS]==="In Progress"; })
                               .reduce(function(s,r){ return s+(Number(r[RC.REV_PAGES])||0); }, 0);
     var avgPages = totalAssigned > 0 ? Math.round(totalPages / totalAssigned) : 0;
+    var estimatedAmount = mTasks.filter(function(r){ return r[TC.STATUS]==="Completed"; })
+                               .reduce(function(s,r){ return s+(Number(r[TC.FINAL_PAGES])||0)*(Number(r[TC.RATE_PER_PAGE])||0); },0) +
+                         mRevs.filter(function(r){ return r[RC.STATUS]==="Completed"; })
+                              .reduce(function(s,r){ return s+(Number(r[RC.REV_PAGES])||0)*(Number(r[RC.RATE_PER_PAGE])||0); },0);
+    var pendingAmount   = mTasks.filter(function(r){ return r[TC.STATUS]!=="Completed"; })
+                               .reduce(function(s,r){ return s+(Number(r[TC.FINAL_PAGES])||0)*(Number(r[TC.RATE_PER_PAGE])||0); },0) +
+                         mRevs.filter(function(r){ return r[RC.STATUS]!=="Completed"; })
+                              .reduce(function(s,r){ return s+(Number(r[RC.REV_PAGES])||0)*(Number(r[RC.RATE_PER_PAGE])||0); },0);
+    var totalAmount     = mTasks.reduce(function(s,r){ return s+(Number(r[TC.FINAL_PAGES])||0)*(Number(r[TC.RATE_PER_PAGE])||0); },0) +
+                         mRevs.reduce(function(s,r){ return s+(Number(r[RC.REV_PAGES])||0)*(Number(r[RC.RATE_PER_PAGE])||0); },0);
 
     /* ── Monthly breakdown (last 12 months, unfiltered) ── */
     var monthlyMap = {};
@@ -515,20 +548,30 @@ function getTeamMemberPerformance(memberName, filters) {
 
     /* ── Detailed rows (filtered) ── */
     var taskRows = fTasks.map(function(r) {
+      var rate  = Number(r[TC.RATE_PER_PAGE]) || 0;
+      var pages = Number(r[TC.FINAL_PAGES])   || 0;
       return {
         id: r[TC.ID], projectId: r[TC.PROJECT_ID], projectName: r[TC.PROJECT_NAME],
         taskType: r[TC.TASK_TYPE], language: r[TC.LANGUAGE],
-        pages: Number(r[TC.FINAL_PAGES]) || 0, status: r[TC.STATUS],
+        pages: pages, status: r[TC.STATUS],
         startDate: r[TC.START_DATE], completedDate: r[TC.COMPLETED_DATE],
+        ratePerPage: rate, currency: r[TC.CURRENCY] || "",
+        estimatedAmount: pages * rate,
+        paymentStatus: r[TC.PAYMENT_STATUS] || "Unpaid",
         type: "task"
       };
     });
     var revRows = fRevs.map(function(r) {
+      var rate  = Number(r[RC.RATE_PER_PAGE]) || 0;
+      var pages = Number(r[RC.REV_PAGES])     || 0;
       return {
         id: r[RC.ID], projectId: r[RC.PROJECT_ID], projectName: r[RC.PROJECT_NAME],
         taskType: "Revision", language: r[RC.LANGUAGE],
-        pages: Number(r[RC.REV_PAGES]) || 0, status: r[RC.STATUS],
+        pages: pages, status: r[RC.STATUS],
         startDate: r[RC.REV_DATE] || r[RC.CREATED_AT], completedDate: r[RC.COMPLETED_DATE],
+        ratePerPage: rate, currency: r[RC.CURRENCY] || "",
+        estimatedAmount: pages * rate,
+        paymentStatus: r[RC.PAYMENT_STATUS] || "Unpaid",
         type: "revision"
       };
     });
@@ -553,11 +596,11 @@ function getTeamMemberPerformance(memberName, filters) {
       member: memberRow ? {
         id: memberRow[0], name: memberRow[1], role: memberRow[2],
         email: memberRow[3], phone: memberRow[4], specialization: memberRow[5],
-        status: memberRow[6]
+        status: memberRow[6], ratePerPage: Number(memberRow[7]) || 0, currency: memberRow[8] || ""
       } : { name: name },
       stats: {
         totalAssigned, totalCompleted, totalPages, completedPages,
-        inProgressPages, avgPages
+        inProgressPages, avgPages, estimatedAmount, pendingAmount, totalAmount
       },
       monthly, byProject, byTaskType, byLanguage,
       rows: allRows,
