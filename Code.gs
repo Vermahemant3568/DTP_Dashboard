@@ -344,30 +344,43 @@ function getProjectsWithTaskCount() {
 ================================================================ */
 function getDropdownData() {
   try {
-    const vendors = _sheetRows(SH_VENDORS)
-      .map(r => ({
-        id:             r[0],
-        name:           r[1] || "",
-        contactPerson:  r[2] || "",
-        specialization: r[5] || "",
-        languages:      r[6] || "",
-        ratePerPage:    r[7] || 0,
-        currency:       r[8] || "",
-        status:         r[9] || "Active"
-      }))
-      .filter(v => v.status === "Active");
-    const team = _sheetRows(SH_TEAM)
-      .map(r => ({
-        id:             r[0],
-        name:           r[1] || "",
-        role:           r[2] || "",
-        specialization: r[5] || "",
-        ratePerPage:    r[7] || 0,
-        currency:       r[8] || "",
-        status:         r[6] || "Active"
-      }))
-      .filter(m => m.status === "Active");
-    return { vendors, team };
+    var vendorRows = _sheetRows(SH_VENDORS);
+    var teamRows   = _sheetRows(SH_TEAM);
+
+    var vendors = vendorRows
+      .map(function(r) {
+        return {
+          id:             String(r[0] || ""),
+          name:           String(r[1] || "").trim(),
+          contactPerson:  String(r[2] || ""),
+          specialization: String(r[5] || ""),
+          languages:      String(r[6] || ""),
+          ratePerPage:    Number(r[7]) || 0,
+          currency:       String(r[8] || ""),
+          status:         String(r[9] || "Active").trim()
+        };
+      })
+      .filter(function(v) {
+        return v.name !== "" && v.status.toLowerCase() !== "inactive";
+      });
+
+    var team = teamRows
+      .map(function(r) {
+        return {
+          id:             String(r[0] || ""),
+          name:           String(r[1] || "").trim(),
+          role:           String(r[2] || ""),
+          specialization: String(r[5] || ""),
+          ratePerPage:    Number(r[7]) || 0,
+          currency:       String(r[8] || ""),
+          status:         String(r[6] || "Active").trim()
+        };
+      })
+      .filter(function(m) {
+        return m.name !== "" && m.status.toLowerCase() !== "inactive";
+      });
+
+    return { vendors: vendors, team: team };
   } catch (e) {
     console.error("getDropdownData:", e);
     return { vendors: [], team: [] };

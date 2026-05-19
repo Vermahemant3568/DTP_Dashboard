@@ -160,13 +160,13 @@
           <div>
             <label class="label">Work Type *</label>
             <div class="flex gap-3 mt-1">
-              <label class="flex-1 cursor-pointer">
+              <label class="flex-1 cursor-pointer" onclick="_onTaskWorkTypeClick('In-House')">
                 <input type="radio" name="task_workType" id="task_wt_inhouse" value="In-House" class="sr-only" checked>
                 <div id="wt_inhouse_btn" class="flex items-center justify-center gap-2 rounded-xl border-2 border-sky-500 bg-sky-50 py-2.5 text-sm font-bold text-sky-700 transition-all">
                   🏢 In-House
                 </div>
               </label>
-              <label class="flex-1 cursor-pointer">
+              <label class="flex-1 cursor-pointer" onclick="_onTaskWorkTypeClick('Vendor')">
                 <input type="radio" name="task_workType" id="task_wt_vendor" value="Vendor" class="sr-only">
                 <div id="wt_vendor_btn" class="flex items-center justify-center gap-2 rounded-xl border-2 border-gray-200 bg-gray-50 py-2.5 text-sm font-bold text-gray-400 transition-all">
                   🤝 Vendor

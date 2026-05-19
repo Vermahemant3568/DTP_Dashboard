@@ -38,7 +38,8 @@ function setupDatabase() {
       "Revision Number", "Revision Type", "Language", "Revision Pages",
       "Work Type", "Assigned To", "Vendor Name", "Status",
       "Revision Date", "Delivery Date", "Completed Date", "Notes",
-      "Created At", "Updated At"
+      "Created At", "Updated At",
+      "Rate Per Page", "Currency", "Payment Status"
     ],
 
     /* ── 4. VENDORS — vendor master list ── */
@@ -100,9 +101,9 @@ function setupDatabase() {
     "Sheets created:\n" +
     "• Projects (15 cols)\n" +
     "• Tasks (25 cols)\n" +
-    "• Revisions (18 cols)\n" +
+    "• Revisions (21 cols)\n" +
     "• Vendors (12 cols)\n" +
-    "• Team (8 cols)\n" +
+    "• Team (10 cols)\n" +
     "• MonthlySnapshot (9 cols)\n\n" +
     "If you have existing data, run migrateOldProjectsToTasks() next."
   );

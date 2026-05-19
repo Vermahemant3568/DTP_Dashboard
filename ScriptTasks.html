@@ -149,8 +149,22 @@ function loadTaskForEdit(id) {
       var wt=t[5]||"In-House";
       var radio=document.querySelector('input[name="task_workType"][value="'+wt+'"]');
       if (radio){ radio.checked=true; _updateWorkTypeBtns("task_workType","wt_inhouse_btn","wt_vendor_btn"); }
-      _setVal("task_assignedTo",t[6]);
-      _setVal("task_vendorName",t[7]);
+      /* Set assignedTo / vendorName AFTER work type so visibility is correct */
+      if (wt === "In-House") {
+        var aEl = document.getElementById("task_assignedTo");
+        if (aEl && t[6]) {
+          for (var i = 0; i < aEl.options.length; i++) {
+            if (aEl.options[i].value === String(t[6])) { aEl.selectedIndex = i; break; }
+          }
+        }
+      } else {
+        var vEl = document.getElementById("task_vendorName");
+        if (vEl && t[7]) {
+          for (var j = 0; j < vEl.options.length; j++) {
+            if (vEl.options[j].value === String(t[7])) { vEl.selectedIndex = j; break; }
+          }
+        }
+      }
       if (typeof _syncTaskAssignmentFields==="function") _syncTaskAssignmentFields();
       if (typeof onTaskTypeChange==="function") onTaskTypeChange();
       _taskProjectLinked = true;
@@ -418,6 +432,13 @@ function _autoFillRateFromVendor() {
 }
 
 /* Show Assigned To for In-House, Vendor Name for Vendor */
+function _onTaskWorkTypeClick(wt) {
+  var radio = document.querySelector('input[name="task_workType"][value="' + wt + '"]');
+  if (radio) radio.checked = true;
+  _updateWorkTypeBtns("task_workType", "wt_inhouse_btn", "wt_vendor_btn");
+  _syncTaskAssignmentFields();
+}
+
 function _syncTaskAssignmentFields() {
   var wtEl = document.querySelector('input[name="task_workType"]:checked');
   var wt   = wtEl ? wtEl.value : "In-House";
