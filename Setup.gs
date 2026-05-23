@@ -1,11 +1,32 @@
 /* ================================================================
    Setup.gs — Run once to create all 6 sheets
-   Sheets: Projects | Tasks | Revisions | Vendors | Team | MonthlySnapshot
-   Run setupDatabase() from Apps Script editor to initialize.
-   Run addMissingColumns() to safely add new columns to existing sheets
-   without touching any existing data.
-   Run migrateOldProjectsToTasks() AFTER setupDatabase() if you have
-   existing data in the old Projects sheet format.
+
+   SCHEMA & RELATIONSHIPS
+   ─────────────────────────────────────────────────────────────────
+   Projects  (1) ──< Tasks     (many)  via Tasks.Project ID
+   Projects  (1) ──< Revisions (many)  via Revisions.Project ID
+   Tasks     (1) ──< Revisions (many)  via Revisions.Task ID (optional)
+   Tasks.Assigned To  → Team.Name    (Work Type = In-House)
+   Tasks.Vendor Name  → Vendors.Name (Work Type = Vendor)
+   Revisions.Assigned To → Team.Name
+   Revisions.Vendor Name → Vendors.Name
+
+   DENORMALIZATION POLICY
+   ─────────────────────────────────────────────────────────────────
+   Tasks and Revisions store Client Name and Project Name as
+   denormalized copies from Projects. This avoids expensive lookups
+   on every read in Google Sheets. These are written once on creation
+   and treated as read-only snapshots thereafter.
+
+   PAYMENT STATUS VALUES
+   ─────────────────────────────────────────────────────────────────
+   Paid    → included in paid totals
+   Partial → included in paid totals (partially settled)
+   Unpaid  → tracked separately, excluded from paid totals
+   N/A     → excluded from all payment calculations
+
+   Run setupDatabase()    — create all sheets (safe, never overwrites)
+   Run addMissingColumns() — add new columns to existing sheets safely
 ================================================================ */
 
 function setupDatabase() {
@@ -14,14 +35,18 @@ function setupDatabase() {
   const SHEETS = {
 
     /* ── 1. PROJECTS — master project registry ── */
+    /* 14 columns. Word Count removed (never used). */
     Projects: [
       "Project ID", "Client Name", "Project Name", "Project Coordinator",
       "Source Language", "Target Languages", "Target Lang Count", "Source Pages",
-      "Word Count", "Priority", "Status", "Received Date",
+      "Priority", "Status", "Received Date",
       "Notes", "Created At", "Updated At"
     ],
 
     /* ── 2. TASKS — every unit of work ── */
+    /* 25 columns. Client Name + Project Name are denormalized from Projects. */
+    /* Assigned To (col 6) used when Work Type = In-House. */
+    /* Vendor Name (col 7) used when Work Type = Vendor. */
     Tasks: [
       "Task ID", "Project ID", "Client Name", "Project Name",
       "Task Type", "Work Type", "Assigned To", "Vendor Name",
@@ -33,6 +58,8 @@ function setupDatabase() {
     ],
 
     /* ── 3. REVISIONS — rework rounds ── */
+    /* 21 columns. Project Name is denormalized from Projects. */
+    /* Task ID (col 2) is optional — links revision to a specific task. */
     Revisions: [
       "Revision ID", "Project ID", "Task ID", "Project Name",
       "Revision Number", "Revision Type", "Language", "Revision Pages",
@@ -43,13 +70,15 @@ function setupDatabase() {
     ],
 
     /* ── 4. VENDORS — vendor master list ── */
+    /* 13 columns. Added Updated At for consistency with all other sheets. */
     Vendors: [
       "Vendor ID", "Vendor Name", "Contact Person", "Email",
       "Phone", "Specialization", "Languages", "Rate Per Page",
-      "Currency", "Status", "Notes", "Created At"
+      "Currency", "Status", "Notes", "Created At", "Updated At"
     ],
 
-    /* ── 5. TEAM — employee master list ── */
+    /* ── 5. TEAM — in-house team member list ── */
+    /* 10 columns. */
     Team: [
       "Member ID", "Name", "Role", "Email",
       "Phone", "Specialization", "Status", "Rate Per Page",
@@ -99,10 +128,10 @@ function setupDatabase() {
   SpreadsheetApp.getUi().alert(
     "✅ Database setup complete.\n\n" +
     "Sheets created:\n" +
-    "• Projects (15 cols)\n" +
+    "• Projects (14 cols)\n" +
     "• Tasks (25 cols)\n" +
     "• Revisions (21 cols)\n" +
-    "• Vendors (12 cols)\n" +
+    "• Vendors (13 cols)\n" +
     "• Team (10 cols)\n" +
     "• MonthlySnapshot (9 cols)\n\n" +
     "If you have existing data, run migrateOldProjectsToTasks() next."
@@ -133,7 +162,7 @@ function addMissingColumns() {
     Projects: [
       "Project ID", "Client Name", "Project Name", "Project Coordinator",
       "Source Language", "Target Languages", "Target Lang Count", "Source Pages",
-      "Word Count", "Priority", "Status", "Received Date",
+      "Priority", "Status", "Received Date",
       "Notes", "Created At", "Updated At"
     ],
     Revisions: [
@@ -147,7 +176,7 @@ function addMissingColumns() {
     Vendors: [
       "Vendor ID", "Vendor Name", "Contact Person", "Email",
       "Phone", "Specialization", "Languages", "Rate Per Page",
-      "Currency", "Status", "Notes", "Created At"
+      "Currency", "Status", "Notes", "Created At", "Updated At"
     ],
     Team: [
       "Member ID", "Name", "Role", "Email",
@@ -292,7 +321,6 @@ function migrateOldProjectsToTasks() {
         r[14] || "",                   // Target Languages
         Number(r[13]) || 0,            // Target Lang Count
         Number(r[11]) || 0,            // Source Pages
-        0,                             // Word Count
         r[7]  || "Medium",             // Priority
         r[10] || "Pending",            // Status
         r[8]  || "",                   // Received Date
@@ -321,4 +349,28 @@ function _findRowInSheet(sheet, id) {
     if (String(data[i][0]).trim() === String(id).trim()) return { row: data[i], index: i + 1 };
   }
   return null;
+}
+
+/* ================================================================
+   REMOVE WORD COUNT COLUMN FROM PROJECTS
+   Run once on a live sheet that still has the old 15-column schema.
+   Finds the "Word Count" header and deletes that column.
+   Safe: checks header name before deleting, never touches other cols.
+================================================================ */
+function removeWordCountColumn() {
+  var ss    = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName("Projects");
+  if (!sheet) {
+    SpreadsheetApp.getUi().alert("❌ Projects sheet not found.");
+    return;
+  }
+  var lastCol = sheet.getLastColumn();
+  var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+  var colIdx  = headers.indexOf("Word Count");
+  if (colIdx === -1) {
+    SpreadsheetApp.getUi().alert("✔️  Word Count column not found — nothing to remove.");
+    return;
+  }
+  sheet.deleteColumn(colIdx + 1);  // deleteColumn is 1-based
+  SpreadsheetApp.getUi().alert("✅ Word Count column removed from Projects sheet.");
 }

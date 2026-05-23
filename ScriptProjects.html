@@ -24,12 +24,12 @@ function _renderProjectsTable(data) {
     return;
   }
   tbody.innerHTML = data.map(function(r) {
-    var sc = getStatusClass(r[10] || "Active");
-    var pc = r[9] === "Urgent" ? "bg-red-100 text-red-700" :
-             r[9] === "High"   ? "bg-orange-100 text-orange-700" :
-             r[9] === "Low"    ? "bg-gray-100 text-gray-500" : "bg-blue-100 text-blue-700";
-    var taskCount = Number(r[15]) || 0;
-    var taskPages = Number(r[16]) || 0;
+    var sc = getStatusClass(r[9] || "Active");
+    var pc = r[8] === "Urgent" ? "bg-red-100 text-red-700" :
+             r[8] === "High"   ? "bg-orange-100 text-orange-700" :
+             r[8] === "Low"    ? "bg-gray-100 text-gray-500" : "bg-blue-100 text-blue-700";
+    var taskCount = Number(r[14]) || 0;
+    var taskPages = Number(r[15]) || 0;
     return '<tr data-id="' + r[0] + '">' +
       '<td class="font-mono text-[11px] text-gray-400">' + r[0] + '</td>' +
       '<td><div class="font-semibold text-gray-900 text-sm">' + (r[1] || "—") + '</div>' +
@@ -37,11 +37,11 @@ function _renderProjectsTable(data) {
       '<td class="text-xs text-gray-600">' + (r[4] || "—") + ' / ' + (r[5] || "—") +
           '<div class="text-gray-400">' + (r[6] || 0) + ' langs</div></td>' +
       '<td class="text-sm text-gray-600">' + (r[3] || "—") + '</td>' +
-      '<td><span class="badge ' + pc + '">' + (r[9] || "Medium") + '</span></td>' +
-      '<td><span class="badge ' + sc + '">' + (r[10] || "Active") + '</span></td>' +
+      '<td><span class="badge ' + pc + '">' + (r[8] || "Medium") + '</span></td>' +
+      '<td><span class="badge ' + sc + '">' + (r[9] || "Active") + '</span></td>' +
       '<td class="text-center text-sm font-semibold text-blue-600">' + taskCount + '</td>' +
       '<td class="text-center text-sm font-semibold text-emerald-600">' + taskPages.toLocaleString() + '</td>' +
-      '<td class="text-xs text-gray-500">' + (r[11] || "—") + '</td>' +
+      '<td class="text-xs text-gray-500">' + (r[10] || "—") + '</td>' +
       '<td class="text-right">' +
         '<div class="flex justify-end gap-1">' +
           btnView(r[0], "viewProjectById") +
@@ -59,8 +59,8 @@ function filterProjects() {
   var pr = _val("proj_priorityFilter") || "";
   var filtered = ALL_PROJECTS.filter(function(r) {
     var mq = !q  || [r[0],r[1],r[2]].some(function(v){ return String(v).toLowerCase().includes(q); });
-    var ms = !st || r[10] === st;
-    var mp = !pr || r[9]  === pr;
+    var ms = !st || r[9]  === st;
+    var mp = !pr || r[8]  === pr;
     return mq && ms && mp;
   });
   _renderProjectsTable(filtered);
@@ -82,7 +82,7 @@ function openProjectQuickEdit(id) {
   if (!proj) { showToast("Project not found.", "error"); return; }
   document.getElementById("m_itemId").innerText   = id;
   document.getElementById("m_itemName").innerText = proj[2] || "—";
-  document.getElementById("m_status").value       = proj[10] || "Active";
+  document.getElementById("m_status").value       = proj[9] || "Active";
   document.getElementById("m_deliveryDate").value = "";
   document.getElementById("editModal").dataset.editType = "project";
   document.getElementById("editModal").style.display    = "flex";
@@ -152,11 +152,11 @@ var _projOriginal = {};
             var idx = ALL_PROJECTS.findIndex(function(r){ return r[0]===editId; });
             if (idx !== -1) {
               /* Preserve appended taskCount/taskPages columns */
-              var tc = ALL_PROJECTS[idx][15];
-              var tp = ALL_PROJECTS[idx][16];
+              var tc = ALL_PROJECTS[idx][14];
+              var tp = ALL_PROJECTS[idx][15];
               ALL_PROJECTS[idx] = res.updated;
-              ALL_PROJECTS[idx][15] = tc;
-              ALL_PROJECTS[idx][16] = tp;
+              ALL_PROJECTS[idx][14] = tc;
+              ALL_PROJECTS[idx][15] = tp;
               _patchProjectRow(editId, ALL_PROJECTS[idx]);
             }
           }
@@ -206,16 +206,16 @@ function _resetProjectForm() {
 function _patchProjectRow(id, r) {
   var row = document.querySelector('#projectsTable tr[data-id="' + id + '"]');
   if (!row) return;
-  var sc = getStatusClass(r[10] || "Active");
-  var pc = r[9] === "Urgent" ? "bg-red-100 text-red-700" :
-           r[9] === "High"   ? "bg-orange-100 text-orange-700" :
-           r[9] === "Low"    ? "bg-gray-100 text-gray-500" : "bg-blue-100 text-blue-700";
+  var sc = getStatusClass(r[9] || "Active");
+  var pc = r[8] === "Urgent" ? "bg-red-100 text-red-700" :
+           r[8] === "High"   ? "bg-orange-100 text-orange-700" :
+           r[8] === "Low"    ? "bg-gray-100 text-gray-500" : "bg-blue-100 text-blue-700";
   var cells = row.cells;
   if (!cells || cells.length < 9) return;
   cells[1].innerHTML = '<div class="font-semibold text-gray-900 text-sm">' + (r[1]||"—") + '</div><div class="text-xs text-gray-500">' + (r[2]||"—") + '</div>';
   cells[2].innerHTML = (r[4]||"—") + ' / ' + (r[5]||"—") + '<div class="text-gray-400">' + (r[6]||0) + ' langs</div>';
   cells[3].textContent = r[3] || "—";
-  cells[4].innerHTML = '<span class="badge ' + pc + '">' + (r[9]||"Medium") + '</span>';
-  cells[5].innerHTML = '<span class="badge ' + sc + '">' + (r[10]||"Active") + '</span>';
+  cells[4].innerHTML = '<span class="badge ' + pc + '">' + (r[8]||"Medium") + '</span>';
+  cells[5].innerHTML = '<span class="badge ' + sc + '">' + (r[9]||"Active") + '</span>';
 }
 </script>

@@ -78,14 +78,24 @@ function _mvRender(d) {
   var spb = document.getElementById("mv_specBadge");
   if (spb) spb.innerText = m.specialization || "—";
 
+  var cur = m.currency || s.currency || "";
+
   /* ── Stat cards ── */
-  _set("mv_totalAssigned",   (s.totalAssigned   || 0).toLocaleString());
-  _set("mv_completedPages",  (s.completedPages  || 0).toLocaleString());
-  _set("mv_inProgressPages", (s.inProgressPages || 0).toLocaleString());
-  _set("mv_totalPages",      (s.totalPages      || 0).toLocaleString());
-  _set("mv_estAmount",       (s.estimatedAmount || 0).toLocaleString());
-  _set("mv_pendingAmount",   (s.pendingAmount   || 0).toLocaleString());
-  _set("mv_totalAmount",     (s.totalAmount     || 0).toLocaleString());
+  _set("mv_totalAssigned",   (s.totalAssigned  || 0).toLocaleString());
+  _set("mv_completedPages",  (s.completedPages || 0).toLocaleString());
+  _set("mv_inProgressPages", (s.pendingPages   || 0).toLocaleString());
+  _set("mv_totalPages",      (s.totalPages     || 0).toLocaleString());
+  /* Payment breakdown */
+  _set("mv_taskPages",   (s.taskPages || 0).toLocaleString() + " pages");
+  _set("mv_revPages",    (s.revPages  || 0).toLocaleString() + " pages");
+  _set("mv_paidAmt",     cur + " " + (s.paidAmount    || 0).toLocaleString());
+  _set("mv_partialAmt", cur + " " + (s.partialAmount || 0).toLocaleString());
+  _set("mv_unpaidAmt",  cur + " " + (s.unpaidAmount  || 0).toLocaleString());
+  _set("mv_totalAmt",   cur + " " + (s.totalAmount   || 0).toLocaleString());
+  /* legacy IDs */
+  _set("mv_estAmount",     cur + " " + (s.paidAmount    || 0).toLocaleString());
+  _set("mv_pendingAmount", cur + " " + (s.unpaidAmount  || 0).toLocaleString());
+  _set("mv_totalAmount",   cur + " " + (s.totalAmount   || 0).toLocaleString());
 
   /* ── Populate filter dropdowns (only on first load) ── */
   _mvPopulateDropdowns(d.projectOptions || [], d.langOptions || []);
@@ -176,7 +186,7 @@ function _mvRenderTable(rows) {
              r.paymentStatus === "N/A"     ? "bg-gray-100 text-gray-400" :
                                             "bg-red-50 text-red-600";
     var rateStr = r.ratePerPage ? (r.currency || "") + " " + Number(r.ratePerPage).toLocaleString() : "—";
-    var amtStr  = r.estimatedAmount ? (r.currency || "") + " " + Number(r.estimatedAmount).toLocaleString() : "—";
+    var amtStr  = (r.amount !== undefined && r.ratePerPage) ? (r.currency || "") + " " + Number(r.amount).toLocaleString() : "—";
     return '<tr>' +
       '<td class="font-mono text-[11px] text-gray-400">' + (r.id || "—") + '</td>' +
       '<td class="text-sm font-semibold text-gray-800 max-w-[140px] truncate">' + (r.projectName || "—") + '</td>' +

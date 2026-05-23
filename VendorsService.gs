@@ -1,6 +1,6 @@
 /* ================================================================
-   VendorsService.gs — Vendor & Team CRUD
-   Sheets: Vendors (12 cols) | Team (8 cols)
+   VendorsService.gs — Vendor & Team CRUD + Performance Analytics
+   Sheets: Vendors (13 cols) | Team (10 cols)
 ================================================================ */
 
 /* ── VENDORS ── */
@@ -32,6 +32,7 @@ function addVendor(d) {
       d.currency         || "USD",
       d.status           || "Active",
       d.notes            || "",
+      now,
       now
     ]);
     return { success: true, id: id };
@@ -46,7 +47,8 @@ function updateVendor(id, d) {
     var sh    = _sh(SH_VENDORS);
     var found = _findRow(sh, id);
     if (!found) throw new Error("Vendor not found: " + id);
-    sh.getRange(found.index, 2, 1, 11).setValues([[
+    var now = new Date();
+    sh.getRange(found.index, 2, 1, 12).setValues([[
       d.vendorName       || "",
       d.contactPerson    || "",
       d.email            || "",
@@ -57,7 +59,8 @@ function updateVendor(id, d) {
       d.currency         || "USD",
       d.status           || "Active",
       d.notes            || "",
-      found.row[11]
+      found.row[VC.CREATED_AT],
+      now
     ]]);
     return { success: true };
   } catch (e) {
@@ -129,7 +132,7 @@ function updateTeamMember(id, d) {
       d.status           || "Active",
       Number(d.ratePerPage) || 0,
       d.currency         || "",
-      found.row[9]
+      found.row[MC.CREATED_AT]
     ]]);
     return { success: true };
   } catch (e) {
@@ -152,232 +155,228 @@ function deleteTeamMember(id) {
 }
 
 /* ================================================================
-   VENDOR PERFORMANCE — full analytics for a single vendor
+   SHARED HELPER — parse a date string or Date into a "YYYY-MM" key.
+   Used by both performance functions to build monthly charts.
+================================================================ */
+function _toMonthKey(v) {
+  if (!v) return null;
+  if (typeof v === "string") {
+    var dmy = v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    v = dmy ? new Date(Number(dmy[3]), Number(dmy[2]) - 1, Number(dmy[1])) : new Date(v);
+  }
+  if (!(v instanceof Date) || isNaN(v)) return null;
+  return v.getFullYear() + "-" + String(v.getMonth() + 1).padStart(2, "0");
+}
+
+/* ================================================================
+   SHARED HELPER — build breakdown maps used by both performance fns.
+   Returns { monthly, byProject, byTaskType, byLanguage, rows,
+             projectOptions, langOptions }
+   allItems  = unfiltered rows for this person (for monthly + dropdowns)
+   fItems    = filtered rows (for breakdowns + detail table)
+   Each item: { pages, date, projectId, projectName, language,
+                taskType, status, paymentStatus, rate, currency,
+                id, workStatus, completedDate, startDate, type }
+================================================================ */
+function _buildPerformanceData(allItems, fItems, defaultCurrency) {
+
+  /* Monthly chart — always unfiltered, last 12 months */
+  var monthlyMap = {};
+  allItems.forEach(function(item) {
+    var key = _toMonthKey(item.date);
+    if (!key) return;
+    if (!monthlyMap[key]) monthlyMap[key] = { pages: 0, count: 0 };
+    monthlyMap[key].pages += item.pages;
+    monthlyMap[key].count++;
+  });
+  var monthly = Object.keys(monthlyMap).sort().slice(-12).map(function(k) {
+    var parts = k.split("-");
+    var label = Utilities.formatDate(
+      new Date(Number(parts[0]), Number(parts[1]) - 1, 1),
+      Session.getScriptTimeZone(), "MMM yyyy"
+    );
+    return { key: k, label: label, pages: monthlyMap[k].pages, count: monthlyMap[k].count };
+  });
+
+  /* Project breakdown with payment totals — filtered */
+  var projMap = {};
+  fItems.forEach(function(item) {
+    var pid = item.projectId;
+    if (!projMap[pid]) projMap[pid] = {
+      projectId: pid, projectName: item.projectName,
+      pages: 0, count: 0, completed: 0,
+      paidAmt: 0, partialAmt: 0, unpaidAmt: 0
+    };
+    var amt = item.pages * item.rate;
+    projMap[pid].pages += item.pages;
+    projMap[pid].count++;
+    if (item.workStatus === "Completed") projMap[pid].completed++;
+    if (item.paymentStatus === "Paid")         projMap[pid].paidAmt    += amt;
+    else if (item.paymentStatus === "Partial") projMap[pid].partialAmt += amt;
+    else if (item.paymentStatus === "Unpaid")  projMap[pid].unpaidAmt  += amt;
+  });
+  var byProject = Object.values(projMap).sort(function(a, b) { return b.pages - a.pages; });
+
+  /* Task-type breakdown — filtered */
+  var typeMap = {};
+  fItems.forEach(function(item) {
+    var t = item.taskType || "Other";
+    if (!typeMap[t]) typeMap[t] = { pages: 0, count: 0 };
+    typeMap[t].pages += item.pages;
+    typeMap[t].count++;
+  });
+  var byTaskType = Object.keys(typeMap).map(function(k) {
+    return { type: k, pages: typeMap[k].pages, count: typeMap[k].count };
+  }).sort(function(a, b) { return b.pages - a.pages; });
+
+  /* Language breakdown — filtered */
+  var langMap = {};
+  fItems.forEach(function(item) {
+    var l = item.language || "Unknown";
+    if (!langMap[l]) langMap[l] = 0;
+    langMap[l] += item.pages;
+  });
+  var byLanguage = Object.keys(langMap).map(function(l) {
+    return { language: l, pages: langMap[l] };
+  }).sort(function(a, b) { return b.pages - a.pages; });
+
+  /* Detail rows — filtered, sorted newest first */
+  var rows = fItems.map(function(item) {
+    return {
+      id:            item.id,
+      projectId:     item.projectId,
+      projectName:   item.projectName,
+      taskType:      item.taskType,
+      language:      item.language,
+      pages:         item.pages,
+      status:        item.workStatus,
+      startDate:     item.startDate,
+      completedDate: item.completedDate,
+      ratePerPage:   item.rate,
+      currency:      item.currency || defaultCurrency,
+      amount:        item.pages * item.rate,
+      paymentStatus: item.paymentStatus,
+      type:          item.type
+    };
+  }).sort(function(a, b) {
+    return String(b.startDate).localeCompare(String(a.startDate));
+  });
+
+  /* Filter dropdown options — from unfiltered data */
+  var seenPids = {}, projectOptions = [];
+  allItems.forEach(function(item) {
+    if (item.projectId && !seenPids[item.projectId]) {
+      seenPids[item.projectId] = true;
+      projectOptions.push({ id: item.projectId, name: item.projectName });
+    }
+  });
+  var seenLangs = {}, langOptions = [];
+  allItems.forEach(function(item) {
+    if (item.language && !seenLangs[item.language]) {
+      seenLangs[item.language] = true;
+      langOptions.push(item.language);
+    }
+  });
+
+  return { monthly, byProject, byTaskType, byLanguage, rows, projectOptions, langOptions };
+}
+
+/* ================================================================
+   VENDOR PERFORMANCE
    Accepts: vendorName (string), filters { month, year, projectId, language, status }
-   Returns: stats, monthly breakdown, project/task/language contributions
 ================================================================ */
 function getVendorPerformance(vendorName, filters) {
   try {
     filters = filters || {};
-    var name = String(vendorName || "").trim();
+    var name      = String(vendorName || "").trim();
+    var nameLower = name.toLowerCase();
 
-    /* ── Batch load all data in one pass ── */
+    /* Single batch load — passed into stats calculator, no double reads */
     var allTasks     = _sheetRows(SH_TASKS).map(_fmtRow);
     var allRevisions = _sheetRows(SH_REVISIONS).map(_fmtRow);
     var allVendors   = _sheetRows(SH_VENDORS).map(_fmtRow);
-    var allProjects  = _sheetRows(SH_PROJECTS).map(_fmtRow);
 
-    /* ── Find vendor record ── */
     var vendorRow = allVendors.find(function(r) {
-      return String(r[1] || "").trim().toLowerCase() === name.toLowerCase();
+      return String(r[VC.NAME] || "").trim().toLowerCase() === nameLower;
     });
+    var defaultCurrency = vendorRow ? (vendorRow[VC.CURRENCY] || "") : "";
 
-    /* ── Filter tasks/revisions belonging to this vendor ── */
+    /* Filter to this vendor */
     var vTasks = allTasks.filter(function(r) {
       return r[TC.WORK_TYPE] === "Vendor" &&
-             String(r[TC.VENDOR_NAME] || "").trim().toLowerCase() === name.toLowerCase();
+             String(r[TC.VENDOR_NAME] || "").trim().toLowerCase() === nameLower;
     });
     var vRevs = allRevisions.filter(function(r) {
       return r[RC.WORK_TYPE] === "Vendor" &&
-             String(r[RC.VENDOR_NAME] || "").trim().toLowerCase() === name.toLowerCase();
+             String(r[RC.VENDOR_NAME] || "").trim().toLowerCase() === nameLower;
     });
 
-    /* ── Apply optional filters ── */
-    function _applyFilters(tasks, revs) {
-      var ft = tasks, fr = revs;
-      if (filters.month && filters.year) {
-        var m = Number(filters.month) - 1, y = Number(filters.year);
-        ft = ft.filter(function(r) { return _inMonth(r[TC.START_DATE], m, y); });
-        fr = fr.filter(function(r) { return _inMonth(r[RC.REV_DATE] || r[RC.CREATED_AT], m, y); });
-      }
-      if (filters.projectId) {
-        ft = ft.filter(function(r) { return String(r[TC.PROJECT_ID]).trim() === String(filters.projectId).trim(); });
-        fr = fr.filter(function(r) { return String(r[RC.PROJECT_ID]).trim() === String(filters.projectId).trim(); });
-      }
-      if (filters.language) {
-        ft = ft.filter(function(r) { return String(r[TC.LANGUAGE] || "").toLowerCase() === filters.language.toLowerCase(); });
-        fr = fr.filter(function(r) { return String(r[RC.LANGUAGE] || "").toLowerCase() === filters.language.toLowerCase(); });
-      }
-      if (filters.status) {
-        ft = ft.filter(function(r) { return r[TC.STATUS] === filters.status; });
-        fr = fr.filter(function(r) { return r[RC.STATUS] === filters.status; });
-      }
-      return { tasks: ft, revs: fr };
-    }
-
-    var filtered = _applyFilters(vTasks, vRevs);
-    var fTasks = filtered.tasks, fRevs = filtered.revs;
-
-    /* ── Overall stats (unfiltered) ── */
-    var totalAssigned   = vTasks.length + vRevs.length;
-    var totalCompleted  = vTasks.filter(function(r){ return r[TC.STATUS] === "Completed"; }).length +
-                         vRevs.filter(function(r){ return r[RC.STATUS] === "Completed"; }).length;
-    var totalPages      = vTasks.reduce(function(s,r){ return s+(Number(r[TC.FINAL_PAGES])||0); }, 0) +
-                         vRevs.reduce(function(s,r){ return s+(Number(r[RC.REV_PAGES])||0); }, 0);
-    var completedPages  = vTasks.filter(function(r){ return r[TC.STATUS]==="Completed"; })
-                               .reduce(function(s,r){ return s+(Number(r[TC.FINAL_PAGES])||0); }, 0) +
-                         vRevs.filter(function(r){ return r[RC.STATUS]==="Completed"; })
-                              .reduce(function(s,r){ return s+(Number(r[RC.REV_PAGES])||0); }, 0);
-    var pendingPages    = totalPages - completedPages;
-    var ratePerPage     = vendorRow ? (Number(vendorRow[7]) || 0) : 0;
-    var currency        = vendorRow ? (vendorRow[8] || "INR") : "INR";
-    var estimatedAmount = vTasks.filter(function(r){ return r[TC.STATUS]==="Completed"; })
-                               .reduce(function(s,r){ return s+(Number(r[TC.FINAL_PAGES])||0)*(Number(r[TC.RATE_PER_PAGE])||0); },0) +
-                         vRevs.filter(function(r){ return r[RC.STATUS]==="Completed"; })
-                              .reduce(function(s,r){ return s+(Number(r[RC.REV_PAGES])||0)*(Number(r[RC.RATE_PER_PAGE])||0); },0);
-    var pendingAmount   = vTasks.filter(function(r){ return r[TC.STATUS]!=="Completed"; })
-                               .reduce(function(s,r){ return s+(Number(r[TC.FINAL_PAGES])||0)*(Number(r[TC.RATE_PER_PAGE])||0); },0) +
-                         vRevs.filter(function(r){ return r[RC.STATUS]!=="Completed"; })
-                              .reduce(function(s,r){ return s+(Number(r[RC.REV_PAGES])||0)*(Number(r[RC.RATE_PER_PAGE])||0); },0);
-    var totalAmount     = vTasks.reduce(function(s,r){ return s+(Number(r[TC.FINAL_PAGES])||0)*(Number(r[TC.RATE_PER_PAGE])||0); },0) +
-                         vRevs.reduce(function(s,r){ return s+(Number(r[RC.REV_PAGES])||0)*(Number(r[RC.RATE_PER_PAGE])||0); },0);
-
-    /* ── Filtered stats ── */
-    var filtPages = fTasks.reduce(function(s,r){ return s+(Number(r[TC.FINAL_PAGES])||0); }, 0) +
-                   fRevs.reduce(function(s,r){ return s+(Number(r[RC.REV_PAGES])||0); }, 0);
-
-    /* ── Monthly breakdown (last 12 months, unfiltered) ── */
-    var monthlyMap = {};
-    function _addToMonth(dateVal, pages) {
-      var d = dateVal;
-      if (typeof d === "string") {
-        var dmy = d.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-        if (dmy) d = new Date(Number(dmy[3]), Number(dmy[2])-1, Number(dmy[1]));
-        else d = new Date(d);
-      }
-      if (!(d instanceof Date) || isNaN(d)) return;
-      var key = d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0");
-      if (!monthlyMap[key]) monthlyMap[key] = { pages: 0, tasks: 0 };
-      monthlyMap[key].pages += pages;
-      monthlyMap[key].tasks++;
-    }
-    vTasks.forEach(function(r) { _addToMonth(r[TC.START_DATE], Number(r[TC.FINAL_PAGES])||0); });
-    vRevs.forEach(function(r)  { _addToMonth(r[RC.REV_DATE]||r[RC.CREATED_AT], Number(r[RC.REV_PAGES])||0); });
-    var monthly = Object.keys(monthlyMap).sort().slice(-12).map(function(k) {
-      var parts = k.split("-");
-      var label = Utilities.formatDate(new Date(Number(parts[0]), Number(parts[1])-1, 1), Session.getScriptTimeZone(), "MMM yyyy");
-      return { key: k, label: label, pages: monthlyMap[k].pages, tasks: monthlyMap[k].tasks };
+    /* Stats via centralized calculator — pass preloaded data, zero extra reads */
+    var stats = calculateVendorStats(name, filters, {
+      tasks: allTasks, revisions: allRevisions, vendorRow: vendorRow
     });
+    var cur = stats.currency || defaultCurrency;
 
-    /* ── Project-wise contribution (filtered) ── */
-    var projMap = {};
-    fTasks.forEach(function(r) {
-      var pid = String(r[TC.PROJECT_ID]).trim();
-      var pname = r[TC.PROJECT_NAME] || pid;
-      if (!projMap[pid]) projMap[pid] = { projectId: pid, projectName: pname, pages: 0, tasks: 0, completed: 0 };
-      projMap[pid].pages += Number(r[TC.FINAL_PAGES]) || 0;
-      projMap[pid].tasks++;
-      if (r[TC.STATUS] === "Completed") projMap[pid].completed++;
-    });
-    fRevs.forEach(function(r) {
-      var pid = String(r[RC.PROJECT_ID]).trim();
-      var pname = r[RC.PROJECT_NAME] || pid;
-      if (!projMap[pid]) projMap[pid] = { projectId: pid, projectName: pname, pages: 0, tasks: 0, completed: 0 };
-      projMap[pid].pages += Number(r[RC.REV_PAGES]) || 0;
-      projMap[pid].tasks++;
-      if (r[RC.STATUS] === "Completed") projMap[pid].completed++;
-    });
-    var byProject = Object.values(projMap).sort(function(a,b){ return b.pages - a.pages; });
+    /* Apply filters for breakdowns */
+    var filtered = applyFilters(vTasks, vRevs, filters);
+    var fTasks   = filtered.tasks;
+    var fRevs    = filtered.revs;
 
-    /* ── Task-type contribution (filtered) ── */
-    var taskTypeMap = {};
-    fTasks.forEach(function(r) {
-      var t = r[TC.TASK_TYPE] || "Other";
-      if (!taskTypeMap[t]) taskTypeMap[t] = { pages: 0, count: 0 };
-      taskTypeMap[t].pages += Number(r[TC.FINAL_PAGES]) || 0;
-      taskTypeMap[t].count++;
-    });
-    if (fRevs.length) {
-      if (!taskTypeMap["Revisions"]) taskTypeMap["Revisions"] = { pages: 0, count: 0 };
-      fRevs.forEach(function(r) {
-        taskTypeMap["Revisions"].pages += Number(r[RC.REV_PAGES]) || 0;
-        taskTypeMap["Revisions"].count++;
-      });
-    }
-    var byTaskType = Object.keys(taskTypeMap).map(function(k) {
-      return { type: k, pages: taskTypeMap[k].pages, count: taskTypeMap[k].count };
-    }).sort(function(a,b){ return b.pages - a.pages; });
-
-    /* ── Language-wise work (filtered) ── */
-    var langMap = {};
-    fTasks.forEach(function(r) {
-      var l = r[TC.LANGUAGE] || "Unknown";
-      if (!langMap[l]) langMap[l] = 0;
-      langMap[l] += Number(r[TC.FINAL_PAGES]) || 0;
-    });
-    fRevs.forEach(function(r) {
-      var l = r[RC.LANGUAGE] || "Unknown";
-      if (!langMap[l]) langMap[l] = 0;
-      langMap[l] += Number(r[RC.REV_PAGES]) || 0;
-    });
-    var byLanguage = Object.keys(langMap).map(function(l) {
-      return { language: l, pages: langMap[l] };
-    }).sort(function(a,b){ return b.pages - a.pages; });
-
-    /* ── Detailed task rows (filtered, for table) ── */
-    var taskRows = fTasks.map(function(r) {
-      var rate  = Number(r[TC.RATE_PER_PAGE]) || 0;
-      var pages = Number(r[TC.FINAL_PAGES])   || 0;
+    /* Normalise tasks + revisions into a flat item list for shared helpers */
+    function _taskToItem(r) {
       return {
-        id: r[TC.ID], projectId: r[TC.PROJECT_ID], projectName: r[TC.PROJECT_NAME],
-        taskType: r[TC.TASK_TYPE], language: r[TC.LANGUAGE],
-        pages: pages, status: r[TC.STATUS],
+        id: r[TC.ID], projectId: String(r[TC.PROJECT_ID]).trim(),
+        projectName: r[TC.PROJECT_NAME] || String(r[TC.PROJECT_ID]).trim(),
+        taskType: r[TC.TASK_TYPE] || "Other",
+        language: r[TC.LANGUAGE] || "",
+        pages: Number(r[TC.FINAL_PAGES]) || 0,
+        rate: Number(r[TC.RATE_PER_PAGE]) || 0,
+        currency: r[TC.CURRENCY] || cur,
+        workStatus: r[TC.STATUS] || "Pending",
+        paymentStatus: String(r[TC.PAYMENT_STATUS] || "Unpaid").trim(),
         startDate: r[TC.START_DATE], completedDate: r[TC.COMPLETED_DATE],
-        ratePerPage: rate, currency: r[TC.CURRENCY] || currency,
-        estimatedAmount: pages * rate,
-        paymentStatus: r[TC.PAYMENT_STATUS] || "Unpaid",
+        date: r[TC.START_DATE] || r[TC.CREATED_AT],
         type: "task"
       };
-    });
-    var revRows = fRevs.map(function(r) {
-      var rate  = Number(r[RC.RATE_PER_PAGE]) || 0;
-      var pages = Number(r[RC.REV_PAGES])     || 0;
+    }
+    function _revToItem(r) {
       return {
-        id: r[RC.ID], projectId: r[RC.PROJECT_ID], projectName: r[RC.PROJECT_NAME],
-        taskType: "Revision", language: r[RC.LANGUAGE],
-        pages: pages, status: r[RC.STATUS],
+        id: r[RC.ID], projectId: String(r[RC.PROJECT_ID]).trim(),
+        projectName: r[RC.PROJECT_NAME] || String(r[RC.PROJECT_ID]).trim(),
+        taskType: "Revision",
+        language: r[RC.LANGUAGE] || "",
+        pages: Number(r[RC.REV_PAGES]) || 0,
+        rate: Number(r[RC.RATE_PER_PAGE]) || 0,
+        currency: r[RC.CURRENCY] || cur,
+        workStatus: r[RC.STATUS] || "Pending",
+        paymentStatus: String(r[RC.PAYMENT_STATUS] || "Unpaid").trim(),
         startDate: r[RC.REV_DATE] || r[RC.CREATED_AT], completedDate: r[RC.COMPLETED_DATE],
-        ratePerPage: rate, currency: r[RC.CURRENCY] || currency,
-        estimatedAmount: pages * rate,
-        paymentStatus: r[RC.PAYMENT_STATUS] || "Unpaid",
+        date: r[RC.REV_DATE] || r[RC.CREATED_AT],
         type: "revision"
       };
-    });
-    var allRows = taskRows.concat(revRows).sort(function(a,b) {
-      return String(b.startDate).localeCompare(String(a.startDate));
-    });
+    }
 
-    /* ── Unique project list for filter dropdown ── */
-    var projectOptions = [];
-    var seenPids = {};
-    vTasks.concat(vRevs).forEach(function(r) {
-      var pid = String(r[TC.PROJECT_ID] || r[RC.PROJECT_ID] || "").trim();
-      var pname = r[TC.PROJECT_NAME] || r[RC.PROJECT_NAME] || pid;
-      if (pid && !seenPids[pid]) { seenPids[pid] = true; projectOptions.push({ id: pid, name: pname }); }
-    });
+    var allItems = vTasks.map(_taskToItem).concat(vRevs.map(_revToItem));
+    var fItems   = fTasks.map(_taskToItem).concat(fRevs.map(_revToItem));
 
-    /* ── Unique language list for filter dropdown ── */
-    var langOptions = [];
-    var seenLangs = {};
-    vTasks.concat(vRevs).forEach(function(r) {
-      var l = r[TC.LANGUAGE] || r[RC.LANGUAGE] || "";
-      if (l && !seenLangs[l]) { seenLangs[l] = true; langOptions.push(l); }
-    });
+    var breakdown = _buildPerformanceData(allItems, fItems, cur);
 
     return {
       vendor: vendorRow ? {
-        id: vendorRow[0], name: vendorRow[1], contactPerson: vendorRow[2],
-        email: vendorRow[3], phone: vendorRow[4], specialization: vendorRow[5],
-        languages: vendorRow[6], ratePerPage: ratePerPage, currency: currency,
-        status: vendorRow[9], notes: vendorRow[10]
-      } : { name: name, ratePerPage: 0, currency: "INR" },
-      stats: {
-        totalAssigned, totalCompleted, totalPages, completedPages,
-        pendingPages, ratePerPage, currency, estimatedAmount, pendingAmount, totalAmount, filtPages
-      },
-      monthly, byProject, byTaskType, byLanguage,
-      rows: allRows,
-      projectOptions, langOptions
+        id: vendorRow[VC.ID], name: vendorRow[VC.NAME],
+        contactPerson: vendorRow[VC.CONTACT], email: vendorRow[VC.EMAIL],
+        phone: vendorRow[VC.PHONE], specialization: vendorRow[VC.SPECIALIZATION],
+        languages: vendorRow[VC.LANGUAGES], ratePerPage: stats.ratePerPage,
+        currency: cur, status: vendorRow[VC.STATUS], notes: vendorRow[VC.NOTES]
+      } : { name: name, ratePerPage: 0, currency: "" },
+      stats: stats,
+      monthly:       breakdown.monthly,
+      byProject:     breakdown.byProject,
+      byTaskType:    breakdown.byTaskType,
+      byLanguage:    breakdown.byLanguage,
+      rows:          breakdown.rows,
+      projectOptions:breakdown.projectOptions,
+      langOptions:   breakdown.langOptions
     };
   } catch (e) {
     console.error("getVendorPerformance:", e);
@@ -386,225 +385,101 @@ function getVendorPerformance(vendorName, filters) {
 }
 
 /* ================================================================
-   TEAM MEMBER PERFORMANCE — full analytics for a single team member
+   TEAM MEMBER PERFORMANCE
    Accepts: memberName (string), filters { month, year, projectId, language, taskType }
-   Returns: stats, monthly breakdown, project/task-type/language contributions
 ================================================================ */
 function getTeamMemberPerformance(memberName, filters) {
   try {
     filters = filters || {};
-    var name = String(memberName || "").trim();
+    var name      = String(memberName || "").trim();
+    var nameLower = name.toLowerCase();
 
-    /* ── Batch load ── */
+    /* Single batch load — passed into stats calculator, no double reads */
     var allTasks     = _sheetRows(SH_TASKS).map(_fmtRow);
     var allRevisions = _sheetRows(SH_REVISIONS).map(_fmtRow);
     var allTeam      = _sheetRows(SH_TEAM).map(_fmtRow);
 
-    /* ── Find member record ── */
     var memberRow = allTeam.find(function(r) {
-      return String(r[1] || "").trim().toLowerCase() === name.toLowerCase();
+      return String(r[MC.NAME] || "").trim().toLowerCase() === nameLower;
     });
+    var defaultCurrency = memberRow ? (memberRow[MC.CURRENCY] || "") : "";
 
-    /* ── Filter tasks/revisions for this member ── */
+    /* Filter to this member */
     var mTasks = allTasks.filter(function(r) {
       return r[TC.WORK_TYPE] === "In-House" &&
-             String(r[TC.ASSIGNED_TO] || "").trim().toLowerCase() === name.toLowerCase();
+             String(r[TC.ASSIGNED_TO] || "").trim().toLowerCase() === nameLower;
     });
     var mRevs = allRevisions.filter(function(r) {
       return r[RC.WORK_TYPE] === "In-House" &&
-             String(r[RC.ASSIGNED_TO] || "").trim().toLowerCase() === name.toLowerCase();
+             String(r[RC.ASSIGNED_TO] || "").trim().toLowerCase() === nameLower;
     });
 
-    /* ── Apply optional filters ── */
-    function _applyFilters(tasks, revs) {
-      var ft = tasks, fr = revs;
-      if (filters.month && filters.year) {
-        var m = Number(filters.month) - 1, y = Number(filters.year);
-        ft = ft.filter(function(r) { return _inMonth(r[TC.START_DATE], m, y); });
-        fr = fr.filter(function(r) { return _inMonth(r[RC.REV_DATE] || r[RC.CREATED_AT], m, y); });
-      }
-      if (filters.projectId) {
-        ft = ft.filter(function(r) { return String(r[TC.PROJECT_ID]).trim() === String(filters.projectId).trim(); });
-        fr = fr.filter(function(r) { return String(r[RC.PROJECT_ID]).trim() === String(filters.projectId).trim(); });
-      }
-      if (filters.language) {
-        ft = ft.filter(function(r) { return String(r[TC.LANGUAGE]||""  ).toLowerCase() === filters.language.toLowerCase(); });
-        fr = fr.filter(function(r) { return String(r[RC.LANGUAGE]||""  ).toLowerCase() === filters.language.toLowerCase(); });
-      }
-      if (filters.taskType && filters.taskType !== "Revision") {
-        ft = ft.filter(function(r) { return r[TC.TASK_TYPE] === filters.taskType; });
-      } else if (filters.taskType === "Revision") {
-        ft = []; /* show only revisions */
-      }
-      return { tasks: ft, revs: fr };
-    }
-
-    var filtered = _applyFilters(mTasks, mRevs);
-    var fTasks = filtered.tasks, fRevs = filtered.revs;
-
-    /* ── Overall stats (unfiltered) ── */
-    var totalAssigned  = mTasks.length + mRevs.length;
-    var totalCompleted = mTasks.filter(function(r){ return r[TC.STATUS]==="Completed"; }).length +
-                        mRevs.filter(function(r){ return r[RC.STATUS]==="Completed"; }).length;
-    var totalPages     = mTasks.reduce(function(s,r){ return s+(Number(r[TC.FINAL_PAGES])||0); }, 0) +
-                        mRevs.reduce(function(s,r){ return s+(Number(r[RC.REV_PAGES])||0); }, 0);
-    var completedPages = mTasks.filter(function(r){ return r[TC.STATUS]==="Completed"; })
-                               .reduce(function(s,r){ return s+(Number(r[TC.FINAL_PAGES])||0); }, 0) +
-                        mRevs.filter(function(r){ return r[RC.STATUS]==="Completed"; })
-                             .reduce(function(s,r){ return s+(Number(r[RC.REV_PAGES])||0); }, 0);
-    var inProgressPages = mTasks.filter(function(r){ return r[TC.STATUS]==="In Progress"; })
-                                .reduce(function(s,r){ return s+(Number(r[TC.FINAL_PAGES])||0); }, 0) +
-                         mRevs.filter(function(r){ return r[RC.STATUS]==="In Progress"; })
-                              .reduce(function(s,r){ return s+(Number(r[RC.REV_PAGES])||0); }, 0);
-    var avgPages = totalAssigned > 0 ? Math.round(totalPages / totalAssigned) : 0;
-    var estimatedAmount = mTasks.filter(function(r){ return r[TC.STATUS]==="Completed"; })
-                               .reduce(function(s,r){ return s+(Number(r[TC.FINAL_PAGES])||0)*(Number(r[TC.RATE_PER_PAGE])||0); },0) +
-                         mRevs.filter(function(r){ return r[RC.STATUS]==="Completed"; })
-                              .reduce(function(s,r){ return s+(Number(r[RC.REV_PAGES])||0)*(Number(r[RC.RATE_PER_PAGE])||0); },0);
-    var pendingAmount   = mTasks.filter(function(r){ return r[TC.STATUS]!=="Completed"; })
-                               .reduce(function(s,r){ return s+(Number(r[TC.FINAL_PAGES])||0)*(Number(r[TC.RATE_PER_PAGE])||0); },0) +
-                         mRevs.filter(function(r){ return r[RC.STATUS]!=="Completed"; })
-                              .reduce(function(s,r){ return s+(Number(r[RC.REV_PAGES])||0)*(Number(r[RC.RATE_PER_PAGE])||0); },0);
-    var totalAmount     = mTasks.reduce(function(s,r){ return s+(Number(r[TC.FINAL_PAGES])||0)*(Number(r[TC.RATE_PER_PAGE])||0); },0) +
-                         mRevs.reduce(function(s,r){ return s+(Number(r[RC.REV_PAGES])||0)*(Number(r[RC.RATE_PER_PAGE])||0); },0);
-
-    /* ── Monthly breakdown (last 12 months, unfiltered) ── */
-    var monthlyMap = {};
-    function _addToMonth(dateVal, pages) {
-      var d = dateVal;
-      if (typeof d === "string") {
-        var dmy = d.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-        if (dmy) d = new Date(Number(dmy[3]), Number(dmy[2])-1, Number(dmy[1]));
-        else d = new Date(d);
-      }
-      if (!(d instanceof Date) || isNaN(d)) return;
-      var key = d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0");
-      if (!monthlyMap[key]) monthlyMap[key] = { pages: 0, tasks: 0 };
-      monthlyMap[key].pages += pages;
-      monthlyMap[key].tasks++;
-    }
-    mTasks.forEach(function(r) { _addToMonth(r[TC.START_DATE], Number(r[TC.FINAL_PAGES])||0); });
-    mRevs.forEach(function(r)  { _addToMonth(r[RC.REV_DATE]||r[RC.CREATED_AT], Number(r[RC.REV_PAGES])||0); });
-    var monthly = Object.keys(monthlyMap).sort().slice(-12).map(function(k) {
-      var parts = k.split("-");
-      var label = Utilities.formatDate(new Date(Number(parts[0]), Number(parts[1])-1, 1), Session.getScriptTimeZone(), "MMM yyyy");
-      return { key: k, label: label, pages: monthlyMap[k].pages, tasks: monthlyMap[k].tasks };
+    /* Stats via centralized calculator — pass preloaded data, zero extra reads */
+    var stats = calculateTeamMemberStats(name, filters, {
+      tasks: allTasks, revisions: allRevisions, memberRow: memberRow
     });
+    var cur = stats.currency || defaultCurrency;
 
-    /* ── Project contribution (filtered) ── */
-    var projMap = {};
-    fTasks.forEach(function(r) {
-      var pid = String(r[TC.PROJECT_ID]).trim();
-      var pname = r[TC.PROJECT_NAME] || pid;
-      if (!projMap[pid]) projMap[pid] = { projectId: pid, projectName: pname, pages: 0, tasks: 0, completed: 0 };
-      projMap[pid].pages += Number(r[TC.FINAL_PAGES]) || 0;
-      projMap[pid].tasks++;
-      if (r[TC.STATUS] === "Completed") projMap[pid].completed++;
-    });
-    fRevs.forEach(function(r) {
-      var pid = String(r[RC.PROJECT_ID]).trim();
-      var pname = r[RC.PROJECT_NAME] || pid;
-      if (!projMap[pid]) projMap[pid] = { projectId: pid, projectName: pname, pages: 0, tasks: 0, completed: 0 };
-      projMap[pid].pages += Number(r[RC.REV_PAGES]) || 0;
-      projMap[pid].tasks++;
-      if (r[RC.STATUS] === "Completed") projMap[pid].completed++;
-    });
-    var byProject = Object.values(projMap).sort(function(a,b){ return b.pages - a.pages; });
+    /* Apply filters for breakdowns */
+    var filtered = applyFilters(mTasks, mRevs, filters);
+    var fTasks   = filtered.tasks;
+    var fRevs    = filtered.revs;
 
-    /* ── Task-type breakdown (filtered) ── */
-    var taskTypeMap = {};
-    fTasks.forEach(function(r) {
-      var t = r[TC.TASK_TYPE] || "Other";
-      if (!taskTypeMap[t]) taskTypeMap[t] = { pages: 0, count: 0 };
-      taskTypeMap[t].pages += Number(r[TC.FINAL_PAGES]) || 0;
-      taskTypeMap[t].count++;
-    });
-    if (fRevs.length) {
-      if (!taskTypeMap["Revisions"]) taskTypeMap["Revisions"] = { pages: 0, count: 0 };
-      fRevs.forEach(function(r) {
-        taskTypeMap["Revisions"].pages += Number(r[RC.REV_PAGES]) || 0;
-        taskTypeMap["Revisions"].count++;
-      });
-    }
-    var byTaskType = Object.keys(taskTypeMap).map(function(k) {
-      return { type: k, pages: taskTypeMap[k].pages, count: taskTypeMap[k].count };
-    }).sort(function(a,b){ return b.pages - a.pages; });
-
-    /* ── Language contribution (filtered) ── */
-    var langMap = {};
-    fTasks.forEach(function(r) {
-      var l = r[TC.LANGUAGE] || "Unknown";
-      if (!langMap[l]) langMap[l] = 0;
-      langMap[l] += Number(r[TC.FINAL_PAGES]) || 0;
-    });
-    fRevs.forEach(function(r) {
-      var l = r[RC.LANGUAGE] || "Unknown";
-      if (!langMap[l]) langMap[l] = 0;
-      langMap[l] += Number(r[RC.REV_PAGES]) || 0;
-    });
-    var byLanguage = Object.keys(langMap).map(function(l) {
-      return { language: l, pages: langMap[l] };
-    }).sort(function(a,b){ return b.pages - a.pages; });
-
-    /* ── Detailed rows (filtered) ── */
-    var taskRows = fTasks.map(function(r) {
-      var rate  = Number(r[TC.RATE_PER_PAGE]) || 0;
-      var pages = Number(r[TC.FINAL_PAGES])   || 0;
+    /* Normalise into flat item list */
+    function _taskToItem(r) {
       return {
-        id: r[TC.ID], projectId: r[TC.PROJECT_ID], projectName: r[TC.PROJECT_NAME],
-        taskType: r[TC.TASK_TYPE], language: r[TC.LANGUAGE],
-        pages: pages, status: r[TC.STATUS],
+        id: r[TC.ID], projectId: String(r[TC.PROJECT_ID]).trim(),
+        projectName: r[TC.PROJECT_NAME] || String(r[TC.PROJECT_ID]).trim(),
+        taskType: r[TC.TASK_TYPE] || "Other",
+        language: r[TC.LANGUAGE] || "",
+        pages: Number(r[TC.FINAL_PAGES]) || 0,
+        rate: Number(r[TC.RATE_PER_PAGE]) || 0,
+        currency: r[TC.CURRENCY] || cur,
+        workStatus: r[TC.STATUS] || "Pending",
+        paymentStatus: String(r[TC.PAYMENT_STATUS] || "Unpaid").trim(),
         startDate: r[TC.START_DATE], completedDate: r[TC.COMPLETED_DATE],
-        ratePerPage: rate, currency: r[TC.CURRENCY] || "",
-        estimatedAmount: pages * rate,
-        paymentStatus: r[TC.PAYMENT_STATUS] || "Unpaid",
+        date: r[TC.START_DATE] || r[TC.CREATED_AT],
         type: "task"
       };
-    });
-    var revRows = fRevs.map(function(r) {
-      var rate  = Number(r[RC.RATE_PER_PAGE]) || 0;
-      var pages = Number(r[RC.REV_PAGES])     || 0;
+    }
+    function _revToItem(r) {
       return {
-        id: r[RC.ID], projectId: r[RC.PROJECT_ID], projectName: r[RC.PROJECT_NAME],
-        taskType: "Revision", language: r[RC.LANGUAGE],
-        pages: pages, status: r[RC.STATUS],
+        id: r[RC.ID], projectId: String(r[RC.PROJECT_ID]).trim(),
+        projectName: r[RC.PROJECT_NAME] || String(r[RC.PROJECT_ID]).trim(),
+        taskType: "Revision",
+        language: r[RC.LANGUAGE] || "",
+        pages: Number(r[RC.REV_PAGES]) || 0,
+        rate: Number(r[RC.RATE_PER_PAGE]) || 0,
+        currency: r[RC.CURRENCY] || cur,
+        workStatus: r[RC.STATUS] || "Pending",
+        paymentStatus: String(r[RC.PAYMENT_STATUS] || "Unpaid").trim(),
         startDate: r[RC.REV_DATE] || r[RC.CREATED_AT], completedDate: r[RC.COMPLETED_DATE],
-        ratePerPage: rate, currency: r[RC.CURRENCY] || "",
-        estimatedAmount: pages * rate,
-        paymentStatus: r[RC.PAYMENT_STATUS] || "Unpaid",
+        date: r[RC.REV_DATE] || r[RC.CREATED_AT],
         type: "revision"
       };
-    });
-    var allRows = taskRows.concat(revRows).sort(function(a,b) {
-      return String(b.startDate).localeCompare(String(a.startDate));
-    });
+    }
 
-    /* ── Dropdown options ── */
-    var projectOptions = [], seenPids = {};
-    mTasks.concat(mRevs).forEach(function(r) {
-      var pid = String(r[TC.PROJECT_ID] || r[RC.PROJECT_ID] || "").trim();
-      var pname = r[TC.PROJECT_NAME] || r[RC.PROJECT_NAME] || pid;
-      if (pid && !seenPids[pid]) { seenPids[pid] = true; projectOptions.push({ id: pid, name: pname }); }
-    });
-    var langOptions = [], seenLangs = {};
-    mTasks.concat(mRevs).forEach(function(r) {
-      var l = r[TC.LANGUAGE] || r[RC.LANGUAGE] || "";
-      if (l && !seenLangs[l]) { seenLangs[l] = true; langOptions.push(l); }
-    });
+    var allItems = mTasks.map(_taskToItem).concat(mRevs.map(_revToItem));
+    var fItems   = fTasks.map(_taskToItem).concat(fRevs.map(_revToItem));
+
+    var breakdown = _buildPerformanceData(allItems, fItems, cur);
 
     return {
       member: memberRow ? {
-        id: memberRow[0], name: memberRow[1], role: memberRow[2],
-        email: memberRow[3], phone: memberRow[4], specialization: memberRow[5],
-        status: memberRow[6], ratePerPage: Number(memberRow[7]) || 0, currency: memberRow[8] || ""
+        id: memberRow[MC.ID], name: memberRow[MC.NAME], role: memberRow[MC.ROLE],
+        email: memberRow[MC.EMAIL], phone: memberRow[MC.PHONE],
+        specialization: memberRow[MC.SPECIALIZATION], status: memberRow[MC.STATUS],
+        ratePerPage: Number(memberRow[MC.RATE_PER_PAGE]) || 0,
+        currency: memberRow[MC.CURRENCY] || ""
       } : { name: name },
-      stats: {
-        totalAssigned, totalCompleted, totalPages, completedPages,
-        inProgressPages, avgPages, estimatedAmount, pendingAmount, totalAmount
-      },
-      monthly, byProject, byTaskType, byLanguage,
-      rows: allRows,
-      projectOptions, langOptions
+      stats: stats,
+      monthly:       breakdown.monthly,
+      byProject:     breakdown.byProject,
+      byTaskType:    breakdown.byTaskType,
+      byLanguage:    breakdown.byLanguage,
+      rows:          breakdown.rows,
+      projectOptions:breakdown.projectOptions,
+      langOptions:   breakdown.langOptions
     };
   } catch (e) {
     console.error("getTeamMemberPerformance:", e);

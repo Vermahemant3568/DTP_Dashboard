@@ -77,20 +77,29 @@ function _vvRender(d) {
   var spb = document.getElementById("vv_specBadge");
   if (spb) spb.innerText = v.specialization || "—";
 
+  var cur = v.currency || s.currency || "";
+
   /* ── Stat cards ── */
   _set("vv_totalAssigned",  (s.totalAssigned  || 0).toLocaleString());
   _set("vv_completedPages", (s.completedPages || 0).toLocaleString());
   _set("vv_pendingPages",   (s.pendingPages   || 0).toLocaleString());
-  _set("vv_estAmount",      (v.currency || "INR") + " " + (s.estimatedAmount || 0).toLocaleString());
+  _set("vv_estAmount",      cur + " " + (s.totalAmount || 0).toLocaleString());
 
-  /* ── Payment summary (task-level rates) ── */
-  var cur = v.currency || "INR";
+  /* ── Payment breakdown ── */
+  _set("vv_taskPages",    (s.taskPages || 0).toLocaleString() + " pages");
+  _set("vv_revPages",     (s.revPages  || 0).toLocaleString() + " pages");
+  _set("vv_paidAmt",      cur + " " + (s.paidAmount    || 0).toLocaleString());
+  _set("vv_partialAmt",   cur + " " + (s.partialAmount || 0).toLocaleString());
+  _set("vv_unpaidAmt",    cur + " " + (s.unpaidAmount  || 0).toLocaleString());
+  _set("vv_totalAmt",     cur + " " + (s.totalAmount   || 0).toLocaleString());
+  /* legacy IDs kept for compatibility */
   _set("vv_payCompletedPages", (s.completedPages || 0).toLocaleString() + " pages");
-  _set("vv_payCompletedAmt",   cur + " " + (s.estimatedAmount || 0).toLocaleString());
+  _set("vv_payCompletedAmt",   cur + " " + (s.paidAmount    || 0).toLocaleString());
   _set("vv_payPendingPages",   (s.pendingPages   || 0).toLocaleString() + " pages");
-  _set("vv_payPendingAmt",     cur + " " + (s.pendingAmount   || 0).toLocaleString());
+  _set("vv_payPendingAmt",     cur + " " + (s.unpaidAmount  || 0).toLocaleString());
+  _set("vv_payPartialAmt",     cur + " " + (s.partialAmount || 0).toLocaleString());
   _set("vv_payTotalPages",     (s.totalPages     || 0).toLocaleString() + " pages");
-  _set("vv_payTotalAmt",       cur + " " + (s.totalAmount     || 0).toLocaleString());
+  _set("vv_payTotalAmt",       cur + " " + (s.totalAmount   || 0).toLocaleString());
 
   /* ── Populate filter dropdowns (only on first load) ── */
   _vvPopulateDropdowns(d.projectOptions || [], d.langOptions || []);
@@ -179,7 +188,7 @@ function _vvRenderTable(rows) {
               r.paymentStatus === "N/A"     ? "bg-gray-100 text-gray-400" :
                                              "bg-red-50 text-red-600";
     var rateStr = r.ratePerPage ? (r.currency || "") + " " + Number(r.ratePerPage).toLocaleString() : "—";
-    var amtStr  = r.estimatedAmount ? (r.currency || "") + " " + Number(r.estimatedAmount).toLocaleString() : "—";
+    var amtStr  = (r.amount !== undefined && r.ratePerPage) ? (r.currency || "") + " " + Number(r.amount).toLocaleString() : "—";
     return '<tr>' +
       '<td class="font-mono text-[11px] text-gray-400">' + (r.id || "—") + '</td>' +
       '<td class="text-sm font-semibold text-gray-800 max-w-[140px] truncate">' + (r.projectName || "—") + '</td>' +

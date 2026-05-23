@@ -60,7 +60,6 @@ function addProject(d) {
       d.targetLanguages || "",
       Number(d.langCount)   || 0,
       Number(d.sourcePages) || 0,
-      0,                        // wordCount — not in form
       d.priority        || "Medium",
       d.status          || "Active",
       d.receivedDate    || "",
@@ -100,7 +99,7 @@ function updateProject(id, d) {
 
     const now = new Date();
     const r   = found.row;
-    sh.getRange(found.index, 2, 1, 14).setValues([[
+    sh.getRange(found.index, 2, 1, 13).setValues([[
       ("clientName"      in d) ? (d.clientName      || r[PC.CLIENT])        : r[PC.CLIENT],
       ("projectName"     in d) ? (d.projectName     || r[PC.PROJECT_NAME])  : r[PC.PROJECT_NAME],
       ("coordinator"     in d) ? d.coordinator                              : r[PC.COORDINATOR],
@@ -108,7 +107,6 @@ function updateProject(id, d) {
       ("targetLanguages" in d) ? d.targetLanguages                          : r[PC.TARGET_LANGS],
       ("langCount"       in d) ? (Number(d.langCount)   || 0)               : (Number(r[PC.LANG_COUNT])   || 0),
       ("sourcePages"     in d) ? (Number(d.sourcePages) || 0)               : (Number(r[PC.SOURCE_PAGES]) || 0),
-      r[PC.WORD_COUNT] || 0,
       ("priority"        in d) ? (d.priority        || r[PC.PRIORITY])      : r[PC.PRIORITY],
       ("status"          in d) ? (d.status          || r[PC.STATUS])        : r[PC.STATUS],
       ("receivedDate"    in d) ? d.receivedDate                             : r[PC.RECEIVED_DATE],

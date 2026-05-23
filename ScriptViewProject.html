@@ -16,9 +16,9 @@ function renderViewProject(data) {
   _set("vp_projectId",   "ID: " + proj[0]);
 
   var statusEl = document.getElementById("vp_status");
-  if (statusEl) { statusEl.innerText = proj[10] || "Active"; statusEl.className = "badge " + getStatusClass(proj[10] || "Active"); }
+  if (statusEl) { statusEl.innerText = proj[9] || "Active"; statusEl.className = "badge " + getStatusClass(proj[9] || "Active"); }
   var prioEl = document.getElementById("vp_priority");
-  if (prioEl) prioEl.innerText = "Priority: " + (proj[9] || "Medium");
+  if (prioEl) prioEl.innerText = "Priority: " + (proj[8] || "Medium");
 
   /* ── stat cards ── */
   var inProg    = tasks.filter(function(r){ return r[12] === "In Progress"; }).length;
@@ -35,10 +35,10 @@ function renderViewProject(data) {
   /* ── info card ── */
   _set("vp_client",        proj[1]);
   _set("vp_coordinator",   proj[3]);
-  _set("vp_priorityInfo",  proj[9] || "Medium");
-  _set("vp_receivedDate",  proj[11]);
+  _set("vp_priorityInfo",  proj[8] || "Medium");
+  _set("vp_receivedDate",  proj[10]);
   _set("vp_projectIdInfo", proj[0]);
-  _set("vp_notes",         proj[12]);
+  _set("vp_notes",         proj[11]);
 
   /* ── scope card ── */
   _set("vp_sourceLang",    proj[4] || "—");
@@ -87,18 +87,18 @@ function editCurrentProject() {
           _setVal("proj_targetLanguages", p[5]);
           _setVal("proj_langCount",       p[6]);
           _setVal("proj_sourcePages",     p[7]);
-          _setVal("proj_priority",        p[9]);
-          _setVal("proj_status",          p[10]);
-          _setVal("proj_receivedDate",    formatForInput(p[11]));
-          _setVal("proj_notes",           p[12]);
+          _setVal("proj_priority",        p[8]);
+          _setVal("proj_status",          p[9]);
+          _setVal("proj_receivedDate",    formatForInput(p[10]));
+          _setVal("proj_notes",           p[11]);
           /* Snapshot for diff */
           if (typeof _projOriginal !== "undefined") {
             _projOriginal = {
               clientName: p[1]||"", projectName: p[2]||"", coordinator: p[3]||"",
               sourceLanguage: p[4]||"", targetLanguages: p[5]||"",
               langCount: String(p[6]||""), sourcePages: String(p[7]||""),
-              priority: p[9]||"Medium", status: p[10]||"Active",
-              receivedDate: formatForInput(p[11]), notes: p[12]||""
+              priority: p[8]||"Medium", status: p[9]||"Active",
+              receivedDate: formatForInput(p[10]), notes: p[11]||""
             };
           }
           hideLoader();

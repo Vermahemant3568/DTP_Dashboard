@@ -255,7 +255,6 @@ function addTaskWithProject(projectData, taskData) {
         projectData.targetLanguages || "",
         Number(projectData.langCount)   || 0,
         Number(projectData.sourcePages) || 0,
-        Number(projectData.wordCount)   || 0,
         projectData.priority        || "Medium",
         "Active",
         projectData.receivedDate    || "",
