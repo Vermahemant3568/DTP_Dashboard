@@ -16,11 +16,20 @@ function loadProjects() {
     .getProjectsWithTaskCount();
 }
 
+function _fmtLangs(src, targets) {
+  var srcStr = (src || "").trim();
+  var parts  = (targets || "").split(",").map(function(s){ return s.trim(); }).filter(Boolean);
+  var shown  = parts.slice(0, 2).join(", ");
+  var more   = parts.length > 2 ? ' <span class="text-gray-400">+' + (parts.length - 2) + ' more</span>' : "";
+  var arrow  = srcStr && parts.length ? ' <span class="text-gray-300">→</span> ' : "";
+  return (srcStr || "—") + arrow + (shown || (srcStr ? "" : "—")) + more;
+}
+
 function _renderProjectsTable(data) {
   var tbody = document.getElementById("projectsTable");
   if (!tbody) return;
   if (!data.length) {
-    tbody.innerHTML = '<tr><td colspan="10" class="py-16 text-center text-slate-400 text-sm">No projects found.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="11" class="py-16 text-center text-slate-400 text-sm">No projects found.</td></tr>';
     return;
   }
   tbody.innerHTML = data.map(function(r) {
@@ -34,8 +43,9 @@ function _renderProjectsTable(data) {
       '<td class="font-mono text-[11px] text-gray-400">' + r[0] + '</td>' +
       '<td><div class="font-semibold text-gray-900 text-sm">' + (r[1] || "—") + '</div>' +
           '<div class="text-xs text-gray-500">' + (r[2] || "—") + '</div></td>' +
-      '<td class="text-xs text-gray-600">' + (r[4] || "—") + ' / ' + (r[5] || "—") +
+      '<td class="text-xs text-gray-600">' + _fmtLangs(r[4], r[5]) +
           '<div class="text-gray-400">' + (r[6] || 0) + ' langs</div></td>' +
+      '<td class="text-center text-sm text-gray-600">' + (Number(r[7]) || '—') + '</td>' +
       '<td class="text-sm text-gray-600">' + (r[3] || "—") + '</td>' +
       '<td><span class="badge ' + pc + '">' + (r[8] || "Medium") + '</span></td>' +
       '<td><span class="badge ' + sc + '">' + (r[9] || "Active") + '</span></td>' +
@@ -211,11 +221,113 @@ function _patchProjectRow(id, r) {
            r[8] === "High"   ? "bg-orange-100 text-orange-700" :
            r[8] === "Low"    ? "bg-gray-100 text-gray-500" : "bg-blue-100 text-blue-700";
   var cells = row.cells;
-  if (!cells || cells.length < 9) return;
-  cells[1].innerHTML = '<div class="font-semibold text-gray-900 text-sm">' + (r[1]||"—") + '</div><div class="text-xs text-gray-500">' + (r[2]||"—") + '</div>';
-  cells[2].innerHTML = (r[4]||"—") + ' / ' + (r[5]||"—") + '<div class="text-gray-400">' + (r[6]||0) + ' langs</div>';
-  cells[3].textContent = r[3] || "—";
-  cells[4].innerHTML = '<span class="badge ' + pc + '">' + (r[8]||"Medium") + '</span>';
-  cells[5].innerHTML = '<span class="badge ' + sc + '">' + (r[9]||"Active") + '</span>';
+  if (!cells || cells.length < 11) return;
+  /* 0=ID, 1=Client&Project, 2=Languages, 3=SrcPages, 4=Coordinator, 5=Priority, 6=Status, 7=Tasks, 8=TaskPages, 9=Received, 10=Actions */
+  cells[1].innerHTML   = '<div class="font-semibold text-gray-900 text-sm">' + (r[1]||"—") + '</div><div class="text-xs text-gray-500">' + (r[2]||"—") + '</div>';
+  cells[2].innerHTML   = _fmtLangs(r[4], r[5]) + '<div class="text-gray-400">' + (r[6]||0) + ' langs</div>';
+  cells[3].textContent = Number(r[7]) || "—";
+  cells[4].textContent = r[3] || "—";
+  cells[5].innerHTML   = '<span class="badge ' + pc + '">' + (r[8]||"Medium") + '</span>';
+  cells[6].innerHTML   = '<span class="badge ' + sc + '">' + (r[9]||"Active") + '</span>';
+  cells[7].textContent = Number(r[14]) || 0;
+  cells[8].textContent = (Number(r[15]) || 0).toLocaleString();
+  cells[9].textContent = r[10] || "—";
+}
+
+/* ================================================================
+   ADD PROJECT — duplicate check & inline live check
+================================================================ */
+var _projDupTimer    = null;
+var _projDupMatches  = [];
+var _projInlineDupId = "";
+
+function _projDupSearchDebounce() {
+  if (_projDupTimer) clearTimeout(_projDupTimer);
+  _projDupTimer = setTimeout(_projDupSearch, 350);
+}
+
+function _projDupSearch() {
+  var q      = ((document.getElementById("proj_dupCheck") || {}).value || "").trim();
+  var resEl  = document.getElementById("proj_dupResults");
+  var noneEl = document.getElementById("proj_dupNone");
+  if (!resEl || !noneEl) { showToast("Search panel not found. Make sure you are on the Register Project page.", "error"); return; }
+  resEl.style.display  = "none";
+  noneEl.style.display = "none";
+  _projDupMatches      = [];
+  if (!q || q.length < 2) { showToast("Enter at least 2 characters to search.", "warning"); return; }
+
+  showLoader("Searching projects...");
+
+  google.script.run
+    .withFailureHandler(function(e) {
+      hideLoader();
+      showToast("Search failed: " + (e.message || e), "error");
+    })
+    .withSuccessHandler(function(results) {
+      hideLoader();
+      _projDupMatches = results || [];
+      if (!_projDupMatches.length) {
+        noneEl.style.display = "block";
+        return;
+      }
+      resEl.innerHTML = _projDupMatches.map(function(p, i) {
+        return '<div class="flex items-center justify-between gap-3 px-4 py-3 hover:bg-amber-50 transition-colors">' +
+          '<div>' +
+            '<p class="text-sm font-semibold text-gray-800">' + (p[2] || "\u2014") + '</p>' +
+            '<p class="text-xs text-gray-500 mt-0.5">' + (p[1] || "\u2014") +
+              ' \u00b7 <span class="font-mono">' + p[0] + '</span>' +
+              (p[9] ? ' \u00b7 <span class="text-amber-600">' + p[9] + '</span>' : '') +
+            '</p>' +
+          '</div>' +
+          '<button type="button" onclick="_proj_useMatch(' + i + ')"' +
+            ' class="shrink-0 text-xs font-bold text-white bg-sky-600 hover:bg-sky-700 px-3 py-1.5 rounded-lg transition-colors">' +
+            'Use This \u2192' +
+          '</button>' +
+        '</div>';
+      }).join("");
+      resEl.style.display = "block";
+    })
+    .searchProjects(q);
+}
+
+function _proj_useMatch(idx) {
+  var p = _projDupMatches[idx];
+  if (!p) return;
+  loadPage("addTask", { projectId: p[0] });
+}
+
+/* Live inline duplicate check as user types client + project name */
+var _projLiveTimer = null;
+function _proj_liveClientCheck() {
+  if (_projLiveTimer) clearTimeout(_projLiveTimer);
+  _projLiveTimer = setTimeout(function() {
+    var client  = ((document.getElementById("proj_clientName")  || {}).value || "").trim();
+    var project = ((document.getElementById("proj_projectName") || {}).value || "").trim();
+    var warnEl  = document.getElementById("proj_inlineDupWarn");
+    var msgEl   = document.getElementById("proj_inlineDupMsg");
+    if (!warnEl || !msgEl) return;
+    if (!client || project.length < 3) { warnEl.style.display = "none"; return; }
+    google.script.run
+      .withFailureHandler(function() {})
+      .withSuccessHandler(function(results) {
+        var match = (results || []).find(function(p) {
+          return String(p[1] || "").toLowerCase().includes(client.toLowerCase()) &&
+                 String(p[2] || "").toLowerCase().includes(project.toLowerCase().substring(0, 5));
+        });
+        if (match) {
+          _projInlineDupId     = match[0];
+          msgEl.innerText      = 'Found: "' + (match[2] || "—") + '" for ' + (match[1] || "—") + ' (' + match[0] + ')';
+          warnEl.style.display = "block";
+        } else {
+          _projInlineDupId     = "";
+          warnEl.style.display = "none";
+        }
+      })
+      .searchProjects(client);
+  }, 500);
+}
+
+function _proj_goToExistingFromInline() {
+  loadPage("addTask", _projInlineDupId ? { projectId: _projInlineDupId } : {});
 }
 </script>

@@ -31,7 +31,7 @@ function _renderRevisionsTable(data) {
   var tbody = document.getElementById("revisionsTable");
   if (!tbody) return;
   if (!data.length) {
-    tbody.innerHTML = '<tr><td colspan="11" class="py-16 text-center text-slate-400 text-sm">No revisions found.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="13" class="py-16 text-center text-slate-400 text-sm">No revisions found.</td></tr>';
     return;
   }
   tbody.innerHTML = data.map(function(r) {
@@ -42,20 +42,24 @@ function _renderRevisionsTable(data) {
       ? '<span class="font-mono text-[10px] text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">' + r[2] + '</span>'
       : '<span class="text-slate-300 text-xs">—</span>';
     return '<tr data-id="' + r[0] + '">' +
-      '<td class="font-mono text-[11px] text-gray-400">' + r[0] + '</td>' +
-      '<td><div class="font-semibold text-gray-900 text-sm">' + (r[3]||r[1]||"—") + '</div>' +
+      '<td class="text-center font-mono text-[11px] text-gray-400">' + r[0] + '</td>' +
+      '<td class="text-center"><div class="font-semibold text-gray-900 text-sm">' + (r[3]||r[1]||"—") + '</div>' +
           '<div class="font-mono text-[10px] text-gray-400">' + r[1] + '</div></td>' +
-      '<td>' + taskCell + '</td>' +
-      '<td><div class="text-sm font-semibold text-gray-700">' + (r[4]||"—") + '</div>' +
+      '<td class="text-center">' + taskCell + '</td>' +
+      '<td class="text-center"><div class="text-sm font-semibold text-gray-700">' + (r[4]||"—") + '</div>' +
           '<div class="text-xs text-gray-400">' + (r[5]||"—") + '</div></td>' +
-      '<td><span class="badge bg-purple-100 text-purple-700">' + (r[6]||"—") + '</span></td>' +
-      '<td class="text-sm text-gray-600">' + who + '</td>' +
-      '<td><span class="badge ' + wc + '">' + (r[8]||"In-House") + '</span></td>' +
-      '<td><span class="badge ' + sc + '">' + (r[11]||"Pending") + '</span></td>' +
+      '<td class="text-center"><span class="badge bg-purple-100 text-purple-700">' + (r[6]||"—") + '</span></td>' +
+      '<td class="text-center text-sm text-gray-600">' + who + '</td>' +
+      '<td class="text-center"><span class="badge ' + wc + '">' + (r[8]||"In-House") + '</span></td>' +
+      '<td class="text-center"><span class="badge ' + sc + '">' + (r[11]||"Pending") + '</span></td>' +
       '<td class="text-center font-bold text-purple-600 text-sm">' + (Number(r[7])||0) + '</td>' +
-      '<td class="text-xs text-gray-500">' + (r[12]||"—") + '</td>' +
-      '<td class="text-right">' +
-        '<div class="flex justify-end gap-1">' +
+      '<td class="text-center">' + (r[20] === "Paid"
+        ? '<span class="badge bg-green-100 text-green-700">Paid</span>'
+        : '<span class="badge bg-red-50 text-red-500">Unpaid</span>') + '</td>' +
+      '<td class="text-center text-sm font-semibold text-emerald-700">' + (Number(r[18]) > 0 ? Number(r[18]).toLocaleString() : '—') + '</td>' +
+      '<td class="text-center text-xs text-gray-500">' + (r[12]||"—") + '</td>' +
+      '<td class="text-center">' +
+        '<div class="flex justify-center gap-1">' +
           btnStatus(r[0], "openRevisionQuickEdit") +
           btnEdit(r[0],   "editRevisionFull") +
           btnDelete(r[0], "deleteRevisionById") +
@@ -159,14 +163,14 @@ function loadRevisionForEdit(id) {
       _setVal("rev_revisionDate",   formatForInput(r[12]));
       _setVal("rev_deliveryDate",   formatForInput(r[13]));
       _setVal("rev_notes",          r[15]);
-      _setVal("rev_ratePerPage",    r[18]);
-      _setVal("rev_currency",       r[19]);
+      _setVal("rev_ratePerPage",   r[18]);
       _setVal("rev_paymentStatus",  r[20] || "Unpaid");
 
       var wt = r[8] || "In-House";
       var radio = document.querySelector('input[name="rev_workType"][value="'+wt+'"]');
       if (radio) { radio.checked = true; _updateWorkTypeBtns("rev_workType","rev_wt_inhouse_btn","rev_wt_vendor_btn"); }
       _syncRevAssignmentFields();
+      if (typeof _onRevPaymentStatusChange === "function") _onRevPaymentStatusChange();
       /* Set assignedTo / vendorName by matching option value, not _setVal */
       if (wt === "In-House") {
         var aEl = document.getElementById("rev_assignedTo");
@@ -192,7 +196,7 @@ function loadRevisionForEdit(id) {
         workType: r[8]||"In-House", assignedTo: r[9]||"", vendorName: r[10]||"",
         status: r[11]||"Pending", revisionDate: formatForInput(r[12]),
         deliveryDate: formatForInput(r[13]), notes: r[15]||"",
-        ratePerPage: String(r[18]||""), currency: r[19]||"",
+        ratePerPage: String(r[18]||""),
         paymentStatus: r[20]||"Unpaid"
       };
     })
@@ -224,7 +228,11 @@ function _patchRevisionRow(id, r) {
   cells[6].innerHTML = '<span class="badge ' + wc + '">' + (r[8]||"In-House") + '</span>';
   cells[7].innerHTML = '<span class="badge ' + sc + '">' + (r[11]||"Pending") + '</span>';
   cells[8].textContent = Number(r[7]) || 0;
-  cells[9].textContent = r[12] || "—";
+  cells[9].innerHTML   = r[20] === "Paid"
+    ? '<span class="badge bg-green-100 text-green-700">Paid</span>'
+    : '<span class="badge bg-red-50 text-red-500">Unpaid</span>';
+  cells[10].textContent = Number(r[18]) > 0 ? Number(r[18]).toLocaleString() : '—';
+  cells[11].textContent = r[12] || "—";
 }
 
 /* ================================================================
@@ -402,10 +410,19 @@ function _selectRevTask(idxOrObj) {
     _set("rev_tp_status", t[12]||"—");
   }
 
-  /* Auto-fill revision detail fields from task */
-  _setVal("rev_language",    t[8]  || "");
-  _setVal("rev_ratePerPage", t[22] || "");
-  _setVal("rev_currency",    t[23] || "");
+  /* Auto-fill language from task — no rate auto-fill */
+  _setVal("rev_language", t[8] || "");
+
+  /* Auto-fill revision number based on existing revisions for this task */
+  google.script.run
+    .withFailureHandler(function() {})
+    .withSuccessHandler(function(revs) {
+      var count = (revs || []).filter(function(r) {
+        return String(r[2]).trim() === String(t[0]).trim();
+      }).length;
+      _setVal("rev_revisionNumber", "R" + (count + 1));
+    })
+    .getRevisionsByProjectId(_val("rev_projectId"));
 
   /* Set work type radio to match task */
   var wt    = t[5] || "In-House";
@@ -430,10 +447,9 @@ function _selectRevTask(idxOrObj) {
     }
   }
 
-  /* Show detail step and submit bar */
   _showRevStep("rev_detailStep");
   _showRevStep("rev_submitBar");
-  _updateRevEstimate();
+  _onRevPaymentStatusChange();
 
   /* Scroll to detail step */
   var ds = document.getElementById("rev_detailStep");
@@ -496,46 +512,30 @@ function loadRevisionDropdowns(cb) {
         var vEl = document.getElementById("rev_vendorName");
         if (aEl) {
           aEl.innerHTML = '<option value="">— Select Team Member —</option>' + tOpts;
-          aEl.addEventListener("change", _autoFillRevRateFromMember);
         }
         if (vEl) {
           vEl.innerHTML = '<option value="">— Select Vendor —</option>' + vOpts;
-          vEl.addEventListener("change", _autoFillRevRateFromVendor);
         }
       }
       _syncRevAssignmentFields();
-
-      /* Wire live estimate on pages/rate change */
-      ["rev_pages","rev_ratePerPage","rev_currency"].forEach(function(id){
-        var el = document.getElementById(id);
-        if (el) el.addEventListener("input", _updateRevEstimate);
-      });
-
       if (typeof cb === "function") cb();
     })
     .getDropdownData();
 }
 
-function _autoFillRevRateFromMember() {
-  var sel = document.getElementById("rev_assignedTo");
-  if (!sel) return;
-  var opt = sel.options[sel.selectedIndex];
-  var rate = opt ? opt.getAttribute("data-rate") : null;
-  var cur  = opt ? opt.getAttribute("data-currency") : null;
-  if (rate !== null && rate !== "") _setVal("rev_ratePerPage", rate);
-  if (cur  !== null && cur  !== "") _setVal("rev_currency",    cur);
-  _updateRevEstimate();
-}
+function _autoFillRevRateFromMember() {}
+function _autoFillRevRateFromVendor() {}
+function _updateRevEstimate() {}
 
-function _autoFillRevRateFromVendor() {
-  var sel = document.getElementById("rev_vendorName");
-  if (!sel) return;
-  var opt = sel.options[sel.selectedIndex];
-  var rate = opt ? opt.getAttribute("data-rate") : null;
-  var cur  = opt ? opt.getAttribute("data-currency") : null;
-  if (rate !== null && rate !== "") _setVal("rev_ratePerPage", rate);
-  if (cur  !== null && cur  !== "") _setVal("rev_currency",    cur);
-  _updateRevEstimate();
+function _onRevPaymentStatusChange() {
+  var sel  = document.getElementById("rev_paymentStatus");
+  var rate = document.getElementById("rev_ratePerPage");
+  if (!sel || !rate) return;
+  var paid = sel.value === "Paid";
+  rate.disabled = !paid;
+  rate.classList.toggle("bg-gray-100", !paid);
+  rate.classList.toggle("text-gray-400", !paid);
+  if (!paid) rate.value = "";
 }
 
 function _onRevWorkTypeClick(wt) {
@@ -592,7 +592,7 @@ function _syncRevAssignmentFields() {
       deliveryDate:  _val("rev_deliveryDate"),
       notes:         _val("rev_notes"),
       ratePerPage:   _val("rev_ratePerPage"),
-      currency:      _val("rev_currency"),
+      currency:      "",
       paymentStatus: _val("rev_paymentStatus") || "Unpaid"
     };
 
@@ -612,7 +612,7 @@ function _syncRevAssignmentFields() {
         workType: wt2, assignedTo: _val("rev_assignedTo"), vendorName: _val("rev_vendorName"),
         status: _val("rev_status"), revisionDate: _val("rev_revisionDate"),
         deliveryDate: _val("rev_deliveryDate"), notes: _val("rev_notes"),
-        ratePerPage: _val("rev_ratePerPage"), currency: _val("rev_currency"),
+        ratePerPage: _val("rev_ratePerPage"),
         paymentStatus: _val("rev_paymentStatus") || "Unpaid"
       };
       var diff = {};

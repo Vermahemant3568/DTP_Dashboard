@@ -35,7 +35,7 @@ function setupDatabase() {
   const SHEETS = {
 
     /* ── 1. PROJECTS — master project registry ── */
-    /* 14 columns. Word Count removed (never used). */
+    /* 14 columns. */
     Projects: [
       "Project ID", "Client Name", "Project Name", "Project Coordinator",
       "Source Language", "Target Languages", "Target Lang Count", "Source Pages",
@@ -143,7 +143,6 @@ function setupDatabase() {
    Safe to run on a live sheet with existing data.
    Checks the current header row of each sheet and appends only the
    columns that are not already present. Never deletes or moves data.
-   Run this after any schema update (e.g. adding Rate Per Page etc.).
 ================================================================ */
 function addMissingColumns() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -351,26 +350,3 @@ function _findRowInSheet(sheet, id) {
   return null;
 }
 
-/* ================================================================
-   REMOVE WORD COUNT COLUMN FROM PROJECTS
-   Run once on a live sheet that still has the old 15-column schema.
-   Finds the "Word Count" header and deletes that column.
-   Safe: checks header name before deleting, never touches other cols.
-================================================================ */
-function removeWordCountColumn() {
-  var ss    = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName("Projects");
-  if (!sheet) {
-    SpreadsheetApp.getUi().alert("❌ Projects sheet not found.");
-    return;
-  }
-  var lastCol = sheet.getLastColumn();
-  var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
-  var colIdx  = headers.indexOf("Word Count");
-  if (colIdx === -1) {
-    SpreadsheetApp.getUi().alert("✔️  Word Count column not found — nothing to remove.");
-    return;
-  }
-  sheet.deleteColumn(colIdx + 1);  // deleteColumn is 1-based
-  SpreadsheetApp.getUi().alert("✅ Word Count column removed from Projects sheet.");
-}

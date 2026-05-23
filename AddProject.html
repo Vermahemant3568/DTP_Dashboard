@@ -46,7 +46,7 @@
         </button>
       </div>
 
-      <!-- Search results -->
+      <!-- Search results — browsable list -->
       <div id="proj_dupResults" style="display:none"
         class="border border-amber-200 rounded-xl overflow-hidden bg-white divide-y divide-gray-100 max-h-56 overflow-y-auto shadow-sm">
       </div>
@@ -58,27 +58,6 @@
         <div>
           <p class="text-sm font-semibold text-green-800">No matching project found</p>
           <p class="text-xs text-green-600 mt-0.5">Safe to register a new project below.</p>
-        </div>
-      </div>
-
-      <!-- Duplicate warning -->
-      <div id="proj_dupWarning" style="display:none"
-        class="p-4 bg-red-50 border-2 border-red-300 rounded-xl space-y-2">
-        <div class="flex items-center gap-2">
-          <span class="text-red-500 text-xl">⚠️</span>
-          <p class="text-sm font-bold text-red-800">Possible duplicate found!</p>
-        </div>
-        <p class="text-xs text-red-600">A project with a similar name already exists. Use it instead of creating a duplicate.</p>
-        <div id="proj_dupMatchList" class="space-y-2 mt-2"></div>
-        <div class="flex gap-2 pt-1">
-          <button type="button" onclick="_proj_useDupProject()"
-            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-colors">
-            ✅ Use Existing Project → Add Task
-          </button>
-          <button type="button" onclick="_proj_dismissDupWarning()"
-            class="px-4 py-2 bg-white border border-red-300 text-red-600 text-xs font-semibold rounded-xl hover:bg-red-50 transition-colors">
-            Still Create New
-          </button>
         </div>
       </div>
 
@@ -259,124 +238,4 @@
   </form>
 </div>
 
-<script>
-/* ── Duplicate check state ── */
-var _projDupTimer    = null;
-var _projDupMatches  = [];
-var _projInlineDupId = "";
 
-function _projDupSearchDebounce() {
-  if (_projDupTimer) clearTimeout(_projDupTimer);
-  _projDupTimer = setTimeout(_projDupSearch, 350);
-}
-
-function _projDupSearch() {
-  var q = (document.getElementById("proj_dupCheck") || {}).value || "";
-  q = q.trim();
-  var resEl  = document.getElementById("proj_dupResults");
-  var noneEl = document.getElementById("proj_dupNone");
-  var warnEl = document.getElementById("proj_dupWarning");
-  if (!q || q.length < 2) {
-    if (resEl)  resEl.style.display  = "none";
-    if (noneEl) noneEl.style.display = "none";
-    if (warnEl) warnEl.style.display = "none";
-    return;
-  }
-  google.script.run
-    .withFailureHandler(function() {})
-    .withSuccessHandler(function(results) {
-      _projDupMatches = results || [];
-      if (resEl)  resEl.style.display  = "none";
-      if (noneEl) noneEl.style.display = "none";
-      if (warnEl) warnEl.style.display = "none";
-      if (!_projDupMatches.length) {
-        if (noneEl) noneEl.style.display = "block";
-        return;
-      }
-      /* Show warning with matches */
-      if (warnEl) warnEl.style.display = "block";
-      var listEl = document.getElementById("proj_dupMatchList");
-      if (listEl) {
-        listEl.innerHTML = _projDupMatches.map(function(p, i) {
-          return '<div class="flex items-center justify-between gap-2 p-2 bg-white border border-red-100 rounded-lg">' +
-            '<div>' +
-              '<p class="text-xs font-bold text-gray-800">' + (p[2] || "—") + '</p>' +
-              '<p class="text-[11px] text-gray-500">' + (p[1] || "—") + ' · <span class="font-mono">' + p[0] + '</span></p>' +
-            '</div>' +
-            '<button type="button" onclick="_proj_selectDupMatch(' + i + ')" ' +
-              'class="shrink-0 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors">' +
-              'Use This →' +
-            '</button>' +
-          '</div>';
-        }).join("");
-      }
-    })
-    .searchProjects(q);
-}
-
-function _proj_selectDupMatch(idx) {
-  var p = _projDupMatches[idx];
-  if (!p) return;
-  _projInlineDupId = p[0];
-  loadPage("addTask", { projectId: p[0] });
-}
-
-function _proj_useDupProject() {
-  if (_projInlineDupId) {
-    loadPage("addTask", { projectId: _projInlineDupId });
-  } else if (_projDupMatches.length) {
-    loadPage("addTask", { projectId: _projDupMatches[0][0] });
-  } else {
-    loadPage("addTask");
-  }
-}
-
-function _proj_dismissDupWarning() {
-  var warnEl = document.getElementById("proj_dupWarning");
-  if (warnEl) warnEl.style.display = "none";
-}
-
-/* Live inline duplicate check as user types client + project name */
-var _projLiveTimer = null;
-function _proj_liveClientCheck() {
-  if (_projLiveTimer) clearTimeout(_projLiveTimer);
-  _projLiveTimer = setTimeout(function() {
-    var client  = (document.getElementById("proj_clientName")  || {}).value || "";
-    var project = (document.getElementById("proj_projectName") || {}).value || "";
-    var warnEl  = document.getElementById("proj_inlineDupWarn");
-    var msgEl   = document.getElementById("proj_inlineDupMsg");
-    if (!client.trim() || !project.trim() || project.trim().length < 3) {
-      if (warnEl) warnEl.style.display = "none";
-      return;
-    }
-    google.script.run
-      .withFailureHandler(function() {})
-      .withSuccessHandler(function(results) {
-        results = results || [];
-        var q = (client.trim() + " " + project.trim()).toLowerCase();
-        var match = results.find(function(p) {
-          var combo = (String(p[1] || "") + " " + String(p[2] || "")).toLowerCase();
-          return combo.includes(client.trim().toLowerCase()) &&
-                 combo.includes(project.trim().toLowerCase().substring(0, 6));
-        });
-        if (match) {
-          _projInlineDupId = match[0];
-          if (msgEl)  msgEl.innerText = "Found: \"" + (match[2] || "—") + "\" for " + (match[1] || "—") + " (" + match[0] + ")";
-          if (warnEl) warnEl.style.display = "block";
-        } else {
-          _projInlineDupId = "";
-          if (warnEl) warnEl.style.display = "none";
-        }
-      })
-      .searchProjects(client.trim());
-  }, 500);
-}
-
-function _proj_goToExistingFromInline() {
-  if (_projInlineDupId) {
-    loadPage("addTask", { projectId: _projInlineDupId });
-  } else {
-    loadPage("addTask");
-  }
-}
-</script>

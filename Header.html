@@ -17,17 +17,6 @@
   </div>
 
   <div class="flex items-center gap-3">
-    <!-- Quick nav: Revisions -->
-    <button onclick="loadPage('revisions')"
-      class="hidden md:flex items-center gap-1.5 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 transition-all">
-      <span>🔁</span><span>Revisions</span>
-    </button>
-    <!-- Quick nav: All Tasks -->
-    <button onclick="loadPage('tasks')"
-      class="hidden md:flex items-center gap-1.5 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 transition-all">
-      <span>📋</span><span>All Tasks</span>
-    </button>
-
     <div class="hidden sm:flex flex-col items-end border-r border-gray-200 pr-3">
       <span class="text-[10px] font-bold uppercase text-gray-400">Last Sync</span>
       <span id="lastUpdated" class="font-mono text-xs font-medium text-gray-600">Just now</span>
@@ -37,13 +26,6 @@
       class="flex items-center gap-2 rounded-xl bg-gray-100 px-3 py-2 text-sm font-bold text-gray-600 hover:bg-gray-200 active:scale-95 transition-all disabled:opacity-50">
       <span id="refreshIcon">🔄</span>
       <span class="hidden sm:inline text-xs">Refresh</span>
-    </button>
-
-    <!-- PRIMARY CTA -->
-    <button onclick="loadPage('addTask')"
-      class="flex items-center gap-2 rounded-xl bg-sky-600 px-4 py-2 text-sm font-bold text-white shadow-md hover:bg-sky-700 active:scale-95 transition-all">
-      <span>✅</span>
-      <span class="hidden sm:inline">Add Task</span>
     </button>
   </div>
 

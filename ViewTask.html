@@ -7,12 +7,12 @@
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
       </button>
       <div>
-        <h2 id="vt_taskId" class="text-xs font-mono text-gray-400">—</h2>
+        <p id="vt_taskId" class="text-xs font-mono text-gray-400">—</p>
         <h1 id="vt_title" class="text-2xl font-bold text-gray-800 mt-0.5">Task Details</h1>
         <div class="flex items-center gap-2 mt-2 flex-wrap">
-          <span id="vt_statusBadge" class="badge">—</span>
-          <span id="vt_typeBadge"   class="badge">—</span>
-          <span id="vt_workBadge"   class="badge">—</span>
+          <span id="vt_statusBadge"   class="badge">—</span>
+          <span id="vt_typeBadge"     class="badge">—</span>
+          <span id="vt_workBadge"     class="badge">—</span>
           <span id="vt_priorityBadge" class="badge bg-gray-100 text-gray-600">—</span>
         </div>
       </div>
@@ -32,9 +32,14 @@
   <!-- STAT CARDS -->
   <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
     <div class="stat-card border-l-4 border-l-blue-500">
+      <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Source Pages</p>
+      <p id="vt_sourcePages" class="text-3xl font-black text-blue-600 mt-1">—</p>
+      <p id="vt_srcLangCount" class="text-xs text-slate-400 mt-1">— langs</p>
+    </div>
+    <div class="stat-card border-l-4 border-l-indigo-500">
       <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Final Pages</p>
-      <p id="vt_finalPages" class="text-3xl font-black text-blue-600 mt-1">—</p>
-      <p id="vt_srcLangCount" class="text-xs text-slate-400 mt-1">— src × — langs</p>
+      <p id="vt_finalPages" class="text-3xl font-black text-indigo-600 mt-1">—</p>
+      <p class="text-xs text-slate-400 mt-1">src × languages</p>
     </div>
     <div class="stat-card border-l-4 border-l-purple-500">
       <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Revision Pages</p>
@@ -42,23 +47,19 @@
       <p id="vt_revCount" class="text-xs text-slate-400 mt-1">— revisions</p>
     </div>
     <div class="stat-card border-l-4 border-l-emerald-500">
-      <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Est. Amount</p>
-      <p id="vt_estAmount" class="text-3xl font-black text-emerald-600 mt-1">—</p>
-      <p id="vt_rateInfo" class="text-xs text-slate-400 mt-1">— /page</p>
-    </div>
-    <div class="stat-card border-l-4 border-l-amber-500">
       <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Payment</p>
-      <p id="vt_paymentStatus" class="text-3xl font-black text-amber-500 mt-1">—</p>
-      <p id="vt_paymentSub" class="text-xs text-slate-400 mt-1">payment status</p>
+      <p id="vt_paymentStatus" class="text-2xl font-black text-emerald-600 mt-1">—</p>
+      <p id="vt_rateInfo" class="text-xs text-slate-400 mt-1">— /page</p>
     </div>
   </div>
 
-  <!-- DETAIL CARDS ROW -->
+  <!-- DETAIL CARDS -->
   <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
 
-    <!-- Task Info -->
+    <!-- Task Information -->
     <div class="section-card">
-      <div class="section-header border-l-blue-500 bg-blue-50 flex items-center gap-3">
+      <div class="section-header border-l-blue-500 bg-blue-50">
+        <div class="h-8 w-8 rounded-lg bg-blue-100 flex items-center justify-center text-base">📋</div>
         <h3 class="text-sm font-semibold text-blue-700">Task Information</h3>
       </div>
       <div class="section-body">
@@ -70,50 +71,51 @@
           </div>
           <div>
             <dt class="text-xs text-gray-400">Client</dt>
-            <dd id="vt_client" class="text-sm font-medium text-gray-900 mt-0.5">—</dd>
+            <dd id="vt_client" class="text-sm font-medium text-gray-800 mt-0.5">—</dd>
           </div>
           <div>
             <dt class="text-xs text-gray-400">Task Type</dt>
-            <dd id="vt_taskType" class="text-sm font-medium text-gray-900 mt-0.5">—</dd>
+            <dd id="vt_taskType" class="text-sm font-medium text-gray-800 mt-0.5">—</dd>
           </div>
           <div>
             <dt class="text-xs text-gray-400">Language</dt>
-            <dd id="vt_language" class="text-sm font-medium text-gray-900 mt-0.5">—</dd>
+            <dd id="vt_language" class="text-sm font-medium text-gray-800 mt-0.5">—</dd>
           </div>
           <div>
             <dt class="text-xs text-gray-400">Priority</dt>
-            <dd id="vt_priority" class="text-sm font-medium text-gray-900 mt-0.5">—</dd>
+            <dd id="vt_priority" class="text-sm font-medium text-gray-800 mt-0.5">—</dd>
           </div>
         </dl>
       </div>
     </div>
 
-    <!-- Assignment & Rate -->
+    <!-- Assignment -->
     <div class="section-card">
-      <div class="section-header border-l-indigo-500 bg-indigo-50 flex items-center gap-3">
+      <div class="section-header border-l-indigo-500 bg-indigo-50">
+        <div class="h-8 w-8 rounded-lg bg-indigo-100 flex items-center justify-center text-base">👤</div>
         <h3 class="text-sm font-semibold text-indigo-700">Assignment & Rate</h3>
       </div>
       <div class="section-body">
         <dl class="space-y-3">
           <div>
             <dt class="text-xs text-gray-400">Work Type</dt>
-            <dd id="vt_workType" class="text-sm font-medium text-gray-900 mt-0.5">—</dd>
+            <dd id="vt_workType" class="text-sm font-medium text-gray-800 mt-0.5">—</dd>
+          </div>
+          <div id="vt_assignedRow">
+            <dt class="text-xs text-gray-400" id="vt_assignedLabel">Assigned To</dt>
+            <dd id="vt_assignedTo" class="text-sm font-semibold text-gray-900 mt-0.5">—</dd>
           </div>
           <div>
-            <dt class="text-xs text-gray-400">Assigned To</dt>
-            <dd id="vt_assignedTo" class="text-sm font-medium text-gray-900 mt-0.5">—</dd>
+            <dt class="text-xs text-gray-400">Payment Status</dt>
+            <dd id="vt_paymentStatusCard" class="text-sm font-semibold mt-0.5">—</dd>
           </div>
-          <div>
-            <dt class="text-xs text-gray-400">Vendor</dt>
-            <dd id="vt_vendorName" class="text-sm font-medium text-gray-900 mt-0.5">—</dd>
-          </div>
-          <div>
+          <div id="vt_rateRow">
             <dt class="text-xs text-gray-400">Rate Per Page</dt>
             <dd id="vt_rate" class="text-sm font-semibold text-emerald-700 mt-0.5">—</dd>
           </div>
-          <div>
-            <dt class="text-xs text-gray-400">Currency</dt>
-            <dd id="vt_currency" class="text-sm font-medium text-gray-900 mt-0.5">—</dd>
+          <div id="vt_estRow">
+            <dt class="text-xs text-gray-400">Est. Amount</dt>
+            <dd id="vt_estAmount" class="text-sm font-bold text-emerald-700 mt-0.5">—</dd>
           </div>
         </dl>
       </div>
@@ -121,29 +123,30 @@
 
     <!-- Timeline -->
     <div class="section-card">
-      <div class="section-header border-l-green-500 bg-green-50 flex items-center gap-3">
+      <div class="section-header border-l-green-500 bg-green-50">
+        <div class="h-8 w-8 rounded-lg bg-green-100 flex items-center justify-center text-base">📅</div>
         <h3 class="text-sm font-semibold text-green-700">Timeline</h3>
       </div>
       <div class="section-body">
         <dl class="space-y-3">
           <div>
             <dt class="text-xs text-gray-400">Start Date</dt>
-            <dd id="vt_startDate" class="text-sm font-medium text-gray-900 mt-0.5">—</dd>
+            <dd id="vt_startDate" class="text-sm font-medium text-gray-800 mt-0.5">—</dd>
           </div>
           <div>
             <dt class="text-xs text-gray-400">Delivery Date</dt>
-            <dd id="vt_deliveryDate" class="text-sm font-medium text-gray-900 mt-0.5">—</dd>
+            <dd id="vt_deliveryDate" class="text-sm font-medium text-gray-800 mt-0.5">—</dd>
           </div>
           <div>
-            <dt class="text-xs text-gray-400">Completed Date</dt>
-            <dd id="vt_completedDate" class="text-sm font-medium text-gray-900 mt-0.5">—</dd>
+            <dt class="text-xs text-gray-400">Status</dt>
+            <dd id="vt_statusDetail" class="text-sm font-semibold text-gray-800 mt-0.5">—</dd>
           </div>
           <div>
-            <dt class="text-xs text-gray-400">Created At</dt>
+            <dt class="text-xs text-gray-400">Created</dt>
             <dd id="vt_createdAt" class="text-xs text-gray-400 mt-0.5">—</dd>
           </div>
           <div>
-            <dt class="text-xs text-gray-400">Updated At</dt>
+            <dt class="text-xs text-gray-400">Last Updated</dt>
             <dd id="vt_updatedAt" class="text-xs text-gray-400 mt-0.5">—</dd>
           </div>
         </dl>
@@ -152,37 +155,11 @@
 
   </div>
 
-  <!-- PAGES BREAKDOWN -->
-  <div class="section-card">
-    <div class="section-header border-l-purple-500 bg-purple-50 flex items-center gap-3">
-      <h3 class="text-sm font-semibold text-purple-700">Page Breakdown</h3>
-    </div>
-    <div class="section-body">
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-        <div class="p-3 bg-gray-50 rounded-xl">
-          <p class="text-xs text-gray-400 font-semibold uppercase tracking-wide">Source Pages</p>
-          <p id="vt_sourcePages" class="text-2xl font-black text-gray-700 mt-1">—</p>
-        </div>
-        <div class="p-3 bg-gray-50 rounded-xl">
-          <p class="text-xs text-gray-400 font-semibold uppercase tracking-wide">Languages</p>
-          <p id="vt_langCount" class="text-2xl font-black text-gray-700 mt-1">—</p>
-        </div>
-        <div class="p-3 bg-blue-50 rounded-xl">
-          <p class="text-xs text-blue-500 font-semibold uppercase tracking-wide">Final Pages</p>
-          <p id="vt_finalPages2" class="text-2xl font-black text-blue-700 mt-1">—</p>
-        </div>
-        <div class="p-3 bg-purple-50 rounded-xl">
-          <p class="text-xs text-purple-500 font-semibold uppercase tracking-wide">Revision Pages</p>
-          <p id="vt_revPages2" class="text-2xl font-black text-purple-700 mt-1">—</p>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <!-- LINKS & NOTES -->
   <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
     <div class="section-card">
-      <div class="section-header border-l-gray-400 bg-gray-50 flex items-center gap-3">
+      <div class="section-header border-l-gray-400 bg-gray-50">
+        <div class="h-8 w-8 rounded-lg bg-gray-200 flex items-center justify-center text-base">🔗</div>
         <h3 class="text-sm font-semibold text-gray-700">File Links</h3>
       </div>
       <div class="section-body space-y-3">
@@ -197,7 +174,8 @@
       </div>
     </div>
     <div class="section-card">
-      <div class="section-header border-l-gray-400 bg-gray-50 flex items-center gap-3">
+      <div class="section-header border-l-gray-400 bg-gray-50">
+        <div class="h-8 w-8 rounded-lg bg-gray-200 flex items-center justify-center text-base">📝</div>
         <h3 class="text-sm font-semibold text-gray-700">Notes</h3>
       </div>
       <div class="section-body">
@@ -232,7 +210,6 @@
             <th>Status</th>
             <th class="text-center">Pages</th>
             <th>Rev Date</th>
-            <th>Payment</th>
             <th class="text-right">Actions</th>
           </tr>
         </thead>

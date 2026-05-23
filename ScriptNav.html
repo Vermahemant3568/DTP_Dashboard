@@ -127,6 +127,7 @@ function _initAddTaskForm(ctx) {
   if (sdEl && !sdEl.value) sdEl.value = todayISO();
   if (typeof initTaskPageCalc === "function") initTaskPageCalc();
   _wireWorkTypeRadios("task_workType", "wt_inhouse_btn", "wt_vendor_btn");
+  if (typeof _onPaymentStatusChange === "function") _onPaymentStatusChange();
   if (typeof loadTaskDropdowns === "function") {
     loadTaskDropdowns(function() {
       if (ctx && ctx.projectId) {

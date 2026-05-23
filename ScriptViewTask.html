@@ -28,30 +28,28 @@ function _renderTaskView(t, revs) {
 
   var statusEl = document.getElementById("vt_statusBadge");
   if (statusEl) { statusEl.innerText = t[12] || "Pending"; statusEl.className = "badge " + getStatusClass(t[12] || "Pending"); }
-
   var typeEl = document.getElementById("vt_typeBadge");
   if (typeEl) { typeEl.innerText = t[4] || "—"; typeEl.className = "badge " + getTaskClass(t[4] || "Main DTP"); }
-
   var workEl = document.getElementById("vt_workBadge");
   if (workEl) { workEl.innerText = t[5] || "In-House"; workEl.className = "badge " + getWorkClass(t[5] || "In-House"); }
-
   var prioEl = document.getElementById("vt_priorityBadge");
   if (prioEl) prioEl.innerText = "Priority: " + (t[13] || "Medium");
 
   /* Stat cards */
+  var srcPages = Number(t[9])  || 0;
+  var langCnt  = Number(t[11]) || 0;
   var finalPgs = Number(t[10]) || 0;
   var revPages = revs.reduce(function(s, r) { return s + (Number(r[7]) || 0); }, 0);
   var rate     = Number(t[22]) || 0;
-  var cur      = t[23] || "";
-  var estAmt   = finalPgs * rate;
+  var paid     = (t[24] || "Unpaid") === "Paid";
 
+  _set("vt_sourcePages",  srcPages.toLocaleString());
+  _set("vt_srcLangCount", langCnt + " lang" + (langCnt !== 1 ? "s" : ""));
   _set("vt_finalPages",   finalPgs.toLocaleString());
-  _set("vt_srcLangCount", (Number(t[9]) || 0) + " src × " + (Number(t[11]) || 0) + " langs");
   _set("vt_revPages",     revPages.toLocaleString());
   _set("vt_revCount",     revs.length + " revision" + (revs.length !== 1 ? "s" : ""));
-  _set("vt_estAmount",    rate > 0 ? (cur ? cur + " " : "") + estAmt.toLocaleString() : "—");
-  _set("vt_rateInfo",     rate > 0 ? (cur ? cur + " " : "") + rate + " /page" : "No rate set");
   _set("vt_paymentStatus", t[24] || "Unpaid");
+  _set("vt_rateInfo",     rate > 0 ? rate + " /page" : "No rate set");
 
   /* Task info card */
   _set("vt_projectName", t[3] || "—");
@@ -61,57 +59,54 @@ function _renderTaskView(t, revs) {
   _set("vt_language",    t[8] || "—");
   _set("vt_priority",    t[13] || "Medium");
 
-  /* Assignment card */
-  _set("vt_workType",   t[5] || "In-House");
-  _set("vt_assignedTo", t[5] === "Vendor" ? "—" : (t[6] || "—"));
-  _set("vt_vendorName", t[5] === "Vendor" ? (t[7] || "—") : "—");
-  _set("vt_rate",       rate > 0 ? (cur ? cur + " " : "") + rate : "—");
-  _set("vt_currency",   cur || "—");
+  /* Assignment card — show only relevant person */
+  var isVendor = t[5] === "Vendor";
+  _set("vt_workType", t[5] || "In-House");
+  var labelEl = document.getElementById("vt_assignedLabel");
+  if (labelEl) labelEl.innerText = isVendor ? "Vendor" : "Assigned To";
+  _set("vt_assignedTo", isVendor ? (t[7] || "—") : (t[6] || "—"));
+
+  /* Payment & rate — only show rate/amount if Paid */
+  var payEl = document.getElementById("vt_paymentStatusCard");
+  if (payEl) {
+    payEl.innerText  = t[24] || "Unpaid";
+    payEl.className  = paid ? "text-sm font-semibold text-emerald-600 mt-0.5" : "text-sm font-semibold text-red-500 mt-0.5";
+  }
+  var rateRow = document.getElementById("vt_rateRow");
+  var estRow  = document.getElementById("vt_estRow");
+  if (paid && rate > 0) {
+    _set("vt_rate",      rate.toLocaleString() + " /page");
+    _set("vt_estAmount", (finalPgs * rate).toLocaleString());
+    if (rateRow) rateRow.style.display = "";
+    if (estRow)  estRow.style.display  = "";
+  } else {
+    if (rateRow) rateRow.style.display = "none";
+    if (estRow)  estRow.style.display  = "none";
+  }
 
   /* Timeline card */
-  _set("vt_startDate",     t[14] || "—");
-  _set("vt_deliveryDate",  t[15] || "—");
-  _set("vt_completedDate", t[16] || "—");
-  _set("vt_createdAt",     t[20] || "—");
-  _set("vt_updatedAt",     t[21] || "—");
-
-  /* Page breakdown */
-  _set("vt_sourcePages",  Number(t[9])  || 0);
-  _set("vt_langCount",    Number(t[11]) || 0);
-  _set("vt_finalPages2",  finalPgs.toLocaleString());
-  _set("vt_revPages2",    revPages.toLocaleString());
+  _set("vt_startDate",    t[14] || "—");
+  _set("vt_deliveryDate", t[15] || "—");
+  _set("vt_statusDetail", t[12] || "Pending");
+  _set("vt_createdAt",    t[20] || "—");
+  _set("vt_updatedAt",    t[21] || "—");
 
   /* Links */
   var slEl = document.getElementById("vt_sourceLink");
-  if (slEl) {
-    if (t[17]) {
-      slEl.innerHTML = '<a href="' + t[17] + '" target="_blank" class="text-blue-600 hover:underline break-all">' + t[17] + '</a>';
-    } else {
-      slEl.innerText = "—";
-    }
-  }
+  if (slEl) slEl.innerHTML = t[17] ? '<a href="' + t[17] + '" target="_blank" class="text-blue-600 hover:underline break-all">' + t[17] + '</a>' : "—";
   var dlEl = document.getElementById("vt_deliverableLink");
-  if (dlEl) {
-    if (t[18]) {
-      dlEl.innerHTML = '<a href="' + t[18] + '" target="_blank" class="text-blue-600 hover:underline break-all">' + t[18] + '</a>';
-    } else {
-      dlEl.innerText = "—";
-    }
-  }
+  if (dlEl) dlEl.innerHTML = t[18] ? '<a href="' + t[18] + '" target="_blank" class="text-blue-600 hover:underline break-all">' + t[18] + '</a>' : "—";
 
   _set("vt_notes", t[19] || "—");
 
-  /* Wire header buttons */
+  /* Buttons */
   var editBtn = document.getElementById("vt_editBtn");
   if (editBtn) editBtn.onclick = function() { loadPage("addTask", { editId: _vtCurrentTaskId }); };
-
   var addRevBtn = document.getElementById("vt_addRevBtn");
   if (addRevBtn) addRevBtn.onclick = function() { loadPage("addRevision", { projectId: _vtCurrentProjId }); };
-
   var addRevBtn2 = document.getElementById("vt_addRevBtn2");
   if (addRevBtn2) addRevBtn2.onclick = function() { loadPage("addRevision", { projectId: _vtCurrentProjId }); };
 
-  /* Revisions table */
   _renderVtRevisions(revs);
 }
 
@@ -124,7 +119,7 @@ function _renderVtRevisions(revs) {
   if (totalEl) totalEl.innerText = total.toLocaleString() + " pages";
 
   if (!revs.length) {
-    tbody.innerHTML = '<tr><td colspan="9" class="py-10 text-center text-slate-400 text-sm">' +
+    tbody.innerHTML = '<tr><td colspan="8" class="py-10 text-center text-slate-400 text-sm">' +
       '<div class="flex flex-col items-center gap-2">' +
         '<span class="text-3xl">🔁</span>' +
         '<p>No revisions linked to this task yet.</p>' +
@@ -139,26 +134,18 @@ function _renderVtRevisions(revs) {
     var sc  = getStatusClass(r[11] || "Pending");
     var wc  = getWorkClass(r[8]   || "In-House");
     var who = r[8] === "Vendor" ? (r[10] || r[9] || "—") : (r[9] || "—");
-    var pc  = r[20] === "Paid" ? "bg-green-100 text-green-700" :
-              r[20] === "Partial" ? "bg-amber-100 text-amber-700" : "bg-red-50 text-red-500";
     return '<tr>' +
-      '<td class="font-mono text-[11px] text-gray-400">' + r[0] + '</td>' +
-      '<td>' +
+      '<td class="text-center font-mono text-[11px] text-gray-400">' + r[0] + '</td>' +
+      '<td class="text-center">' +
         '<div class="text-sm font-semibold text-gray-700">' + (r[4] || "—") + '</div>' +
         '<div class="text-xs text-gray-400">' + (r[5] || "—") + '</div>' +
       '</td>' +
-      '<td><span class="badge bg-purple-100 text-purple-700">' + (r[6] || "—") + '</span></td>' +
-      '<td class="text-sm text-gray-700">' + who + '</td>' +
-      '<td><span class="badge ' + sc + '">' + (r[11] || "Pending") + '</span></td>' +
+      '<td class="text-center"><span class="badge bg-purple-100 text-purple-700">' + (r[6] || "—") + '</span></td>' +
+      '<td class="text-center text-sm text-gray-700">' + who + '</td>' +
+      '<td class="text-center"><span class="badge ' + sc + '">' + (r[11] || "Pending") + '</span></td>' +
       '<td class="text-center font-bold text-purple-600 text-sm">' + (Number(r[7]) || 0).toLocaleString() + '</td>' +
-      '<td class="text-xs text-gray-500">' + (r[12] || "—") + '</td>' +
-      '<td><span class="badge ' + pc + '">' + (r[20] || "Unpaid") + '</span></td>' +
-      '<td class="text-right">' +
-        '<div class="flex justify-end gap-1">' +
-          btnEdit(r[0],   "editRevisionFull") +
-          btnDelete(r[0], "_vtDeleteRevision") +
-        '</div>' +
-      '</td>' +
+      '<td class="text-center text-xs text-gray-500">' + (r[12] || "—") + '</td>' +
+      '<td class="text-center">' + btnDelete(r[0], "_vtDeleteRevision") + '</td>' +
     '</tr>';
   }).join("");
 }

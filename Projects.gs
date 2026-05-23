@@ -1,11 +1,11 @@
 /* ================================================================
    Projects.gs — Master Project Registry CRUD
-   Sheet: Projects (15 columns)
+   Sheet: Projects (14 columns)
    Col map: PC constants defined in Code.gs
-   0=ID, 1=Client, 2=ProjectName, 3=Coordinator, 4=SourceLang,
-   5=TargetLangs, 6=LangCount, 7=SourcePages, 8=WordCount,
-   9=Priority, 10=Status, 11=ReceivedDate, 12=Notes,
-   13=CreatedAt, 14=UpdatedAt
+   0=ID, 1=Client, 2=ProjectName, 3=Coordinator,
+   4=SourceLang, 5=TargetLangs, 6=LangCount, 7=SourcePages,
+   8=Priority, 9=Status, 10=ReceivedDate,
+   11=Notes, 12=CreatedAt, 13=UpdatedAt
 ================================================================ */
 
 function getProjects() {

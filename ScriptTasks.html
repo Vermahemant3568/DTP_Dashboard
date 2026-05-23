@@ -36,7 +36,7 @@ function _renderTasksTable(data) {
   var tbody = document.getElementById("tasksTable");
   if (!tbody) return;
   if (!data.length) {
-    tbody.innerHTML = '<tr><td colspan="9" class="py-16 text-center text-slate-400 text-sm">No tasks found.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10" class="py-16 text-center text-slate-400 text-sm">No tasks found.</td></tr>';
     return;
   }
   tbody.innerHTML = data.map(function(r) {
@@ -44,17 +44,18 @@ function _renderTasksTable(data) {
     var tc  = getTaskClass(r[4]   || "Main DTP");
     var who = r[5]==="Vendor" ? (r[7]||r[6]||"—") : (r[6]||"—");
     return '<tr data-id="' + r[0] + '">' +
-      '<td class="font-mono text-[11px] text-gray-400">' + r[0] + '</td>' +
-      '<td><div class="font-semibold text-gray-900 text-sm">' + (r[3]||"—") + '</div>' +
+      '<td class="text-center font-mono text-[11px] text-gray-400">' + r[0] + '</td>' +
+      '<td class="text-center"><div class="font-semibold text-gray-900 text-sm">' + (r[3]||"—") + '</div>' +
           '<div class="text-xs text-gray-500">' + (r[2]||"—") + '</div></td>' +
-      '<td><span class="badge ' + tc + '">' + (r[4]||"—") + '</span></td>' +
-      '<td class="text-sm text-gray-600">' + (r[8]||"—") + '</td>' +
-      '<td class="text-sm text-gray-600">' + who + '</td>' +
-      '<td><span class="badge ' + sc + '">' + (r[12]||"Pending") + '</span></td>' +
+      '<td class="text-center"><span class="badge ' + tc + '">' + (r[4]||"—") + '</span></td>' +
+      '<td class="text-center text-sm text-gray-600">' + (r[8]||"—") + '</td>' +
+      '<td class="text-center text-sm text-gray-600">' + who + '</td>' +
+      '<td class="text-center"><span class="badge ' + sc + '">' + (r[12]||"Pending") + '</span></td>' +
+      '<td class="text-center font-semibold text-gray-600 text-sm">' + (Number(r[9])||0) + '</td>' +
       '<td class="text-center font-bold text-blue-600 text-sm">' + (Number(r[10])||0) + '</td>' +
-      '<td class="text-xs text-gray-500">' + (r[15]||"—") + '</td>' +
-      '<td class="text-right">' +
-        '<div class="flex justify-end gap-1">' +
+      '<td class="text-center text-xs text-gray-500">' + (r[15]||"—") + '</td>' +
+      '<td class="text-center">' +
+        '<div class="flex justify-center gap-1">' +
           btnView(r[0],   "viewTaskById") +
           btnStatus(r[0], "openTaskQuickEdit") +
           btnEdit(r[0],   "editTaskFull") +
@@ -110,8 +111,9 @@ function _patchTaskRow(id, r) {
   cells[3].textContent = r[8] || "—";
   cells[4].textContent = who;
   cells[5].innerHTML = '<span class="badge ' + sc + '">' + (r[12]||"Pending") + '</span>';
-  cells[6].textContent = Number(r[10]) || 0;
-  cells[7].textContent = r[15] || "—";
+  cells[6].textContent = Number(r[9]) || 0;
+  cells[7].textContent = Number(r[10]) || 0;
+  cells[8].textContent = r[15] || "—";
 }
 
 /* ── snapshot of original values when edit form loads ── */
@@ -139,12 +141,10 @@ function loadTaskForEdit(id) {
       _setVal("task_priority",       t[13]);
       _setVal("task_startDate",      formatForInput(t[14]));
       _setVal("task_deliveryDate",   formatForInput(t[15]));
-      _setVal("task_completedDate",  formatForInput(t[16]));
       _setVal("task_sourceLink",     t[17]);
       _setVal("task_deliverableLink",t[18]);
       _setVal("task_notes",          t[19]);
       _setVal("task_ratePerPage",    t[22]);
-      _setVal("task_currency",       t[23]);
       _setVal("task_paymentStatus",  t[24] || "Unpaid");
       var wt=t[5]||"In-House";
       var radio=document.querySelector('input[name="task_workType"][value="'+wt+'"]');
@@ -167,6 +167,7 @@ function loadTaskForEdit(id) {
       }
       if (typeof _syncTaskAssignmentFields==="function") _syncTaskAssignmentFields();
       if (typeof onTaskTypeChange==="function") onTaskTypeChange();
+      if (typeof _onPaymentStatusChange==="function") _onPaymentStatusChange();
       _taskProjectLinked = true;
       _taskProjectIsNew  = false;
       var prev = document.getElementById("task_projectPreview");
@@ -184,9 +185,9 @@ function loadTaskForEdit(id) {
         sourcePages: String(t[9]||""), langCount: String(t[11]||""),
         finalPages: String(t[10]||""), status: t[12]||"Pending",
         priority: t[13]||"Medium", startDate: formatForInput(t[14]),
-        deliveryDate: formatForInput(t[15]), completedDate: formatForInput(t[16]),
+        deliveryDate: formatForInput(t[15]),
         sourceLink: t[17]||"", deliverableLink: t[18]||"", notes: t[19]||"",
-        ratePerPage: String(t[22]||""), currency: t[23]||"",
+        ratePerPage: String(t[22]||""),
         paymentStatus: t[24]||"Unpaid"
       };
     })
@@ -284,8 +285,6 @@ function lookupTaskProject() {
       _set("task_preview_name",   p[2]);
       _set("task_preview_client", "Client: " + (p[1]||"—"));
       _set("task_preview_langs",  "Languages: " + (p[5]||"—") + " (" + (p[6]||0) + " langs)");
-      /* Auto-fill lang count into task if empty */
-      if (!_val("task_langCount") && p[6]) _setVal("task_langCount", p[6]);
     })
     .getProjectById(id);
 }
@@ -397,12 +396,10 @@ function loadTaskDropdowns(cb) {
         if (aEl) {
           aEl.innerHTML = '<option value="">— Select Team Member —</option>' + tOpts;
           if (!tOpts) aEl.innerHTML += '<option value="" disabled>No active team members found</option>';
-          aEl.addEventListener("change", _autoFillRateFromMember);
         }
         if (vEl) {
           vEl.innerHTML = '<option value="">— Select Vendor —</option>' + vOpts;
           if (!vOpts) vEl.innerHTML += '<option value="" disabled>No active vendors found</option>';
-          vEl.addEventListener("change", _autoFillRateFromVendor);
         }
       }
       _syncTaskAssignmentFields();
@@ -411,24 +408,16 @@ function loadTaskDropdowns(cb) {
     .getDropdownData();
 }
 
-function _autoFillRateFromMember() {
-  var sel = document.getElementById("task_assignedTo");
-  if (!sel) return;
-  var opt = sel.options[sel.selectedIndex];
-  var rate = opt ? opt.getAttribute("data-rate") : null;
-  var cur  = opt ? opt.getAttribute("data-currency") : null;
-  if (rate !== null && rate !== "") _setVal("task_ratePerPage", rate);
-  if (cur  !== null && cur  !== "") _setVal("task_currency",    cur);
-}
-
-function _autoFillRateFromVendor() {
-  var sel = document.getElementById("task_vendorName");
-  if (!sel) return;
-  var opt = sel.options[sel.selectedIndex];
-  var rate = opt ? opt.getAttribute("data-rate") : null;
-  var cur  = opt ? opt.getAttribute("data-currency") : null;
-  if (rate !== null && rate !== "") _setVal("task_ratePerPage", rate);
-  if (cur  !== null && cur  !== "") _setVal("task_currency",    cur);
+/* Enable/disable rate field based on payment status */
+function _onPaymentStatusChange() {
+  var sel   = document.getElementById("task_paymentStatus");
+  var rate  = document.getElementById("task_ratePerPage");
+  if (!sel || !rate) return;
+  var paid  = sel.value === "Paid";
+  rate.disabled = !paid;
+  rate.classList.toggle("bg-gray-100", !paid);
+  rate.classList.toggle("text-gray-400", !paid);
+  if (!paid) rate.value = "";
 }
 
 /* Show Assigned To for In-House, Vendor Name for Vendor */
@@ -477,12 +466,10 @@ var _taskSubmitting = false;
       priority:        _val("task_priority"),
       startDate:       _val("task_startDate"),
       deliveryDate:    _val("task_deliveryDate"),
-      completedDate:   _val("task_completedDate"),
       sourceLink:      _val("task_sourceLink"),
       deliverableLink: _val("task_deliverableLink"),
       notes:           _val("task_notes"),
       ratePerPage:     _val("task_ratePerPage"),
-      currency:        _val("task_currency"),
       paymentStatus:   _val("task_paymentStatus") || "Unpaid"
     };
 
@@ -502,9 +489,9 @@ var _taskSubmitting = false;
         langCount: _val("task_langCount"), finalPages: _val("task_finalPages"),
         status: _val("task_status"), priority: _val("task_priority"),
         startDate: _val("task_startDate"), deliveryDate: _val("task_deliveryDate"),
-        completedDate: _val("task_completedDate"), sourceLink: _val("task_sourceLink"),
+        sourceLink: _val("task_sourceLink"),
         deliverableLink: _val("task_deliverableLink"), notes: _val("task_notes"),
-        ratePerPage: _val("task_ratePerPage"), currency: _val("task_currency"),
+        ratePerPage: _val("task_ratePerPage"),
         paymentStatus: _val("task_paymentStatus") || "Unpaid"
       };
       /* Build diff — only send fields that actually changed */
@@ -574,7 +561,6 @@ var _taskSubmitting = false;
         targetLanguages: _val("np_targetLanguages"),
         langCount:       _val("np_langCount"),
         sourcePages:     _val("np_sourcePages"),
-        wordCount:       _val("np_wordCount"),
         receivedDate:    _val("np_receivedDate"),
         priority:        _val("np_priority") || "Medium",
         notes:           _val("np_notes")
