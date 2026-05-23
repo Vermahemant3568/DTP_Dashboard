@@ -58,7 +58,7 @@
   /* ── TABLE ── */
   .data-table { width: 100%; border-collapse: collapse; }
   .data-table th {
-    padding: 12px 16px;
+    padding: 10px 12px;
     font-size: 11px;
     font-weight: 700;
     text-transform: uppercase;
@@ -67,9 +67,12 @@
     background: #f9fafb;
     border-bottom: 1px solid #f3f4f6;
     white-space: nowrap;
+    text-align: left;
   }
+  .data-table th.text-center { text-align: center; }
+  .data-table th.text-right  { text-align: right; }
   .data-table td {
-    padding: 12px 16px;
+    padding: 10px 12px;
     font-size: 13px;
     color: #374151;
     border-bottom: 1px solid #f9fafb;
@@ -86,6 +89,9 @@
     padding: 20px;
     box-shadow: 0 1px 3px rgba(0,0,0,.05);
   }
+
+  /* ── SIDEBAR + MAIN LAYOUT ── */
+  #mainContent { transition: margin-left 0.3s ease; }
 
   /* ── PAGE FADE IN ── */
   @keyframes fadeUp {

@@ -10,10 +10,27 @@ function loadProjects() {
     .withFailureHandler(function(e) { hideLoader(); showToast("Could not load projects: " + e.message, "error"); })
     .withSuccessHandler(function(data) {
       ALL_PROJECTS = data || [];
+      _renderProjStats(ALL_PROJECTS);
       _renderProjectsTable(ALL_PROJECTS);
       hideLoader();
     })
     .getProjectsWithTaskCount();
+}
+
+function _renderProjStats(data) {
+  var total     = data.length;
+  var active    = data.filter(function(r){ return r[9] === 'Active'; }).length;
+  var pending   = data.filter(function(r){ return r[9] === 'Pending'; }).length;
+  var completed = data.filter(function(r){ return r[9] === 'Completed'; }).length;
+  var taskPg    = data.reduce(function(s,r){ return s + (Number(r[15])||0); }, 0);
+  var revPg     = data.reduce(function(s,r){ return s + (Number(r[17])||0); }, 0);
+  function _set(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; }
+  _set('pstat_total',     total);
+  _set('pstat_active',    active);
+  _set('pstat_pending',   pending);
+  _set('pstat_completed', completed);
+  _set('pstat_taskpages', taskPg.toLocaleString());
+  _set('pstat_revpages',  revPg.toLocaleString());
 }
 
 function _fmtLangs(src, targets) {
@@ -27,9 +44,11 @@ function _fmtLangs(src, targets) {
 
 function _renderProjectsTable(data) {
   var tbody = document.getElementById("projectsTable");
+  var label = document.getElementById("proj_countLabel");
   if (!tbody) return;
+  if (label) label.textContent = data.length + ' project' + (data.length !== 1 ? 's' : '') + ' shown';
   if (!data.length) {
-    tbody.innerHTML = '<tr><td colspan="11" class="py-16 text-center text-slate-400 text-sm">No projects found.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="14" class="py-16 text-center text-slate-400 text-sm">No projects found.</td></tr>';
     return;
   }
   tbody.innerHTML = data.map(function(r) {
@@ -39,19 +58,29 @@ function _renderProjectsTable(data) {
              r[8] === "Low"    ? "bg-gray-100 text-gray-500" : "bg-blue-100 text-blue-700";
     var taskCount = Number(r[14]) || 0;
     var taskPages = Number(r[15]) || 0;
+    var srcPages  = Number(r[7])  || 0;
+    var revCount  = Number(r[16]) || 0;
+    var revPages  = Number(r[17]) || 0;
+    var totPages  = Number(r[18]) || 0;
+    var revBadge  = revCount > 0
+      ? '<span class="inline-flex items-center bg-amber-100 text-amber-700 text-xs font-semibold px-2 py-0.5 rounded-full">R' + revCount + '</span>'
+      : '<span class="text-gray-300 text-xs">\u2014</span>';
     return '<tr data-id="' + r[0] + '">' +
       '<td class="font-mono text-[11px] text-gray-400">' + r[0] + '</td>' +
-      '<td><div class="font-semibold text-gray-900 text-sm">' + (r[1] || "—") + '</div>' +
-          '<div class="text-xs text-gray-500">' + (r[2] || "—") + '</div></td>' +
+      '<td><div class="font-semibold text-gray-900 text-sm">' + (r[1] || '\u2014') + '</div>' +
+          '<div class="text-xs text-gray-500">' + (r[2] || '\u2014') + '</div></td>' +
       '<td class="text-xs text-gray-600">' + _fmtLangs(r[4], r[5]) +
           '<div class="text-gray-400">' + (r[6] || 0) + ' langs</div></td>' +
-      '<td class="text-center text-sm text-gray-600">' + (Number(r[7]) || '—') + '</td>' +
-      '<td class="text-sm text-gray-600">' + (r[3] || "—") + '</td>' +
-      '<td><span class="badge ' + pc + '">' + (r[8] || "Medium") + '</span></td>' +
-      '<td><span class="badge ' + sc + '">' + (r[9] || "Active") + '</span></td>' +
+      '<td class="text-center text-sm text-gray-600">' + (srcPages || '\u2014') + '</td>' +
+      '<td class="text-sm text-gray-600">' + (r[3] || '\u2014') + '</td>' +
+      '<td><span class="badge ' + pc + '">' + (r[8] || 'Medium') + '</span></td>' +
+      '<td><span class="badge ' + sc + '">' + (r[9] || 'Active') + '</span></td>' +
       '<td class="text-center text-sm font-semibold text-blue-600">' + taskCount + '</td>' +
       '<td class="text-center text-sm font-semibold text-emerald-600">' + taskPages.toLocaleString() + '</td>' +
-      '<td class="text-xs text-gray-500">' + (r[10] || "—") + '</td>' +
+      '<td class="text-center">' + revBadge + '</td>' +
+      '<td class="text-center text-sm font-semibold text-amber-600">' + (revPages ? revPages.toLocaleString() : '\u2014') + '</td>' +
+      '<td class="text-center text-sm font-bold text-slate-700">' + (totPages ? totPages.toLocaleString() : '\u2014') + '</td>' +
+      '<td class="text-xs text-gray-500">' + (r[10] || '\u2014') + '</td>' +
       '<td class="text-right">' +
         '<div class="flex justify-end gap-1">' +
           btnView(r[0], "viewProjectById") +
@@ -63,14 +92,22 @@ function _renderProjectsTable(data) {
   }).join("");
 }
 
+function _resetProjFilters() {
+  var s = document.getElementById('proj_search');        if (s) s.value = '';
+  var st = document.getElementById('proj_statusFilter'); if (st) st.value = '';
+  var pr = document.getElementById('proj_priorityFilter'); if (pr) pr.value = '';
+  _renderProjectsTable(ALL_PROJECTS);
+}
+
 function filterProjects() {
   var q  = (_val("proj_search")        || "").toLowerCase();
   var st = _val("proj_statusFilter")   || "";
   var pr = _val("proj_priorityFilter") || "";
+  /* reset: clear all filters if called with no active filter values */
   var filtered = ALL_PROJECTS.filter(function(r) {
     var mq = !q  || [r[0],r[1],r[2]].some(function(v){ return String(v).toLowerCase().includes(q); });
-    var ms = !st || r[9]  === st;
-    var mp = !pr || r[8]  === pr;
+    var ms = !st || r[9] === st;
+    var mp = !pr || r[8] === pr;
     return mq && ms && mp;
   });
   _renderProjectsTable(filtered);
@@ -161,12 +198,10 @@ var _projOriginal = {};
           if (res && res.updated) {
             var idx = ALL_PROJECTS.findIndex(function(r){ return r[0]===editId; });
             if (idx !== -1) {
-              /* Preserve appended taskCount/taskPages columns */
-              var tc = ALL_PROJECTS[idx][14];
-              var tp = ALL_PROJECTS[idx][15];
+              /* Preserve appended task/revision stats columns */
+              var saved = ALL_PROJECTS[idx].slice(14, 19);
               ALL_PROJECTS[idx] = res.updated;
-              ALL_PROJECTS[idx][14] = tc;
-              ALL_PROJECTS[idx][15] = tp;
+              for (var i = 0; i < saved.length; i++) ALL_PROJECTS[idx][14 + i] = saved[i];
               _patchProjectRow(editId, ALL_PROJECTS[idx]);
             }
           }
@@ -216,22 +251,27 @@ function _resetProjectForm() {
 function _patchProjectRow(id, r) {
   var row = document.querySelector('#projectsTable tr[data-id="' + id + '"]');
   if (!row) return;
-  var sc = getStatusClass(r[9] || "Active");
-  var pc = r[8] === "Urgent" ? "bg-red-100 text-red-700" :
-           r[8] === "High"   ? "bg-orange-100 text-orange-700" :
-           r[8] === "Low"    ? "bg-gray-100 text-gray-500" : "bg-blue-100 text-blue-700";
+  var sc = getStatusClass(r[9] || 'Active');
+  var pc = r[8] === 'Urgent' ? 'bg-red-100 text-red-700' :
+           r[8] === 'High'   ? 'bg-orange-100 text-orange-700' :
+           r[8] === 'Low'    ? 'bg-gray-100 text-gray-500' : 'bg-blue-100 text-blue-700';
   var cells = row.cells;
-  if (!cells || cells.length < 11) return;
-  /* 0=ID, 1=Client&Project, 2=Languages, 3=SrcPages, 4=Coordinator, 5=Priority, 6=Status, 7=Tasks, 8=TaskPages, 9=Received, 10=Actions */
-  cells[1].innerHTML   = '<div class="font-semibold text-gray-900 text-sm">' + (r[1]||"—") + '</div><div class="text-xs text-gray-500">' + (r[2]||"—") + '</div>';
+  if (!cells || cells.length < 14) return;
+  cells[1].innerHTML   = '<div class="font-semibold text-gray-900 text-sm">' + (r[1]||'\u2014') + '</div><div class="text-xs text-gray-500">' + (r[2]||'\u2014') + '</div>';
   cells[2].innerHTML   = _fmtLangs(r[4], r[5]) + '<div class="text-gray-400">' + (r[6]||0) + ' langs</div>';
-  cells[3].textContent = Number(r[7]) || "—";
-  cells[4].textContent = r[3] || "—";
-  cells[5].innerHTML   = '<span class="badge ' + pc + '">' + (r[8]||"Medium") + '</span>';
-  cells[6].innerHTML   = '<span class="badge ' + sc + '">' + (r[9]||"Active") + '</span>';
+  cells[3].textContent = Number(r[7]) || '\u2014';
+  cells[4].textContent = r[3] || '\u2014';
+  cells[5].innerHTML   = '<span class="badge ' + pc + '">' + (r[8]||'Medium') + '</span>';
+  cells[6].innerHTML   = '<span class="badge ' + sc + '">' + (r[9]||'Active') + '</span>';
   cells[7].textContent = Number(r[14]) || 0;
   cells[8].textContent = (Number(r[15]) || 0).toLocaleString();
-  cells[9].textContent = r[10] || "—";
+  var revCount = Number(r[16]) || 0;
+  cells[9].innerHTML   = revCount > 0
+    ? '<span class="inline-flex items-center bg-amber-100 text-amber-700 text-xs font-semibold px-2 py-0.5 rounded-full">R' + revCount + '</span>'
+    : '<span class="text-gray-300 text-xs">\u2014</span>';
+  cells[10].textContent = Number(r[17]) ? Number(r[17]).toLocaleString() : '\u2014';
+  cells[11].textContent = Number(r[18]) ? Number(r[18]).toLocaleString() : '\u2014';
+  cells[12].textContent = r[10] || '\u2014';
 }
 
 /* ================================================================

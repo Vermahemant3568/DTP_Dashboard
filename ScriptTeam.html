@@ -10,59 +10,109 @@ function loadTeam() {
   google.script.run
     .withFailureHandler(function(e){ hideLoader(); showToast("Could not load team: "+e.message,"error"); })
     .withSuccessHandler(function(data){
-      ALL_TEAM=data||[];
+      ALL_TEAM = data || [];
+      _renderTeamStats(ALL_TEAM);
       _renderTeamTable(ALL_TEAM);
       hideLoader();
     })
     .getTeam();
 }
 
+function _renderTeamStats(data) {
+  var active   = data.filter(function(r){ return r[6] === 'Active'; }).length;
+  var inactive = data.filter(function(r){ return r[6] !== 'Active'; }).length;
+  var roles    = data.reduce(function(s,r){ if (r[2] && s.indexOf(r[2]) === -1) s.push(r[2]); return s; }, []).length;
+  function _s(id, v) { var el = document.getElementById(id); if (el) el.textContent = v; }
+  _s('tm_stat_total',    data.length);
+  _s('tm_stat_active',   active);
+  _s('tm_stat_inactive', inactive);
+  _s('tm_stat_roles',    roles);
+}
+
+function filterTeam() {
+  var q  = (_val('tm_search')       || '').toLowerCase();
+  var st = _val('tm_statusFilter')  || '';
+  var filtered = ALL_TEAM.filter(function(r) {
+    var mq = !q  || [r[1],r[2],r[5]].some(function(v){ return String(v||'').toLowerCase().includes(q); });
+    var ms = !st || r[6] === st;
+    return mq && ms;
+  });
+  _renderTeamTable(filtered);
+}
+
+function _resetTeamFilters() {
+  var s = document.getElementById('tm_search');       if (s) s.value = '';
+  var f = document.getElementById('tm_statusFilter'); if (f) f.value = '';
+  _renderTeamTable(ALL_TEAM);
+}
+
 function _renderTeamTable(data) {
-  var tbody=document.getElementById("teamTable");
+  var tbody = document.getElementById('teamTable');
+  var label = document.getElementById('tm_countLabel');
   if (!tbody) return;
-  if (!data.length){
-    tbody.innerHTML='<tr><td colspan="8" class="py-16 text-center text-slate-400 text-sm">No team members yet.</td></tr>';
+  if (label) label.textContent = data.length + ' member' + (data.length !== 1 ? 's' : '') + ' shown';
+  if (!data.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="py-16 text-center text-slate-400 text-sm">No team members found.</td></tr>';
     return;
   }
-  tbody.innerHTML=data.map(function(r){
-    var sc=r[6]==="Active"?"bg-green-100 text-green-700":"bg-gray-100 text-gray-500";
-    var rateStr = r[7] ? (r[8]||"")+" "+(Number(r[7]).toLocaleString()) : "—";
-    return '<tr>'+
-      '<td class="font-mono text-[11px] text-gray-400">'+r[0]+'</td>'+
-      '<td class="font-semibold text-gray-900 text-sm">'+(r[1]||"—")+'</td>'+
-      '<td class="text-sm text-gray-600">'+(r[2]||"—")+'</td>'+
-      '<td class="text-sm text-gray-600">'+(r[3]||"—")+'</td>'+
-      '<td class="text-sm text-gray-600">'+(r[5]||"—")+'</td>'+
-      '<td class="text-sm font-semibold text-emerald-700 text-center">'+rateStr+'</td>'+
-      '<td><span class="badge '+sc+'">'+(r[6]||"Active")+'</span></td>'+
-      '<td class="text-right">'+
-        '<div class="flex justify-end gap-1">'+
-          btnView(r[1],"viewMemberPerformance")+
-          btnEdit(r[0],"openTeamModal")+
-          btnDelete(r[0],"deleteTeamMemberById")+
-        '</div>'+
-      '</td>'+
+  tbody.innerHTML = data.map(function(r) {
+    var active   = r[6] === 'Active';
+    var sc       = active ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-400';
+    var rate     = Number(r[7]) || 0;
+    var currency  = String(r[8] || '').trim();
+    var rateStr   = rate > 0 ? (currency ? currency + '\u00a0' : '') + rate.toLocaleString() : '\u2014';
+    var initials = (r[1] || '?').split(' ').map(function(w){ return w[0]; }).slice(0,2).join('').toUpperCase();
+    var avatarBg = active ? 'bg-sky-100 text-sky-700' : 'bg-gray-100 text-gray-400';
+    return '<tr data-id="' + r[0] + '">' +
+      '<td class="font-mono text-[10px] text-gray-400">' + r[0] + '</td>' +
+      '<td>' +
+        '<div class="flex items-center gap-2">' +
+          '<div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold ' + avatarBg + '">' + initials + '</div>' +
+          '<div>' +
+            '<p class="text-sm font-semibold text-gray-900 leading-none">' + (r[1] || '\u2014') + '</p>' +
+            '<p class="text-[11px] text-gray-400 mt-0.5">' + (r[2] || '\u2014') + '</p>' +
+          '</div>' +
+        '</div>' +
+      '</td>' +
+      '<td class="text-xs text-gray-500">' + (r[3] || '\u2014') + '</td>' +
+      '<td class="text-xs text-gray-500">' + (r[5] || '\u2014') + '</td>' +
+      '<td class="text-center text-sm font-semibold text-emerald-700">' + rateStr + '</td>' +
+      '<td class="text-center"><span class="badge ' + sc + '">' + (r[6] || 'Active') + '</span></td>' +
+      '<td class="text-right">' +
+        '<div class="flex justify-end gap-1">' +
+          btnView(r[1], 'viewMemberPerformance') +
+          btnEdit(r[0], 'openTeamModal') +
+          btnDelete(r[0], 'deleteTeamMemberById') +
+        '</div>' +
+      '</td>' +
     '</tr>';
-  }).join("");
+  }).join('');
 }
 
 function openTeamModal(id) {
-  _editTeamId=id||"";
-  var modal=document.getElementById("teamModal");
+  _editTeamId = id || '';
+  var modal = document.getElementById('teamModal');
   if (!modal) return;
-  document.getElementById("teamModalTitle").innerText=id?"Edit Team Member":"Add Team Member";
-  if (id){
-    var m=ALL_TEAM.find(function(r){ return r[0]===id; });
-    if (m){
-      _setVal("tm_name",m[1]); _setVal("tm_role",m[2]); _setVal("tm_email",m[3]);
-      _setVal("tm_phone",m[4]); _setVal("tm_spec",m[5]); _setVal("tm_status",m[6]);
-      _setVal("tm_rate",m[7]); _setVal("tm_currency",m[8]);
+  document.getElementById('teamModalTitle').innerText = id ? 'Edit Team Member' : 'Add Team Member';
+  if (id) {
+    var m = ALL_TEAM.find(function(r){ return r[0] === id; });
+    if (m) {
+      _setVal('tm_name',     m[1]);
+      _setVal('tm_role',     m[2]);
+      _setVal('tm_email',    m[3]);
+      _setVal('tm_phone',    m[4]);
+      _setVal('tm_spec',     m[5]);
+      _setVal('tm_status',   m[6] || 'Active');
+      document.getElementById('tm_rate').value     = Number(m[7]) || '';
+      document.getElementById('tm_currency').value = String(m[8] || '');
     }
   } else {
-    ["tm_name","tm_role","tm_email","tm_phone","tm_spec","tm_rate"].forEach(function(i){ _setVal(i,""); });
-    _setVal("tm_currency",""); _setVal("tm_status","Active");
+    ['tm_name','tm_role','tm_email','tm_phone','tm_spec'].forEach(function(i){ _setVal(i,''); });
+    document.getElementById('tm_rate').value     = '';
+    document.getElementById('tm_currency').value = '';
+    _setVal('tm_status', 'Active');
   }
-  modal.style.display="flex";
+  modal.style.display = 'flex';
 }
 
 function closeTeamModal() {
@@ -72,28 +122,35 @@ function closeTeamModal() {
 }
 
 function saveTeamMember() {
-  var name=_val("tm_name");
-  if (!name){ showToast("Name is required.","error"); return; }
-  var d={
-    name:          name,
-    role:          _val("tm_role"),
-    email:         _val("tm_email"),
-    phone:         _val("tm_phone"),
-    specialization:_val("tm_spec"),
-    status:        _val("tm_status"),
-    ratePerPage:   _val("tm_rate"),
-    currency:      _val("tm_currency")
+  var name = _val('tm_name');
+  if (!name) { showToast('Full name is required.', 'error'); document.getElementById('tm_name').focus(); return; }
+  var btn = document.querySelector('#teamModal button[onclick="saveTeamMember()"]');
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
+  var d = {
+    name:           name,
+    role:           _val('tm_role'),
+    email:          _val('tm_email'),
+    phone:          _val('tm_phone'),
+    specialization: _val('tm_spec'),
+    status:         _val('tm_status') || 'Active',
+    ratePerPage:    _val('tm_rate'),
+    currency:       _val('tm_currency')
   };
-  showLoader("Saving...");
-  if (_editTeamId){
+  function _done(msg, type) {
+    hideLoader();
+    if (btn) { btn.disabled = false; btn.textContent = 'Save Member'; }
+    showToast(msg, type);
+  }
+  showLoader('Saving...');
+  if (_editTeamId) {
     google.script.run
-      .withFailureHandler(function(e){ hideLoader(); showToast("Error: "+e.message,"error"); })
-      .withSuccessHandler(function(){ hideLoader(); closeTeamModal(); showToast("Member updated!","success"); loadTeam(); })
-      .updateTeamMember(_editTeamId,d);
+      .withFailureHandler(function(e){ _done('Error: ' + e.message, 'error'); })
+      .withSuccessHandler(function(){ _done('Member updated!', 'success'); closeTeamModal(); loadTeam(); })
+      .updateTeamMember(_editTeamId, d);
   } else {
     google.script.run
-      .withFailureHandler(function(e){ hideLoader(); showToast("Error: "+e.message,"error"); })
-      .withSuccessHandler(function(){ hideLoader(); closeTeamModal(); showToast("Member added!","success"); loadTeam(); })
+      .withFailureHandler(function(e){ _done('Error: ' + e.message, 'error'); })
+      .withSuccessHandler(function(){ _done('Member added!', 'success'); closeTeamModal(); loadTeam(); })
       .addTeamMember(d);
   }
 }

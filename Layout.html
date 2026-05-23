@@ -11,11 +11,11 @@
 
   <?!= include('Header'); ?>
 
-  <div class="flex">
+  <div class="flex h-screen overflow-hidden">
     <?!= include('Sidebar'); ?>
 
-    <main class="flex-1 ml-72 min-h-screen bg-gray-50 pt-20 pb-10 px-6 transition-all duration-300" id="mainContent">
-      <div id="contentArea" class="max-w-7xl mx-auto"></div>
+    <main class="flex-1 min-h-screen bg-gray-50 pt-16 pb-10 overflow-y-auto transition-all duration-300" id="mainContent">
+      <div id="contentArea" class="w-full px-4 py-4"></div>
     </main>
   </div>
 
@@ -174,7 +174,7 @@
   <!-- TEAM MODAL -->
   <div id="teamModal" style="display:none"
     class="fixed inset-0 z-[6000] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
-    <div class="w-full max-w-md rounded-2xl bg-white shadow-2xl flex flex-col max-h-[90vh]">
+    <div class="w-full max-w-lg rounded-2xl bg-white shadow-2xl flex flex-col max-h-[90vh]">
       <div class="flex items-center justify-between border-b border-gray-100 px-6 py-4 shrink-0">
         <div class="flex items-center gap-3">
           <div class="h-9 w-9 rounded-xl bg-sky-100 flex items-center justify-center text-lg">👤</div>
@@ -182,57 +182,67 @@
         </div>
         <button onclick="closeTeamModal()" class="text-gray-400 hover:text-gray-600 text-xl leading-none transition-colors">✕</button>
       </div>
-      <div class="overflow-y-auto p-6 grid grid-cols-2 gap-4">
-        <div class="col-span-2">
-          <label class="label">Full Name *</label>
-          <input id="tm_name" class="input" placeholder="Full name">
-        </div>
+      <div class="overflow-y-auto p-5 space-y-4">
+        <!-- Name -->
         <div>
-          <label class="label">Role</label>
-          <input id="tm_role" class="input" placeholder="e.g. DTP Operator">
+          <label class="label">Full Name <span class="text-red-500">*</span></label>
+          <input id="tm_name" class="input" placeholder="Full name" required>
         </div>
-        <div>
-          <label class="label">Email</label>
-          <input type="email" id="tm_email" class="input" placeholder="email@example.com">
+        <!-- Role + Specialization -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="label">Role</label>
+            <input id="tm_role" class="input" placeholder="e.g. DTP Operator">
+          </div>
+          <div>
+            <label class="label">Specialization</label>
+            <input id="tm_spec" class="input" placeholder="e.g. InDesign, Illustrator">
+          </div>
         </div>
-        <div>
-          <label class="label">Phone</label>
-          <input id="tm_phone" class="input" placeholder="+91 98765 43210">
+        <!-- Email + Phone -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="label">Email</label>
+            <input type="email" id="tm_email" class="input" placeholder="email@example.com">
+          </div>
+          <div>
+            <label class="label">Phone</label>
+            <input id="tm_phone" class="input" placeholder="+91 98765 43210">
+          </div>
         </div>
-        <div>
-          <label class="label">Specialization</label>
-          <input id="tm_spec" class="input" placeholder="e.g. InDesign, Illustrator">
-        </div>
-        <div>
-          <label class="label">Rate Per Page</label>
-          <input type="number" id="tm_rate" class="input" placeholder="0.00" min="0" step="0.01">
-        </div>
-        <div>
-          <label class="label">Currency</label>
-          <select id="tm_currency" class="input">
-            <option value="">—</option>
-            <option>INR</option>
-            <option>USD</option>
-            <option>EUR</option>
-            <option>GBP</option>
-            <option>AED</option>
-          </select>
-        </div>
-        <div class="col-span-2">
-          <label class="label">Status</label>
-          <select id="tm_status" class="input">
-            <option>Active</option>
-            <option>Inactive</option>
-          </select>
+        <!-- Rate + Currency + Status -->
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="label">Rate / Page</label>
+            <input type="number" id="tm_rate" class="input" placeholder="0.00" min="0" step="0.01">
+          </div>
+          <div>
+            <label class="label">Currency</label>
+            <select id="tm_currency" class="input">
+              <option value="">—</option>
+              <option value="INR">INR</option>
+              <option value="USD">USD</option>
+              <option value="EUR">EUR</option>
+              <option value="GBP">GBP</option>
+              <option value="AED">AED</option>
+            </select>
+          </div>
+          <div>
+            <label class="label">Status</label>
+            <select id="tm_status" class="input">
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+            </select>
+          </div>
         </div>
       </div>
-      <div class="flex justify-end gap-3 border-t border-gray-100 px-6 py-4 shrink-0">
+      <div class="flex justify-end gap-3 border-t border-gray-100 px-5 py-4 shrink-0">
         <button onclick="closeTeamModal()"
-          class="px-5 py-2.5 text-sm font-semibold text-gray-500 hover:bg-gray-100 rounded-xl transition-colors">
+          class="px-4 py-2 text-sm font-semibold text-gray-500 hover:bg-gray-100 rounded-xl transition-colors">
           Cancel
         </button>
         <button onclick="saveTeamMember()"
-          class="px-5 py-2.5 text-sm font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-xl transition-colors">
+          class="px-5 py-2 text-sm font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-xl transition-colors">
           Save Member
         </button>
       </div>

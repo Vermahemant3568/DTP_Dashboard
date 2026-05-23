@@ -305,22 +305,66 @@ function getProjectSummary(projectId) {
 }
 
 /* ================================================================
+   DEBUG — run once from Apps Script editor to check ID matching
+================================================================ */
+function debugTaskProjectMatch() {
+  var rawProjects = _sheetRows(SH_PROJECTS);
+  var rawTasks    = _sheetRows(SH_TASKS);
+  var log = [];
+  log.push("Projects count: " + rawProjects.length);
+  log.push("Tasks count: " + rawTasks.length);
+  if (rawProjects.length) log.push("First project ID: [" + String(rawProjects[0][PC.ID]) + "] col=" + PC.ID);
+  if (rawTasks.length)    log.push("First task project_id: [" + String(rawTasks[0][TC.PROJECT_ID]) + "] col=" + TC.PROJECT_ID);
+  /* Check first 5 tasks */
+  rawTasks.slice(0, 5).forEach(function(t, i) {
+    var pid = String(t[TC.PROJECT_ID] || "").trim();
+    var match = rawProjects.find(function(p) { return String(p[PC.ID]||"").trim() === pid; });
+    log.push("Task[" + i + "] pid=[" + pid + "] match=" + (match ? "YES" : "NO"));
+  });
+  Logger.log(log.join("\n"));
+  SpreadsheetApp.getUi().alert(log.join("\n"));
+}
+
+/* ================================================================
    PROJECTS WITH TASK COUNT
 ================================================================ */
 function getProjectsWithTaskCount() {
   try {
-    const projects = _sheetRows(SH_PROJECTS).map(_fmtRow);
-    const tasks    = _sheetRows(SH_TASKS);
-    const taskMap  = {};
-    tasks.forEach(function(r) {
-      const pid = String(r[TC.PROJECT_ID]).trim();
-      if (!taskMap[pid]) taskMap[pid] = { count:0, pages:0 };
+    const rawProjects = _sheetRows(SH_PROJECTS);
+    const rawTasks    = _sheetRows(SH_TASKS);
+
+    /* Build task map keyed by trimmed PROJECT_ID */
+    const taskMap = {};
+    rawTasks.forEach(function(t) {
+      const pid = String(t[TC.PROJECT_ID] || "").trim();
+      if (!pid) return;
+      if (!taskMap[pid]) taskMap[pid] = { count: 0, pages: 0 };
       taskMap[pid].count++;
-      taskMap[pid].pages += Number(r[TC.FINAL_PAGES]) || 0;
+      taskMap[pid].pages += Number(t[TC.FINAL_PAGES]) || 0;
     });
-    return projects.map(function(p) {
-      const info = taskMap[String(p[0]).trim()] || { count:0, pages:0 };
-      return p.concat([info.count, info.pages]);
+
+    /* Build revision map keyed by PROJECT_ID */
+    const rawRevisions = _sheetRows(SH_REVISIONS);
+    const revMap = {};
+    rawRevisions.forEach(function(r) {
+      const pid = String(r[RC.PROJECT_ID] || "").trim();
+      if (!pid) return;
+      if (!revMap[pid]) revMap[pid] = { count: 0, pages: 0 };
+      revMap[pid].count++;
+      revMap[pid].pages += Number(r[RC.REV_PAGES]) || 0;
+    });
+
+    return rawProjects.map(function(p) {
+      const pid    = String(p[PC.ID] || "").trim();
+      const tInfo  = taskMap[pid] || { count: 0, pages: 0 };
+      const rInfo  = revMap[pid]  || { count: 0, pages: 0 };
+      const row    = _fmtRow(p).slice(0, 14);
+      row[14] = tInfo.count;                /* task count       */
+      row[15] = tInfo.pages;               /* task final pages  */
+      row[16] = rInfo.count;               /* revision count    */
+      row[17] = rInfo.pages;               /* revision pages    */
+      row[18] = tInfo.pages + rInfo.pages; /* total pages       */
+      return row;
     });
   } catch (e) {
     console.error("getProjectsWithTaskCount:", e);

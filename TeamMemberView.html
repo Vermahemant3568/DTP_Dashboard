@@ -1,4 +1,4 @@
-<div class="space-y-6 page-enter" id="memberViewRoot">
+<div class="space-y-5 page-enter" id="memberViewRoot">
 
   <!-- BACK + HEADER -->
   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -9,12 +9,13 @@
       </button>
       <div class="h-4 w-px bg-slate-200"></div>
       <div>
-        <h2 id="mv_title" class="text-2xl font-bold text-slate-800">Team Member Performance</h2>
-        <p id="mv_subtitle" class="text-sm text-slate-500 mt-0.5">Loading…</p>
+        <h2 id="mv_title" class="text-xl font-bold text-slate-800">Team Member Performance</h2>
+        <p id="mv_subtitle" class="text-xs text-slate-400 mt-0.5">Loading…</p>
       </div>
     </div>
+    <!-- FILTERS: Month + Year + Project only -->
     <div class="flex flex-wrap items-center gap-2">
-      <select id="mv_fMonth" onchange="mvApplyFilter()" class="input w-36 text-sm">
+      <select id="mv_fMonth" onchange="mvApplyFilter()" class="input w-32 text-xs py-2">
         <option value="">All Months</option>
         <option value="1">January</option><option value="2">February</option>
         <option value="3">March</option><option value="4">April</option>
@@ -23,105 +24,94 @@
         <option value="9">September</option><option value="10">October</option>
         <option value="11">November</option><option value="12">December</option>
       </select>
-      <select id="mv_fYear" onchange="mvApplyFilter()" class="input w-28 text-sm"></select>
-      <select id="mv_fProject" onchange="mvApplyFilter()" class="input w-44 text-sm">
+      <select id="mv_fYear" onchange="mvApplyFilter()" class="input w-24 text-xs py-2"></select>
+      <select id="mv_fProject" onchange="mvApplyFilter()" class="input w-44 text-xs py-2">
         <option value="">All Projects</option>
       </select>
-      <select id="mv_fLang" onchange="mvApplyFilter()" class="input w-36 text-sm">
-        <option value="">All Languages</option>
-      </select>
-      <select id="mv_fTaskType" onchange="mvApplyFilter()" class="input w-40 text-sm">
-        <option value="">All Task Types</option>
-        <option value="Main DTP">Main DTP</option>
-        <option value="Pre-Engineering">Pre-Engineering</option>
-        <option value="Bilingual Creation">Bilingual Creation</option>
-        <option value="QC">QC</option>
-        <option value="Others">Others</option>
-        <option value="Revision">Revision</option>
-      </select>
+      <button onclick="_mvResetFilters()" class="px-3 py-2 text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-all">Reset</button>
     </div>
   </div>
 
   <!-- MEMBER INFO CARD -->
-  <div class="section-card p-5 flex flex-wrap gap-6 items-start">
+  <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex flex-wrap gap-6 items-center">
     <div class="flex items-center gap-4">
-      <div class="h-14 w-14 rounded-2xl bg-sky-100 flex items-center justify-center text-2xl shrink-0">👤</div>
+      <div id="mv_avatar" class="h-14 w-14 rounded-2xl bg-sky-100 flex items-center justify-center text-xl font-black text-sky-700 shrink-0">?</div>
       <div>
-        <h3 id="mv_name" class="text-xl font-bold text-slate-800">—</h3>
-        <p id="mv_role" class="text-sm text-slate-500 mt-0.5">—</p>
-        <div class="flex items-center gap-2 mt-1">
-          <span id="mv_statusBadge" class="badge bg-green-100 text-green-700">Active</span>
-          <span id="mv_specBadge" class="badge bg-slate-100 text-slate-600">—</span>
+        <h3 id="mv_name" class="text-lg font-bold text-slate-800">—</h3>
+        <p id="mv_role" class="text-xs text-slate-500 mt-0.5">—</p>
+        <div class="flex items-center gap-2 mt-1.5">
+          <span id="mv_statusBadge" class="badge bg-emerald-100 text-emerald-700">Active</span>
+          <span id="mv_specBadge" class="badge bg-slate-100 text-slate-500">—</span>
         </div>
       </div>
     </div>
     <div class="flex flex-wrap gap-6 text-sm ml-auto">
-      <div><p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Email</p><p id="mv_email" class="font-semibold text-slate-700 mt-0.5">—</p></div>
-      <div><p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Phone</p><p id="mv_phone" class="font-semibold text-slate-700 mt-0.5">—</p></div>
-      <div><p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Avg Pages/Task</p><p id="mv_avgPages" class="font-semibold text-sky-700 mt-0.5">—</p></div>
+      <div><p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Email</p><p id="mv_email" class="font-semibold text-slate-700 mt-0.5 text-xs">—</p></div>
+      <div><p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Phone</p><p id="mv_phone" class="font-semibold text-slate-700 mt-0.5 text-xs">—</p></div>
+      <div><p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Rate / Page</p><p id="mv_rate" class="font-semibold text-emerald-700 mt-0.5 text-xs">—</p></div>
+      <div><p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Avg Pages/Task</p><p id="mv_avgPages" class="font-semibold text-sky-700 mt-0.5 text-xs">—</p></div>
     </div>
   </div>
 
   <!-- STAT CARDS -->
-  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
     <div class="stat-card border-l-4 border-l-sky-500">
       <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Total Assigned</p>
-      <h3 id="mv_totalAssigned" class="text-4xl font-black text-sky-600 mt-2">—</h3>
+      <h3 id="mv_totalAssigned" class="text-3xl font-black text-sky-600 mt-1">—</h3>
       <p class="text-xs text-slate-400 mt-1">tasks + revisions</p>
     </div>
     <div class="stat-card border-l-4 border-l-emerald-500">
       <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Completed Pages</p>
-      <h3 id="mv_completedPages" class="text-4xl font-black text-emerald-600 mt-2">—</h3>
-      <p class="text-xs text-slate-400 mt-1">all time</p>
+      <h3 id="mv_completedPages" class="text-3xl font-black text-emerald-600 mt-1">—</h3>
+      <p class="text-xs text-slate-400 mt-1">work status = completed</p>
     </div>
-    <div class="stat-card border-l-4 border-l-blue-500">
-      <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">In-Progress Pages</p>
-      <h3 id="mv_inProgressPages" class="text-4xl font-black text-blue-500 mt-2">—</h3>
-      <p class="text-xs text-slate-400 mt-1">currently active</p>
+    <div class="stat-card border-l-4 border-l-amber-400">
+      <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Pending Pages</p>
+      <h3 id="mv_inProgressPages" class="text-3xl font-black text-amber-500 mt-1">—</h3>
+      <p class="text-xs text-slate-400 mt-1">in-progress + pending</p>
     </div>
     <div class="stat-card border-l-4 border-l-violet-500">
       <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Total Pages</p>
-      <h3 id="mv_totalPages" class="text-4xl font-black text-violet-600 mt-2">—</h3>
+      <h3 id="mv_totalPages" class="text-3xl font-black text-violet-600 mt-1">—</h3>
       <p class="text-xs text-slate-400 mt-1">all tasks + revisions</p>
     </div>
   </div>
 
-  <!-- PAYMENT SUMMARY -->
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-    <div class="stat-card border-l-4 border-l-emerald-500 bg-gradient-to-br from-emerald-50 to-white">
-      <p class="text-[10px] font-bold uppercase tracking-widest text-emerald-500">Est. Amount (Completed)</p>
-      <h3 id="mv_estAmount" class="text-3xl font-black text-emerald-700 mt-2">—</h3>
-      <p class="text-xs text-slate-400 mt-1">completed pages × task rate</p>
+  <!-- PAYMENT SUMMARY — 3 cards -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
+    <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-4">
+      <p class="text-[10px] font-bold uppercase tracking-widest text-emerald-600">Paid</p>
+      <h3 id="mv_paidCount" class="text-2xl font-black text-emerald-700 mt-1">—</h3>
+      <p id="mv_paidBreakdown" class="text-xs text-emerald-600 mt-1">—</p>
     </div>
-    <div class="stat-card border-l-4 border-l-amber-500">
-      <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Pending Amount</p>
-      <h3 id="mv_pendingAmount" class="text-3xl font-black text-amber-600 mt-2">—</h3>
-      <p class="text-xs text-slate-400 mt-1">in-progress &amp; pending</p>
+    <div class="bg-red-50 border border-red-100 rounded-xl p-4">
+      <p class="text-[10px] font-bold uppercase tracking-widest text-red-500">Unpaid</p>
+      <h3 id="mv_unpaidCount" class="text-2xl font-black text-red-600 mt-1">—</h3>
+      <p id="mv_unpaidBreakdown" class="text-xs text-red-400 mt-1">—</p>
     </div>
-    <div class="stat-card border-l-4 border-l-slate-400">
-      <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Total Amount</p>
-      <h3 id="mv_totalAmount" class="text-3xl font-black text-slate-700 mt-2">—</h3>
-      <p class="text-xs text-slate-400 mt-1">all tasks + revisions</p>
+    <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+      <p class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Total Paid Amount</p>
+      <h3 id="mv_totalAmt" class="text-2xl font-black text-slate-700 mt-1">—</h3>
+      <p class="text-xs text-slate-400 mt-1">Paid + Partial amounts</p>
     </div>
   </div>
 
-  <!-- MONTHLY PRODUCTIVITY CHART -->
-  <div class="section-card">
-    <div class="px-5 py-4 border-b border-gray-100">
+  <!-- MONTHLY CHART -->
+  <div class="bg-white rounded-xl border border-gray-100 shadow-sm">
+    <div class="px-5 py-3 border-b border-gray-50">
       <h3 class="text-sm font-bold text-slate-700">Monthly Productivity</h3>
-      <p class="text-xs text-slate-400 mt-0.5">Pages completed per month (last 12 months)</p>
+      <p class="text-xs text-slate-400 mt-0.5">Pages per month (last 12 months, unfiltered)</p>
     </div>
-    <div id="mv_monthlyChart" class="p-5 space-y-3">
+    <div id="mv_monthlyChart" class="p-5 space-y-2.5">
       <div class="h-4 bg-slate-100 rounded-full animate-pulse"></div>
       <div class="h-4 bg-slate-100 rounded-full animate-pulse w-3/4"></div>
     </div>
   </div>
 
-  <!-- BREAKDOWN CHARTS -->
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-    <div class="section-card">
-      <div class="px-5 py-4 border-b border-gray-100">
+  <!-- BREAKDOWN: Project + Task Type (2 cols, no Language) -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <div class="bg-white rounded-xl border border-gray-100 shadow-sm">
+      <div class="px-5 py-3 border-b border-gray-50">
         <h3 class="text-sm font-bold text-slate-700">Project Contribution</h3>
         <p class="text-xs text-slate-400 mt-0.5">Pages per project</p>
       </div>
@@ -129,9 +119,8 @@
         <div class="h-4 bg-slate-100 rounded-full animate-pulse"></div>
       </div>
     </div>
-
-    <div class="section-card">
-      <div class="px-5 py-4 border-b border-gray-100">
+    <div class="bg-white rounded-xl border border-gray-100 shadow-sm">
+      <div class="px-5 py-3 border-b border-gray-50">
         <h3 class="text-sm font-bold text-slate-700">Task Type Breakdown</h3>
         <p class="text-xs text-slate-400 mt-0.5">Pages by task type</p>
       </div>
@@ -139,22 +128,11 @@
         <div class="h-4 bg-slate-100 rounded-full animate-pulse"></div>
       </div>
     </div>
-
-    <div class="section-card">
-      <div class="px-5 py-4 border-b border-gray-100">
-        <h3 class="text-sm font-bold text-slate-700">Language Contribution</h3>
-        <p class="text-xs text-slate-400 mt-0.5">Pages per language</p>
-      </div>
-      <div id="mv_byLanguage" class="p-5 space-y-3">
-        <div class="h-4 bg-slate-100 rounded-full animate-pulse"></div>
-      </div>
-    </div>
-
   </div>
 
   <!-- WORK HISTORY TABLE -->
-  <div class="section-card overflow-hidden">
-    <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+  <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+    <div class="px-5 py-3 border-b border-gray-50 flex items-center justify-between">
       <div>
         <h3 class="text-sm font-bold text-slate-700">Work History</h3>
         <p id="mv_tableCount" class="text-xs text-slate-400 mt-0.5">All tasks and revisions</p>
@@ -169,10 +147,10 @@
             <th>Type</th>
             <th>Language</th>
             <th class="text-center">Pages</th>
-            <th class="text-right">Rate/Page</th>
-            <th class="text-right">Est. Amount</th>
-            <th>Status</th>
-            <th>Payment</th>
+            <th class="text-center">Rate/Pg</th>
+            <th class="text-center">Amount</th>
+            <th class="text-center">Work Status</th>
+            <th class="text-center">Payment</th>
             <th>Completed</th>
           </tr>
         </thead>

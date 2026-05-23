@@ -1,23 +1,26 @@
 <script>
 /* ================================================================
-   ScriptTeamMemberView.html — Team Member Performance Page Logic
+   ScriptTeamMemberView.html
 ================================================================ */
-var _mvMemberName = "";
+var _mvMemberName = '';
 var _mvData       = null;
 
-/* ── Entry point: called from ScriptNav when page = memberView ── */
 function loadMemberView(memberName) {
-  _mvMemberName = memberName || "";
+  _mvMemberName = memberName || '';
   _mvInitYearFilter();
   _mvFetch();
 }
 
 function _mvInitYearFilter() {
-  var el = document.getElementById("mv_fYear");
+  var el = document.getElementById('mv_fYear');
   if (!el || el.options.length > 1) return;
   var now = new Date().getFullYear();
+  /* blank = all years */
+  var blank = document.createElement('option');
+  blank.value = ''; blank.text = 'All Years';
+  el.appendChild(blank);
   for (var y = now; y >= now - 4; y--) {
-    var o = document.createElement("option");
+    var o = document.createElement('option');
     o.value = y; o.text = y;
     if (y === now) o.selected = true;
     el.appendChild(o);
@@ -26,179 +29,166 @@ function _mvInitYearFilter() {
 
 function mvApplyFilter() { _mvFetch(); }
 
+function _mvResetFilters() {
+  ['mv_fMonth','mv_fYear','mv_fProject'].forEach(function(id) {
+    var el = document.getElementById(id); if (el) el.value = '';
+  });
+  _mvFetch();
+}
+
 function _mvGetFilters() {
-  return {
-    month:    _val("mv_fMonth")    || "",
-    year:     _val("mv_fYear")     || "",
-    projectId:_val("mv_fProject")  || "",
-    language: _val("mv_fLang")     || "",
-    taskType: _val("mv_fTaskType") || ""
+  var f = {
+    month:     _val('mv_fMonth')   || '',
+    year:      _val('mv_fYear')    || '',
+    projectId: _val('mv_fProject') || ''
   };
+  Object.keys(f).forEach(function(k){ if (!f[k]) delete f[k]; });
+  return f;
 }
 
 function _mvFetch() {
   if (!_mvMemberName) { hideLoader(); return; }
-  showLoader("Loading member performance…");
-  var filters = _mvGetFilters();
-  Object.keys(filters).forEach(function(k) { if (!filters[k]) delete filters[k]; });
+  showLoader('Loading performance…');
   google.script.run
-    .withFailureHandler(function(e) { hideLoader(); showToast("Error: " + e.message, "error"); })
-    .withSuccessHandler(function(data) {
-      hideLoader();
-      _mvData = data;
-      _mvRender(data);
-    })
-    .getTeamMemberPerformance(_mvMemberName, filters);
+    .withFailureHandler(function(e){ hideLoader(); showToast('Error: ' + e.message, 'error'); })
+    .withSuccessHandler(function(data){ hideLoader(); _mvData = data; _mvRender(data); })
+    .getTeamMemberPerformance(_mvMemberName, _mvGetFilters());
 }
 
 function _mvRender(d) {
   if (!d) return;
-  var m = d.member || {};
-  var s = d.stats  || {};
+  var m   = d.member || {};
+  var s   = d.stats  || {};
+  var cur = m.currency || s.currency || '';
 
-  /* ── Header ── */
-  _set("mv_title",    m.name || _mvMemberName);
-  _set("mv_subtitle", (m.role || "Team Member") + " · " + (m.status || "Active"));
+  /* Avatar initials */
+  var initials = (m.name || '?').split(' ').map(function(w){ return w[0]; }).slice(0,2).join('').toUpperCase();
+  var av = document.getElementById('mv_avatar');
+  if (av) av.textContent = initials;
 
-  /* ── Info card ── */
-  _set("mv_name",     m.name || "—");
-  _set("mv_role",     m.role || "—");
-  _set("mv_email",    m.email || "—");
-  _set("mv_phone",    m.phone || "—");
-  _set("mv_avgPages", (s.avgPages || 0).toLocaleString() + " pages/task");
-  if (m.ratePerPage) {
-    _set("mv_avgPages", (s.avgPages || 0).toLocaleString() + " pages/task · " + (m.currency || "") + " " + Number(m.ratePerPage).toLocaleString() + "/page");
-  }
+  /* Header */
+  _set('mv_title',    m.name || _mvMemberName);
+  _set('mv_subtitle', (m.role || 'Team Member') + ' \u00b7 ' + (m.status || 'Active'));
 
-  var sb = document.getElementById("mv_statusBadge");
+  /* Info card */
+  _set('mv_name',  m.name  || '\u2014');
+  _set('mv_role',  m.role  || '\u2014');
+  _set('mv_email', m.email || '\u2014');
+  _set('mv_phone', m.phone || '\u2014');
+  _set('mv_rate',  m.ratePerPage ? (cur ? cur + '\u00a0' : '') + Number(m.ratePerPage).toLocaleString() + ' / page' : '\u2014');
+  _set('mv_avgPages', (s.avgPages || 0) + ' pages / task');
+
+  var sb = document.getElementById('mv_statusBadge');
   if (sb) {
-    sb.className = "badge " + (m.status === "Active" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500");
-    sb.innerText = m.status || "Active";
+    sb.className = 'badge ' + (m.status === 'Active' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-400');
+    sb.innerText = m.status || 'Active';
   }
-  var spb = document.getElementById("mv_specBadge");
-  if (spb) spb.innerText = m.specialization || "—";
+  var spb = document.getElementById('mv_specBadge');
+  if (spb) spb.innerText = m.specialization || '\u2014';
 
-  var cur = m.currency || s.currency || "";
+  /* Stat cards */
+  _set('mv_totalAssigned',   (s.totalAssigned  || 0).toLocaleString());
+  _set('mv_completedPages',  (s.completedPages || 0).toLocaleString());
+  _set('mv_inProgressPages', (s.pendingPages   || 0).toLocaleString());
+  _set('mv_totalPages',      (s.totalPages     || 0).toLocaleString());
 
-  /* ── Stat cards ── */
-  _set("mv_totalAssigned",   (s.totalAssigned  || 0).toLocaleString());
-  _set("mv_completedPages",  (s.completedPages || 0).toLocaleString());
-  _set("mv_inProgressPages", (s.pendingPages   || 0).toLocaleString());
-  _set("mv_totalPages",      (s.totalPages     || 0).toLocaleString());
-  /* Payment breakdown */
-  _set("mv_taskPages",   (s.taskPages || 0).toLocaleString() + " pages");
-  _set("mv_revPages",    (s.revPages  || 0).toLocaleString() + " pages");
-  _set("mv_paidAmt",     cur + " " + (s.paidAmount    || 0).toLocaleString());
-  _set("mv_partialAmt", cur + " " + (s.partialAmount || 0).toLocaleString());
-  _set("mv_unpaidAmt",  cur + " " + (s.unpaidAmount  || 0).toLocaleString());
-  _set("mv_totalAmt",   cur + " " + (s.totalAmount   || 0).toLocaleString());
-  /* legacy IDs */
-  _set("mv_estAmount",     cur + " " + (s.paidAmount    || 0).toLocaleString());
-  _set("mv_pendingAmount", cur + " " + (s.unpaidAmount  || 0).toLocaleString());
-  _set("mv_totalAmount",   cur + " " + (s.totalAmount   || 0).toLocaleString());
+  /* Payment cards — 3 cards: Paid, Unpaid, Total Paid Amount */
+  var rows = d.rows || [];
+  var paidTasks  = rows.filter(function(r){ return r.paymentStatus === 'Paid'   && r.type === 'task'; }).length;
+  var paidRevs   = rows.filter(function(r){ return r.paymentStatus === 'Paid'   && r.type === 'revision'; }).length;
+  var unpaidTasks= rows.filter(function(r){ return r.paymentStatus === 'Unpaid' && r.type === 'task'; }).length;
+  var unpaidRevs = rows.filter(function(r){ return r.paymentStatus === 'Unpaid' && r.type === 'revision'; }).length;
+  var paidTotal  = paidTasks + paidRevs;
+  var unpaidTotal= unpaidTasks + unpaidRevs;
+  function _amt(v) { return v > 0 ? (cur ? cur + '\u00a0' : '') + Number(v).toLocaleString() : '\u2014'; }
+  _set('mv_paidCount',      paidTotal > 0 ? paidTotal + ' paid' : '\u2014');
+  _set('mv_paidBreakdown',  paidTotal > 0 ? paidTasks + ' task' + (paidTasks !== 1 ? 's' : '') + ' \u00b7 ' + paidRevs + ' revision' + (paidRevs !== 1 ? 's' : '') : 'No paid records');
+  _set('mv_unpaidCount',    unpaidTotal > 0 ? unpaidTotal + ' unpaid' : '\u2014');
+  _set('mv_unpaidBreakdown',unpaidTotal > 0 ? unpaidTasks + ' task' + (unpaidTasks !== 1 ? 's' : '') + ' \u00b7 ' + unpaidRevs + ' revision' + (unpaidRevs !== 1 ? 's' : '') : 'All paid');
+  _set('mv_totalAmt',       _amt((s.paidAmount || 0) + (s.partialAmount || 0)));
 
-  /* ── Populate filter dropdowns (only on first load) ── */
-  _mvPopulateDropdowns(d.projectOptions || [], d.langOptions || []);
-
-  /* ── Monthly chart ── */
-  _mvRenderMonthly(d.monthly || []);
-
-  /* ── Breakdown bars ── */
-  _mvRenderBars("mv_byProject",  d.byProject  || [], "projectName", "pages", "bg-sky-500");
-  _mvRenderBars("mv_byTaskType", d.byTaskType || [], "type",        "pages", "bg-blue-500");
-  _mvRenderBars("mv_byLanguage", d.byLanguage || [], "language",    "pages", "bg-teal-500");
-
-  /* ── Work table ── */
-  _mvRenderTable(d.rows || []);
-}
-
-function _mvPopulateDropdowns(projects, langs) {
-  var pEl = document.getElementById("mv_fProject");
+  /* Populate project dropdown once */
+  var pEl = document.getElementById('mv_fProject');
   if (pEl && pEl.options.length <= 1) {
-    projects.forEach(function(p) {
-      var o = document.createElement("option");
+    (d.projectOptions || []).forEach(function(p) {
+      var o = document.createElement('option');
       o.value = p.id; o.text = p.name;
       pEl.appendChild(o);
     });
   }
-  var lEl = document.getElementById("mv_fLang");
-  if (lEl && lEl.options.length <= 1) {
-    langs.forEach(function(l) {
-      var o = document.createElement("option");
-      o.value = l; o.text = l;
-      lEl.appendChild(o);
-    });
-  }
+
+  /* Charts */
+  _mvRenderMonthly(d.monthly || []);
+  _mvRenderBars('mv_byProject',  d.byProject  || [], 'projectName', 'pages', 'bg-sky-500');
+  _mvRenderBars('mv_byTaskType', d.byTaskType || [], 'type',        'pages', 'bg-violet-500');
+
+  /* Table */
+  _mvRenderTable(d.rows || [], cur);
 }
 
 function _mvRenderMonthly(monthly) {
-  var el = document.getElementById("mv_monthlyChart");
+  var el = document.getElementById('mv_monthlyChart');
   if (!el) return;
-  if (!monthly.length) {
-    el.innerHTML = '<p class="text-sm text-slate-400 text-center py-4">No monthly data available.</p>';
-    return;
-  }
-  var max = Math.max.apply(null, monthly.map(function(m) { return m.pages; })) || 1;
+  if (!monthly.length) { el.innerHTML = '<p class="text-sm text-slate-400 text-center py-4">No data.</p>'; return; }
+  var max = Math.max.apply(null, monthly.map(function(m){ return m.pages; })) || 1;
   el.innerHTML = monthly.map(function(m) {
     var pct = Math.round(m.pages / max * 100);
     return '<div class="flex items-center gap-3">' +
       '<span class="text-[11px] text-slate-500 w-20 shrink-0 text-right">' + m.label + '</span>' +
       '<div class="flex-1 bg-slate-100 rounded-full h-5 overflow-hidden">' +
-        '<div class="bg-sky-500 h-5 rounded-full flex items-center justify-end pr-2 transition-all duration-700" style="width:' + Math.max(pct, 2) + '%">' +
+        '<div class="bg-sky-500 h-5 rounded-full flex items-center justify-end pr-2 transition-all duration-700" style="width:' + Math.max(pct,2) + '%">' +
           (pct > 8 ? '<span class="text-[10px] font-bold text-white">' + m.pages.toLocaleString() + '</span>' : '') +
         '</div>' +
       '</div>' +
       (pct <= 8 ? '<span class="text-[11px] font-bold text-slate-600 shrink-0">' + m.pages.toLocaleString() + '</span>' : '') +
     '</div>';
-  }).join("");
+  }).join('');
 }
 
-function _mvRenderBars(containerId, items, labelKey, valueKey, colorClass) {
-  var el = document.getElementById(containerId);
+function _mvRenderBars(id, items, labelKey, valueKey, colorClass) {
+  var el = document.getElementById(id);
   if (!el) return;
-  if (!items.length) {
-    el.innerHTML = '<p class="text-sm text-slate-400 text-center py-4">No data.</p>';
-    return;
-  }
-  var max = Math.max.apply(null, items.map(function(i) { return i[valueKey]; })) || 1;
-  el.innerHTML = items.slice(0, 8).map(function(i) {
-    var sub = (i.count !== undefined)
-      ? (i[valueKey].toLocaleString() + " pages · " + i.count + " task" + (i.count !== 1 ? "s" : ""))
-      : (i[valueKey].toLocaleString() + " pages");
+  if (!items.length) { el.innerHTML = '<p class="text-sm text-slate-400 text-center py-4">No data.</p>'; return; }
+  var max = Math.max.apply(null, items.map(function(i){ return i[valueKey]; })) || 1;
+  el.innerHTML = items.slice(0,8).map(function(i) {
+    var sub = i[valueKey].toLocaleString() + ' pages' + (i.count !== undefined ? ' \u00b7 ' + i.count + ' task' + (i.count !== 1 ? 's' : '') : '');
     return buildBar(i[labelKey], i[valueKey], max, colorClass, sub);
-  }).join("<div class='mt-3'></div>");
+  }).join('<div class="mt-2"></div>');
 }
 
-function _mvRenderTable(rows) {
-  var tbody   = document.getElementById("mv_workTable");
-  var countEl = document.getElementById("mv_tableCount");
+function _mvRenderTable(rows, cur) {
+  var tbody   = document.getElementById('mv_workTable');
+  var countEl = document.getElementById('mv_tableCount');
   if (!tbody) return;
-  if (countEl) countEl.innerText = rows.length + " record" + (rows.length !== 1 ? "s" : "");
+  if (countEl) countEl.innerText = rows.length + ' record' + (rows.length !== 1 ? 's' : '');
   if (!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="10" class="py-12 text-center text-slate-400 text-sm">No work records found for the selected filters.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10" class="py-12 text-center text-slate-400 text-sm">No records found.</td></tr>';
     return;
   }
   tbody.innerHTML = rows.map(function(r) {
-    var sc = getStatusClass(r.status || "Pending");
-    var tc = r.type === "revision" ? "bg-purple-100 text-purple-700" : getTaskClass(r.taskType || "Main DTP");
-    var pc = r.paymentStatus === "Paid"    ? "bg-green-100 text-green-700" :
-             r.paymentStatus === "Partial" ? "bg-yellow-100 text-yellow-700" :
-             r.paymentStatus === "N/A"     ? "bg-gray-100 text-gray-400" :
-                                            "bg-red-50 text-red-600";
-    var rateStr = r.ratePerPage ? (r.currency || "") + " " + Number(r.ratePerPage).toLocaleString() : "—";
-    var amtStr  = (r.amount !== undefined && r.ratePerPage) ? (r.currency || "") + " " + Number(r.amount).toLocaleString() : "—";
+    var sc  = getStatusClass(r.status || 'Pending');
+    var tc  = r.type === 'revision' ? 'bg-purple-100 text-purple-700' : getTaskClass(r.taskType || 'Main DTP');
+    var pc  = r.paymentStatus === 'Paid'    ? 'bg-emerald-100 text-emerald-700' :
+              r.paymentStatus === 'Partial' ? 'bg-yellow-100 text-yellow-700'  :
+              r.paymentStatus === 'Unpaid'  ? 'bg-red-50 text-red-600'         :
+                                              'bg-gray-100 text-gray-400';
+    /* Only show rate/amount if rate > 0 */
+    var rate = Number(r.ratePerPage) || 0;
+    var amt  = Number(r.amount)      || 0;
+    var rateStr = rate > 0 ? (cur ? cur + '\u00a0' : '') + rate.toLocaleString() : '\u2014';
+    var amtStr  = rate > 0 ? (cur ? cur + '\u00a0' : '') + amt.toLocaleString()  : '\u2014';
     return '<tr>' +
-      '<td class="font-mono text-[11px] text-gray-400">' + (r.id || "—") + '</td>' +
-      '<td class="text-sm font-semibold text-gray-800 max-w-[140px] truncate">' + (r.projectName || "—") + '</td>' +
-      '<td><span class="badge ' + tc + '">' + (r.taskType || "—") + '</span></td>' +
-      '<td class="text-sm text-gray-600">' + (r.language || "—") + '</td>' +
-      '<td class="text-center text-sm font-black text-sky-700">' + (r.pages || 0).toLocaleString() + '</td>' +
-      '<td class="text-sm text-gray-600 text-right">' + rateStr + '</td>' +
-      '<td class="text-sm font-semibold text-emerald-700 text-right">' + amtStr + '</td>' +
-      '<td><span class="badge ' + sc + '">' + (r.status || "—") + '</span></td>' +
-      '<td><span class="badge ' + pc + '">' + (r.paymentStatus || "—") + '</span></td>' +
-      '<td class="text-sm text-gray-500">' + (r.completedDate || "—") + '</td>' +
+      '<td class="font-mono text-[10px] text-gray-400">'                          + (r.id          || '\u2014') + '</td>' +
+      '<td class="text-xs font-semibold text-gray-800 max-w-[140px] truncate">'   + (r.projectName || '\u2014') + '</td>' +
+      '<td><span class="badge ' + tc + '">'                                        + (r.taskType    || '\u2014') + '</span></td>' +
+      '<td class="text-xs text-gray-500">'                                         + (r.language    || '\u2014') + '</td>' +
+      '<td class="text-center text-sm font-black text-sky-700">'                   + (r.pages || 0).toLocaleString() + '</td>' +
+      '<td class="text-center text-xs text-gray-600">'                             + rateStr + '</td>' +
+      '<td class="text-center text-sm font-semibold text-emerald-700">'            + amtStr  + '</td>' +
+      '<td class="text-center"><span class="badge ' + sc + '">'                    + (r.status        || '\u2014') + '</span></td>' +
+      '<td class="text-center"><span class="badge ' + pc + '">'                    + (r.paymentStatus || '\u2014') + '</span></td>' +
+      '<td class="text-xs text-gray-500">'                                         + (r.completedDate || '\u2014') + '</td>' +
     '</tr>';
-  }).join("");
+  }).join('');
 }
 </script>
