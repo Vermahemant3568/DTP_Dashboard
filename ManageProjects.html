@@ -4,12 +4,19 @@
   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
     <div>
       <h2 class="text-2xl font-bold text-slate-800">All Projects</h2>
-      <p class="text-sm text-slate-500 mt-0.5">Master project registry — one record per project</p>
+      <p class="text-sm text-slate-500 mt-0.5">Master project registry — select a project, then add tasks to it</p>
     </div>
-    <button onclick="loadPage('addProject')"
-      class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl shadow-sm active:scale-95 transition-all">
-      ➕ New Project
-    </button>
+    <div class="flex items-center gap-2">
+      <button onclick="loadPage('addTask')"
+        class="inline-flex items-center gap-2 bg-sky-600 hover:bg-sky-700 text-white text-sm font-bold px-4 py-2.5 rounded-xl shadow-sm active:scale-95 transition-all">
+        ✅ Add Task
+      </button>
+      <button onclick="loadPage('addProject')"
+        class="inline-flex items-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-500 text-xs font-medium px-3 py-2.5 rounded-xl transition-all"
+        title="Only register if this is a brand new job not already in the list">
+        ➕ Register New Project
+      </button>
+    </div>
   </div>
 
   <!-- FILTERS -->

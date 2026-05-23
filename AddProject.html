@@ -6,7 +6,85 @@
     </button>
     <div>
       <h2 id="addProjectTitle" class="text-2xl font-bold text-gray-800">Register New Project</h2>
-      <p class="text-sm text-gray-500 mt-0.5">One project per job received. Same client can have multiple projects.</p>
+      <p class="text-sm text-gray-500 mt-0.5">Only register if this is a brand new job. Check existing projects first.</p>
+    </div>
+  </div>
+
+  <!-- ★ TASK-FIRST HERO BANNER — shown before the form — -->
+  <div class="flex items-center justify-between gap-4 p-4 bg-sky-50 border-2 border-sky-200 rounded-2xl">
+    <div class="flex items-center gap-3">
+      <span class="text-2xl">✅</span>
+      <div>
+        <p class="text-sm font-bold text-sky-800">Already have a project? Add a task directly.</p>
+        <p class="text-xs text-sky-500 mt-0.5">Search for the project in Add Task — no need to come here.</p>
+      </div>
+    </div>
+    <button onclick="loadPage('addTask')"
+      class="shrink-0 inline-flex items-center gap-2 bg-sky-600 hover:bg-sky-700 text-white text-sm font-bold px-5 py-2.5 rounded-xl shadow-sm active:scale-95 transition-all">
+      Go to Add Task →
+    </button>
+  </div>
+
+  <!-- ── STEP 0: CHECK EXISTING FIRST — always visible ── -->
+  <div class="section-card border-2 border-amber-200 bg-amber-50/50">
+    <div class="section-header border-l-amber-500 bg-amber-50">
+      <div class="h-9 w-9 rounded-xl bg-amber-100 flex items-center justify-center text-lg">🔍</div>
+      <div class="flex-1">
+        <h3 class="text-base font-semibold text-amber-700">Step 1 — Check Existing Projects First</h3>
+        <p class="text-xs text-amber-500">Search by client name or project name before creating a new one to avoid duplicates.</p>
+      </div>
+    </div>
+    <div class="section-body space-y-3">
+
+      <!-- Search input -->
+      <div class="flex gap-2">
+        <input id="proj_dupCheck" class="input flex-1" placeholder="Type client name or project name to search…"
+          oninput="_projDupSearchDebounce()">
+        <button type="button" onclick="_projDupSearch()"
+          class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-xl transition-colors whitespace-nowrap">
+          🔍 Search
+        </button>
+      </div>
+
+      <!-- Search results -->
+      <div id="proj_dupResults" style="display:none"
+        class="border border-amber-200 rounded-xl overflow-hidden bg-white divide-y divide-gray-100 max-h-56 overflow-y-auto shadow-sm">
+      </div>
+
+      <!-- No results found -->
+      <div id="proj_dupNone" style="display:none"
+        class="p-3 bg-green-50 border border-green-200 rounded-xl flex items-center gap-3">
+        <span class="text-green-500 text-lg">✅</span>
+        <div>
+          <p class="text-sm font-semibold text-green-800">No matching project found</p>
+          <p class="text-xs text-green-600 mt-0.5">Safe to register a new project below.</p>
+        </div>
+      </div>
+
+      <!-- Duplicate warning -->
+      <div id="proj_dupWarning" style="display:none"
+        class="p-4 bg-red-50 border-2 border-red-300 rounded-xl space-y-2">
+        <div class="flex items-center gap-2">
+          <span class="text-red-500 text-xl">⚠️</span>
+          <p class="text-sm font-bold text-red-800">Possible duplicate found!</p>
+        </div>
+        <p class="text-xs text-red-600">A project with a similar name already exists. Use it instead of creating a duplicate.</p>
+        <div id="proj_dupMatchList" class="space-y-2 mt-2"></div>
+        <div class="flex gap-2 pt-1">
+          <button type="button" onclick="_proj_useDupProject()"
+            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-colors">
+            ✅ Use Existing Project → Add Task
+          </button>
+          <button type="button" onclick="_proj_dismissDupWarning()"
+            class="px-4 py-2 bg-white border border-red-300 text-red-600 text-xs font-semibold rounded-xl hover:bg-red-50 transition-colors">
+            Still Create New
+          </button>
+        </div>
+      </div>
+
+      <p class="text-xs text-amber-600 font-medium">
+        💡 Tip: If the project already exists, go to <button type="button" onclick="loadPage('addTask')" class="underline font-bold hover:text-amber-800">Add Task</button> and search for it there instead.
+      </p>
     </div>
   </div>
 
@@ -24,11 +102,11 @@
     <div class="bg-white border border-emerald-200 rounded-xl p-4">
       <p class="text-sm font-semibold text-slate-700 mb-1">👇 What's next?</p>
       <p class="text-xs text-slate-500 mb-3">
-        Project registered. Now add your first task — DTP, Extraction, QC etc. Each task tracks its own languages, page count, and who's working on it.
+        Project registered. Now add your first task — DTP, Pre-Engineering, QC etc. Each task tracks its own languages, page count, and assignee.
       </p>
       <div class="flex flex-wrap gap-2">
         <button id="proj_addTaskBtn"
-          class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-5 py-2.5 rounded-xl shadow-sm active:scale-95 transition-all">
+          class="inline-flex items-center gap-2 bg-sky-600 hover:bg-sky-700 text-white text-sm font-bold px-5 py-2.5 rounded-xl shadow-sm active:scale-95 transition-all">
           ✅ Add First Task to This Project
         </button>
         <button onclick="loadPage('projects')"
@@ -50,7 +128,7 @@
       <div class="section-header border-l-blue-500 bg-blue-50">
         <div class="h-9 w-9 rounded-xl bg-blue-100 flex items-center justify-center text-lg">📁</div>
         <div>
-          <h3 class="text-base font-semibold text-blue-700">Project Information</h3>
+          <h3 class="text-base font-semibold text-blue-700">Step 2 — Project Information</h3>
           <p class="text-xs text-blue-400">One record per job. Same client can have many projects with different names.</p>
         </div>
       </div>
@@ -58,11 +136,13 @@
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           <div>
             <label class="label">Client Name *</label>
-            <input id="proj_clientName" class="input" placeholder="e.g. ICICI Bank" required>
+            <input id="proj_clientName" class="input" placeholder="e.g. ICICI Bank" required
+              oninput="_proj_liveClientCheck()">
           </div>
           <div>
             <label class="label">Project Name *</label>
-            <input id="proj_projectName" class="input" placeholder="e.g. Annual Report Book 1 DTP" required>
+            <input id="proj_projectName" class="input" placeholder="e.g. Annual Report Book 1 DTP" required
+              oninput="_proj_liveClientCheck()">
             <p class="text-xs text-gray-400 mt-1">Must be unique per client</p>
           </div>
           <div>
@@ -91,6 +171,20 @@
           <div>
             <label class="label">Received Date</label>
             <input type="date" id="proj_receivedDate" class="input">
+          </div>
+        </div>
+
+        <!-- Inline duplicate warning triggered by typing client+project name -->
+        <div id="proj_inlineDupWarn" style="display:none"
+          class="mt-4 p-3 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">
+          <span class="text-red-500 text-lg shrink-0">⚠️</span>
+          <div>
+            <p class="text-sm font-semibold text-red-700">This project may already exist!</p>
+            <p id="proj_inlineDupMsg" class="text-xs text-red-500 mt-0.5">—</p>
+            <button type="button" onclick="_proj_goToExistingFromInline()"
+              class="mt-2 text-xs font-bold text-blue-600 underline hover:text-blue-800">
+              Use existing project → Add Task instead
+            </button>
           </div>
         </div>
       </div>
@@ -144,17 +238,145 @@
     </div>
 
     <!-- ── SUBMIT ── -->
-    <div class="sticky bottom-0 bg-white/90 backdrop-blur-sm border-t border-gray-200 px-4 py-3 rounded-2xl flex justify-end gap-3">
-      <button type="button" onclick="loadPage('projects')"
-        class="px-5 py-2.5 text-sm font-semibold text-gray-500 hover:bg-gray-100 rounded-xl transition-colors">
-        Cancel
+    <div class="sticky bottom-0 bg-white/90 backdrop-blur-sm border-t border-gray-200 px-4 py-3 rounded-2xl flex items-center justify-between gap-3">
+      <button type="button" onclick="loadPage('addTask')"
+        class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-sky-600 hover:bg-sky-50 border border-sky-200 rounded-xl transition-colors">
+        ✅ Add Task Instead
       </button>
-      <button type="submit" id="projSubmitBtn"
-        class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-blue-700 active:scale-[0.98] transition-all">
-        <span id="projSubmitIcon">🚀</span>
-        <span id="projSubmitLabel">Register Project</span>
-      </button>
+      <div class="flex gap-3">
+        <button type="button" onclick="loadPage('projects')"
+          class="px-5 py-2.5 text-sm font-semibold text-gray-500 hover:bg-gray-100 rounded-xl transition-colors">
+          Cancel
+        </button>
+        <button type="submit" id="projSubmitBtn"
+          class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-blue-700 active:scale-[0.98] transition-all">
+          <span id="projSubmitIcon">🚀</span>
+          <span id="projSubmitLabel">Register Project</span>
+        </button>
+      </div>
     </div>
 
   </form>
 </div>
+
+<script>
+/* ── Duplicate check state ── */
+var _projDupTimer    = null;
+var _projDupMatches  = [];
+var _projInlineDupId = "";
+
+function _projDupSearchDebounce() {
+  if (_projDupTimer) clearTimeout(_projDupTimer);
+  _projDupTimer = setTimeout(_projDupSearch, 350);
+}
+
+function _projDupSearch() {
+  var q = (document.getElementById("proj_dupCheck") || {}).value || "";
+  q = q.trim();
+  var resEl  = document.getElementById("proj_dupResults");
+  var noneEl = document.getElementById("proj_dupNone");
+  var warnEl = document.getElementById("proj_dupWarning");
+  if (!q || q.length < 2) {
+    if (resEl)  resEl.style.display  = "none";
+    if (noneEl) noneEl.style.display = "none";
+    if (warnEl) warnEl.style.display = "none";
+    return;
+  }
+  google.script.run
+    .withFailureHandler(function() {})
+    .withSuccessHandler(function(results) {
+      _projDupMatches = results || [];
+      if (resEl)  resEl.style.display  = "none";
+      if (noneEl) noneEl.style.display = "none";
+      if (warnEl) warnEl.style.display = "none";
+      if (!_projDupMatches.length) {
+        if (noneEl) noneEl.style.display = "block";
+        return;
+      }
+      /* Show warning with matches */
+      if (warnEl) warnEl.style.display = "block";
+      var listEl = document.getElementById("proj_dupMatchList");
+      if (listEl) {
+        listEl.innerHTML = _projDupMatches.map(function(p, i) {
+          return '<div class="flex items-center justify-between gap-2 p-2 bg-white border border-red-100 rounded-lg">' +
+            '<div>' +
+              '<p class="text-xs font-bold text-gray-800">' + (p[2] || "—") + '</p>' +
+              '<p class="text-[11px] text-gray-500">' + (p[1] || "—") + ' · <span class="font-mono">' + p[0] + '</span></p>' +
+            '</div>' +
+            '<button type="button" onclick="_proj_selectDupMatch(' + i + ')" ' +
+              'class="shrink-0 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors">' +
+              'Use This →' +
+            '</button>' +
+          '</div>';
+        }).join("");
+      }
+    })
+    .searchProjects(q);
+}
+
+function _proj_selectDupMatch(idx) {
+  var p = _projDupMatches[idx];
+  if (!p) return;
+  _projInlineDupId = p[0];
+  loadPage("addTask", { projectId: p[0] });
+}
+
+function _proj_useDupProject() {
+  if (_projInlineDupId) {
+    loadPage("addTask", { projectId: _projInlineDupId });
+  } else if (_projDupMatches.length) {
+    loadPage("addTask", { projectId: _projDupMatches[0][0] });
+  } else {
+    loadPage("addTask");
+  }
+}
+
+function _proj_dismissDupWarning() {
+  var warnEl = document.getElementById("proj_dupWarning");
+  if (warnEl) warnEl.style.display = "none";
+}
+
+/* Live inline duplicate check as user types client + project name */
+var _projLiveTimer = null;
+function _proj_liveClientCheck() {
+  if (_projLiveTimer) clearTimeout(_projLiveTimer);
+  _projLiveTimer = setTimeout(function() {
+    var client  = (document.getElementById("proj_clientName")  || {}).value || "";
+    var project = (document.getElementById("proj_projectName") || {}).value || "";
+    var warnEl  = document.getElementById("proj_inlineDupWarn");
+    var msgEl   = document.getElementById("proj_inlineDupMsg");
+    if (!client.trim() || !project.trim() || project.trim().length < 3) {
+      if (warnEl) warnEl.style.display = "none";
+      return;
+    }
+    google.script.run
+      .withFailureHandler(function() {})
+      .withSuccessHandler(function(results) {
+        results = results || [];
+        var q = (client.trim() + " " + project.trim()).toLowerCase();
+        var match = results.find(function(p) {
+          var combo = (String(p[1] || "") + " " + String(p[2] || "")).toLowerCase();
+          return combo.includes(client.trim().toLowerCase()) &&
+                 combo.includes(project.trim().toLowerCase().substring(0, 6));
+        });
+        if (match) {
+          _projInlineDupId = match[0];
+          if (msgEl)  msgEl.innerText = "Found: \"" + (match[2] || "—") + "\" for " + (match[1] || "—") + " (" + match[0] + ")";
+          if (warnEl) warnEl.style.display = "block";
+        } else {
+          _projInlineDupId = "";
+          if (warnEl) warnEl.style.display = "none";
+        }
+      })
+      .searchProjects(client.trim());
+  }, 500);
+}
+
+function _proj_goToExistingFromInline() {
+  if (_projInlineDupId) {
+    loadPage("addTask", { projectId: _projInlineDupId });
+  } else {
+    loadPage("addTask");
+  }
+}
+</script>
