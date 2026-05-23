@@ -1,192 +1,281 @@
-<div class="space-y-6 page-enter">
+<div class="space-y-6 page-enter" id="dashboardRoot">
 
-  <!-- ── HEADER ── -->
-  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-    <div>
-      <h2 class="text-2xl font-bold text-slate-800">DTP Production Dashboard</h2>
-      <p id="dash_monthLabel" class="text-sm text-slate-500 mt-0.5">Loading metrics…</p>
-    </div>
-    <div class="flex flex-wrap items-center gap-2">
-      <select id="dash_filterMonth" onchange="_dashApplyFilter()" class="input w-36">
-        <option value="1">January</option><option value="2">February</option>
-        <option value="3">March</option><option value="4">April</option>
-        <option value="5">May</option><option value="6">June</option>
-        <option value="7">July</option><option value="8">August</option>
-        <option value="9">September</option><option value="10">October</option>
-        <option value="11">November</option><option value="12">December</option>
-      </select>
-      <select id="dash_filterYear" onchange="_dashApplyFilter()" class="input w-28"></select>
-      <button onclick="loadPage('addProject')"
-        class="inline-flex items-center gap-1.5 bg-sky-600 hover:bg-sky-700 text-white text-sm font-semibold px-4 py-2 rounded-xl shadow-sm active:scale-95 transition-all">
-        ➕ New Project
-      </button>
-      <button onclick="loadPage('addTask')"
-        class="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-xl shadow-sm active:scale-95 transition-all">
-        ✅ Add Task
-      </button>
-      <button onclick="loadPage('addRevision')"
-        class="inline-flex items-center gap-1.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold px-4 py-2 rounded-xl shadow-sm active:scale-95 transition-all">
-        🔁 Add Revision
-      </button>
+  <!-- ── HERO HEADER ── -->
+  <div class="relative rounded-2xl overflow-hidden bg-gradient-to-br from-slate-800 via-slate-900 to-sky-950 shadow-xl">
+    <!-- Decorative blobs -->
+    <div class="absolute -top-8 -right-8 h-40 w-40 rounded-full bg-sky-500/10 blur-2xl pointer-events-none"></div>
+    <div class="absolute bottom-0 left-10 h-24 w-24 rounded-full bg-emerald-500/10 blur-2xl pointer-events-none"></div>
+
+    <div class="relative px-6 py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div>
+        <div class="flex items-center gap-2 mb-1">
+          <span class="text-xl">📊</span>
+          <h2 class="text-xl font-black text-white tracking-tight">DTP Production Dashboard</h2>
+        </div>
+        <p id="dash_monthLabel" class="text-sm text-slate-400 font-medium">Loading metrics…</p>
+      </div>
+
+      <!-- Filters + Actions -->
+      <div class="flex flex-wrap items-center gap-2">
+        <div class="flex items-center gap-1.5 bg-slate-700/60 border border-slate-600/50 rounded-xl px-3 py-1.5">
+          <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Period</span>
+          <select id="dash_filterMonth" onchange="_dashApplyFilter()"
+            class="bg-transparent text-white text-xs font-semibold outline-none cursor-pointer">
+            <option value="1">January</option><option value="2">February</option>
+            <option value="3">March</option><option value="4">April</option>
+            <option value="5">May</option><option value="6">June</option>
+            <option value="7">July</option><option value="8">August</option>
+            <option value="9">September</option><option value="10">October</option>
+            <option value="11">November</option><option value="12">December</option>
+          </select>
+          <select id="dash_filterYear" onchange="_dashApplyFilter()"
+            class="bg-transparent text-white text-xs font-semibold outline-none cursor-pointer w-16"></select>
+        </div>
+
+        <button onclick="loadPage('addProject')"
+          class="inline-flex items-center gap-1.5 bg-sky-500 hover:bg-sky-400 text-white text-xs font-bold px-3 py-2 rounded-xl shadow-sm active:scale-95 transition-all">
+          ➕ Project
+        </button>
+        <button onclick="loadPage('addTask')"
+          class="inline-flex items-center gap-1.5 bg-blue-500 hover:bg-blue-400 text-white text-xs font-bold px-3 py-2 rounded-xl shadow-sm active:scale-95 transition-all">
+          ✅ Task
+        </button>
+        <button onclick="loadPage('addRevision')"
+          class="inline-flex items-center gap-1.5 bg-purple-500 hover:bg-purple-400 text-white text-xs font-bold px-3 py-2 rounded-xl shadow-sm active:scale-95 transition-all">
+          🔁 Revision
+        </button>
+      </div>
     </div>
   </div>
 
-  <!-- ── ROW 1: KEY METRICS (ALL-TIME) ── -->
+  <!-- ── SECTION: OVERALL TRACKER SUMMARY ── -->
   <div>
-    <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">Overall Tracker Summary</p>
-    <div class="grid grid-cols-2 lg:grid-cols-3 gap-4">
+    <div class="flex items-center gap-3 mb-3">
+      <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">Overall Tracker Summary</p>
+      <div class="flex-1 h-px bg-slate-200"></div>
+      <span class="text-[10px] text-slate-400 font-medium">All-time</span>
+    </div>
 
-      <div onclick="loadPage('projects')" class="stat-card border-l-4 border-l-sky-500 cursor-pointer hover:shadow-lg transition-all group">
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+
+      <div onclick="loadPage('projects')"
+        class="stat-card border-l-4 border-l-sky-500 cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 group">
         <div class="flex items-start justify-between">
           <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Projects</p>
-          <span class="text-lg">📁</span>
+          <div class="h-9 w-9 rounded-xl bg-sky-50 flex items-center justify-center text-base group-hover:bg-sky-100 transition-colors">📁</div>
         </div>
-        <h3 id="dash_totalProjects" class="text-4xl font-black text-sky-600 mt-2">—</h3>
-        <div class="mt-3 flex items-center justify-between text-xs">
-          <span id="dash_activeProjects" class="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-semibold">— active</span>
-          <span id="dash_completedProjects" class="bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-semibold">— done</span>
+        <h3 id="dash_totalProjects" class="text-4xl font-black text-sky-600 mt-2 tabular-nums">—</h3>
+        <div class="mt-3 flex items-center gap-2 text-xs">
+          <span id="dash_activeProjects" class="bg-emerald-50 text-emerald-700 border border-emerald-100 px-2 py-0.5 rounded-full font-bold">— active</span>
+          <span id="dash_completedProjects" class="bg-slate-100 text-slate-500 border border-slate-200 px-2 py-0.5 rounded-full font-bold">— done</span>
         </div>
       </div>
 
-      <div onclick="loadPage('tasks')" class="stat-card border-l-4 border-l-blue-500 cursor-pointer hover:shadow-lg transition-all group">
+      <div onclick="loadPage('tasks')"
+        class="stat-card border-l-4 border-l-blue-500 cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 group">
         <div class="flex items-start justify-between">
           <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Tasks</p>
-          <span class="text-lg">⚙️</span>
+          <div class="h-9 w-9 rounded-xl bg-blue-50 flex items-center justify-center text-base group-hover:bg-blue-100 transition-colors">⚙️</div>
         </div>
-        <h3 id="dash_totalTasks" class="text-4xl font-black text-blue-600 mt-2">—</h3>
-        <div class="mt-3 flex items-center justify-between text-xs">
-          <span id="dash_pendingTasks" class="bg-yellow-50 text-yellow-700 px-2 py-0.5 rounded-full font-semibold">— pending</span>
-          <span id="dash_inProgressTasks" class="bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full font-semibold">— in progress</span>
+        <h3 id="dash_totalTasks" class="text-4xl font-black text-blue-600 mt-2 tabular-nums">—</h3>
+        <div class="mt-3 flex items-center gap-2 text-xs">
+          <span id="dash_pendingTasks" class="bg-yellow-50 text-yellow-700 border border-yellow-100 px-2 py-0.5 rounded-full font-bold">— pending</span>
+          <span id="dash_inProgressTasks" class="bg-blue-50 text-blue-700 border border-blue-100 px-2 py-0.5 rounded-full font-bold">— in progress</span>
         </div>
       </div>
 
-      <div onclick="loadPage('revisions')" class="stat-card border-l-4 border-l-purple-500 cursor-pointer hover:shadow-lg transition-all">
+      <div onclick="loadPage('revisions')"
+        class="stat-card border-l-4 border-l-purple-500 cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 group">
         <div class="flex items-start justify-between">
           <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Revisions</p>
-          <span class="text-lg">🔁</span>
+          <div class="h-9 w-9 rounded-xl bg-purple-50 flex items-center justify-center text-base group-hover:bg-purple-100 transition-colors">🔁</div>
         </div>
-        <h3 id="dash_totalRevisions" class="text-4xl font-black text-purple-600 mt-2">—</h3>
-        <div class="mt-3 flex items-center justify-between text-xs">
-          <span id="dash_pendingRevisions" class="bg-yellow-50 text-yellow-700 px-2 py-0.5 rounded-full font-semibold">— pending</span>
-          <span id="dash_totalRevPages" class="bg-purple-50 text-purple-700 px-2 py-0.5 rounded-full font-semibold">— pages</span>
+        <h3 id="dash_totalRevisions" class="text-4xl font-black text-purple-600 mt-2 tabular-nums">—</h3>
+        <div class="mt-3 flex items-center gap-2 text-xs">
+          <span id="dash_pendingRevisions" class="bg-yellow-50 text-yellow-700 border border-yellow-100 px-2 py-0.5 rounded-full font-bold">— pending</span>
+          <span id="dash_totalRevPages" class="bg-purple-50 text-purple-700 border border-purple-100 px-2 py-0.5 rounded-full font-bold">— pages</span>
         </div>
       </div>
 
     </div>
   </div>
 
-  <!-- ── ROW 2: THIS MONTH VOLUME ── -->
+  <!-- ── SECTION: THIS MONTH VOLUME ── -->
   <div>
-    <div class="flex items-center justify-between mb-3">
-      <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">This Month — <span id="dash_monthName" class="text-slate-500 normal-case font-semibold">Current Month</span></p>
-    </div>
-    <div class="grid grid-cols-2 lg:grid-cols-7 gap-3">
-
-      <!-- Grand Total this month -->
-      <div class="col-span-2 lg:col-span-2 stat-card border-l-4 border-l-emerald-500 bg-gradient-to-br from-emerald-50 to-white">
-        <p class="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Grand Total This Month</p>
-        <h3 id="dash_grandTotal" class="text-5xl font-black text-emerald-600 mt-2">—</h3>
-        <p class="text-xs text-slate-400 mt-1">tasks + revisions</p>
-        <div class="mt-3 grid grid-cols-2 gap-2 text-xs">
-          <div class="bg-sky-50 rounded-lg p-2 text-center">
-            <p class="text-sky-600 font-black text-lg" id="dash_monthIH">—</p>
-            <p class="text-sky-500 font-semibold">🏢 In-House</p>
-          </div>
-          <div class="bg-amber-50 rounded-lg p-2 text-center">
-            <p class="text-amber-600 font-black text-lg" id="dash_monthVD">—</p>
-            <p class="text-amber-500 font-semibold">🤝 Vendor</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Per task type cards -->
-      <div class="stat-card border-l-4 border-l-blue-500">
-        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Main DTP</p>
-        <h3 id="dash_dtpTotal" class="text-3xl font-black text-blue-600 mt-1">—</h3>
-        <p class="text-[10px] text-slate-400 mt-0.5">pages</p>
-        <div class="mt-2 space-y-1 text-[11px]">
-          <div class="flex justify-between"><span class="text-sky-600">🏢</span><span id="dash_dtpIH" class="font-bold text-sky-700">—</span></div>
-          <div class="flex justify-between"><span class="text-amber-500">🤝</span><span id="dash_dtpVD" class="font-bold text-amber-600">—</span></div>
-        </div>
-        <div id="dash_dtpBar" class="mt-2 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-          <div id="dash_dtpBarFill" class="h-1.5 bg-blue-500 rounded-full transition-all duration-700" style="width:0%"></div>
-        </div>
-      </div>
-
-      <div class="stat-card border-l-4 border-l-teal-500">
-        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pre-Engineering</p>
-        <h3 id="dash_preEngTotal" class="text-3xl font-black text-teal-600 mt-1">—</h3>
-        <p class="text-[10px] text-slate-400 mt-0.5">pages</p>
-        <div class="mt-2 space-y-1 text-[11px]">
-          <div class="flex justify-between"><span class="text-sky-600">🏢</span><span id="dash_preEngIH" class="font-bold text-sky-700">—</span></div>
-          <div class="flex justify-between"><span class="text-amber-500">🤝</span><span id="dash_preEngVD" class="font-bold text-amber-600">—</span></div>
-        </div>
-        <div class="mt-2 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-          <div id="dash_preEngBarFill" class="h-1.5 bg-teal-500 rounded-full transition-all duration-700" style="width:0%"></div>
-        </div>
-      </div>
-
-      <div class="stat-card border-l-4 border-l-violet-500">
-        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bilingual</p>
-        <h3 id="dash_bilingTotal" class="text-3xl font-black text-violet-600 mt-1">—</h3>
-        <p class="text-[10px] text-slate-400 mt-0.5">pages</p>
-        <div class="mt-2 space-y-1 text-[11px]">
-          <div class="flex justify-between"><span class="text-sky-600">🏢</span><span id="dash_bilingIH" class="font-bold text-sky-700">—</span></div>
-          <div class="flex justify-between"><span class="text-amber-500">🤝</span><span id="dash_bilingVD" class="font-bold text-amber-600">—</span></div>
-        </div>
-        <div class="mt-2 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-          <div id="dash_bilingBarFill" class="h-1.5 bg-violet-500 rounded-full transition-all duration-700" style="width:0%"></div>
-        </div>
-      </div>
-
-      <div class="stat-card border-l-4 border-l-green-500">
-        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">QC</p>
-        <h3 id="dash_qcTotal" class="text-3xl font-black text-green-600 mt-1">—</h3>
-        <p class="text-[10px] text-slate-400 mt-0.5">pages</p>
-        <div class="mt-2 space-y-1 text-[11px]">
-          <div class="flex justify-between"><span class="text-sky-600">🏢</span><span id="dash_qcIH" class="font-bold text-sky-700">—</span></div>
-          <div class="flex justify-between"><span class="text-amber-500">🤝</span><span id="dash_qcVD" class="font-bold text-amber-600">—</span></div>
-        </div>
-        <div class="mt-2 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-          <div id="dash_qcBarFill" class="h-1.5 bg-green-500 rounded-full transition-all duration-700" style="width:0%"></div>
-        </div>
-      </div>
-
-      <div class="stat-card border-l-4 border-l-orange-500">
-        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Others</p>
-        <h3 id="dash_othersTotal" class="text-3xl font-black text-orange-600 mt-1">—</h3>
-        <p class="text-[10px] text-slate-400 mt-0.5">pages</p>
-        <div class="mt-2 space-y-1 text-[11px]">
-          <div class="flex justify-between"><span class="text-sky-600">🏢</span><span id="dash_othersIH" class="font-bold text-sky-700">—</span></div>
-          <div class="flex justify-between"><span class="text-amber-500">🤝</span><span id="dash_othersVD" class="font-bold text-amber-600">—</span></div>
-        </div>
-        <div class="mt-2 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-          <div id="dash_othersBarFill" class="h-1.5 bg-orange-500 rounded-full transition-all duration-700" style="width:0%"></div>
-        </div>
-      </div>
-
+    <div class="flex items-center gap-3 mb-3">
+      <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">This Month</p>
+      <span id="dash_monthName" class="text-xs font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-2.5 py-0.5 rounded-full">Current Month</span>
+      <div class="flex-1 h-px bg-slate-200"></div>
     </div>
 
-    <!-- Revisions + In Progress — secondary row -->
-    <div class="grid grid-cols-2 lg:grid-cols-2 gap-3 mt-3">
+    <!-- Grand Total + In-House/Vendor split -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
 
-      <div onclick="loadPage('revisions')" class="stat-card border-l-4 border-l-purple-500 cursor-pointer hover:shadow-lg transition-all">
-        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Revisions</p>
-        <h3 id="dash_revTotal" class="text-3xl font-black text-purple-600 mt-1">—</h3>
-        <div class="mt-2 flex gap-2 text-[11px]">
-          <span class="bg-sky-50 text-sky-700 px-2 py-0.5 rounded-full font-semibold">🏢 <span id="dash_revIH">—</span></span>
-          <span class="bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full font-semibold">🤝 <span id="dash_revVD">—</span></span>
+      <!-- Grand Total hero card -->
+      <div class="lg:col-span-1 relative rounded-2xl overflow-hidden bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg shadow-emerald-200/50 p-5 flex flex-col justify-between">
+        <div class="absolute -top-4 -right-4 h-24 w-24 rounded-full bg-white/10 blur-xl pointer-events-none"></div>
+        <div>
+          <p class="text-[10px] font-black uppercase tracking-widest text-emerald-100">Grand Total This Month</p>
+          <h3 id="dash_grandTotal" class="text-6xl font-black text-white mt-2 tabular-nums leading-none">—</h3>
+          <p class="text-xs text-emerald-200 mt-1 font-medium">tasks + revisions combined</p>
+        </div>
+        <div class="mt-4 grid grid-cols-2 gap-2">
+          <div class="bg-white/15 backdrop-blur-sm rounded-xl p-2.5 text-center border border-white/20">
+            <p class="text-white font-black text-xl tabular-nums" id="dash_monthIH">—</p>
+            <p class="text-emerald-100 text-[11px] font-semibold mt-0.5">🏢 In-House</p>
+          </div>
+          <div class="bg-white/15 backdrop-blur-sm rounded-xl p-2.5 text-center border border-white/20">
+            <p class="text-white font-black text-xl tabular-nums" id="dash_monthVD">—</p>
+            <p class="text-emerald-100 text-[11px] font-semibold mt-0.5">🤝 Vendor</p>
+          </div>
         </div>
       </div>
 
-      <div class="stat-card border-l-4 border-l-amber-500">
-        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">In Progress Now</p>
-        <h3 id="dash_inProgress" class="text-3xl font-black text-amber-500 mt-1">—</h3>
-        <p id="dash_inProgressPages" class="text-xs text-slate-400 mt-1">— pages active</p>
+      <!-- Revisions + In Progress side cards -->
+      <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+        <div onclick="loadPage('revisions')"
+          class="stat-card border-l-4 border-l-purple-500 cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 group flex flex-col justify-between">
+          <div class="flex items-start justify-between">
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Revisions This Month</p>
+            <div class="h-9 w-9 rounded-xl bg-purple-50 flex items-center justify-center text-base group-hover:bg-purple-100 transition-colors">🔁</div>
+          </div>
+          <h3 id="dash_revTotal" class="text-4xl font-black text-purple-600 mt-2 tabular-nums">—</h3>
+          <div class="mt-3 flex gap-2 text-[11px]">
+            <span class="bg-sky-50 text-sky-700 border border-sky-100 px-2 py-0.5 rounded-full font-bold">🏢 <span id="dash_revIH">—</span></span>
+            <span class="bg-amber-50 text-amber-700 border border-amber-100 px-2 py-0.5 rounded-full font-bold">🤝 <span id="dash_revVD">—</span></span>
+          </div>
+        </div>
+
+        <div class="stat-card border-l-4 border-l-amber-500 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between">
+          <div class="flex items-start justify-between">
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">In Progress Now</p>
+            <div class="h-9 w-9 rounded-xl bg-amber-50 flex items-center justify-center text-base">⏳</div>
+          </div>
+          <h3 id="dash_inProgress" class="text-4xl font-black text-amber-500 mt-2 tabular-nums">—</h3>
+          <p id="dash_inProgressPages" class="text-xs text-slate-400 mt-1 font-medium">— pages active</p>
+          <div class="mt-3 h-1.5 bg-amber-100 rounded-full overflow-hidden">
+            <div class="h-1.5 bg-gradient-to-r from-amber-400 to-orange-400 rounded-full w-3/4 animate-pulse"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── TASK TYPE BREAKDOWN GRID ── -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+
+      <div class="stat-card border-l-4 border-l-blue-500 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+        <div class="flex items-center justify-between mb-1">
+          <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Main DTP</p>
+          <span class="h-2 w-2 rounded-full bg-blue-500"></span>
+        </div>
+        <h3 id="dash_dtpTotal" class="text-3xl font-black text-blue-600 tabular-nums">—</h3>
+        <p class="text-[10px] text-slate-400 mt-0.5">pages</p>
+        <div class="mt-2.5 space-y-1 text-[11px]">
+          <div class="flex items-center justify-between">
+            <span class="text-slate-400 font-medium">🏢 IH</span>
+            <span id="dash_dtpIH" class="font-black text-sky-700 tabular-nums">—</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-slate-400 font-medium">🤝 VD</span>
+            <span id="dash_dtpVD" class="font-black text-amber-600 tabular-nums">—</span>
+          </div>
+        </div>
+        <div class="mt-2.5 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+          <div id="dash_dtpBarFill" class="h-1.5 bg-gradient-to-r from-blue-400 to-blue-600 rounded-full transition-all duration-700" style="width:0%"></div>
+        </div>
+      </div>
+
+      <div class="stat-card border-l-4 border-l-teal-500 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+        <div class="flex items-center justify-between mb-1">
+          <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pre-Eng</p>
+          <span class="h-2 w-2 rounded-full bg-teal-500"></span>
+        </div>
+        <h3 id="dash_preEngTotal" class="text-3xl font-black text-teal-600 tabular-nums">—</h3>
+        <p class="text-[10px] text-slate-400 mt-0.5">pages</p>
+        <div class="mt-2.5 space-y-1 text-[11px]">
+          <div class="flex items-center justify-between">
+            <span class="text-slate-400 font-medium">🏢 IH</span>
+            <span id="dash_preEngIH" class="font-black text-sky-700 tabular-nums">—</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-slate-400 font-medium">🤝 VD</span>
+            <span id="dash_preEngVD" class="font-black text-amber-600 tabular-nums">—</span>
+          </div>
+        </div>
+        <div class="mt-2.5 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+          <div id="dash_preEngBarFill" class="h-1.5 bg-gradient-to-r from-teal-400 to-teal-600 rounded-full transition-all duration-700" style="width:0%"></div>
+        </div>
+      </div>
+
+      <div class="stat-card border-l-4 border-l-violet-500 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+        <div class="flex items-center justify-between mb-1">
+          <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bilingual</p>
+          <span class="h-2 w-2 rounded-full bg-violet-500"></span>
+        </div>
+        <h3 id="dash_bilingTotal" class="text-3xl font-black text-violet-600 tabular-nums">—</h3>
+        <p class="text-[10px] text-slate-400 mt-0.5">pages</p>
+        <div class="mt-2.5 space-y-1 text-[11px]">
+          <div class="flex items-center justify-between">
+            <span class="text-slate-400 font-medium">🏢 IH</span>
+            <span id="dash_bilingIH" class="font-black text-sky-700 tabular-nums">—</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-slate-400 font-medium">🤝 VD</span>
+            <span id="dash_bilingVD" class="font-black text-amber-600 tabular-nums">—</span>
+          </div>
+        </div>
+        <div class="mt-2.5 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+          <div id="dash_bilingBarFill" class="h-1.5 bg-gradient-to-r from-violet-400 to-violet-600 rounded-full transition-all duration-700" style="width:0%"></div>
+        </div>
+      </div>
+
+      <div class="stat-card border-l-4 border-l-green-500 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+        <div class="flex items-center justify-between mb-1">
+          <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">QC</p>
+          <span class="h-2 w-2 rounded-full bg-green-500"></span>
+        </div>
+        <h3 id="dash_qcTotal" class="text-3xl font-black text-green-600 tabular-nums">—</h3>
+        <p class="text-[10px] text-slate-400 mt-0.5">pages</p>
+        <div class="mt-2.5 space-y-1 text-[11px]">
+          <div class="flex items-center justify-between">
+            <span class="text-slate-400 font-medium">🏢 IH</span>
+            <span id="dash_qcIH" class="font-black text-sky-700 tabular-nums">—</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-slate-400 font-medium">🤝 VD</span>
+            <span id="dash_qcVD" class="font-black text-amber-600 tabular-nums">—</span>
+          </div>
+        </div>
+        <div class="mt-2.5 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+          <div id="dash_qcBarFill" class="h-1.5 bg-gradient-to-r from-green-400 to-green-600 rounded-full transition-all duration-700" style="width:0%"></div>
+        </div>
+      </div>
+
+      <div class="stat-card border-l-4 border-l-orange-500 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+        <div class="flex items-center justify-between mb-1">
+          <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Others</p>
+          <span class="h-2 w-2 rounded-full bg-orange-500"></span>
+        </div>
+        <h3 id="dash_othersTotal" class="text-3xl font-black text-orange-600 tabular-nums">—</h3>
+        <p class="text-[10px] text-slate-400 mt-0.5">pages</p>
+        <div class="mt-2.5 space-y-1 text-[11px]">
+          <div class="flex items-center justify-between">
+            <span class="text-slate-400 font-medium">🏢 IH</span>
+            <span id="dash_othersIH" class="font-black text-sky-700 tabular-nums">—</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-slate-400 font-medium">🤝 VD</span>
+            <span id="dash_othersVD" class="font-black text-amber-600 tabular-nums">—</span>
+          </div>
+        </div>
+        <div class="mt-2.5 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+          <div id="dash_othersBarFill" class="h-1.5 bg-gradient-to-r from-orange-400 to-orange-600 rounded-full transition-all duration-700" style="width:0%"></div>
+        </div>
       </div>
 
     </div>
   </div>
-
 
 </div>

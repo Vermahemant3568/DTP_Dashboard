@@ -36,7 +36,7 @@ function _renderTasksTable(data) {
   var tbody = document.getElementById("tasksTable");
   if (!tbody) return;
   if (!data.length) {
-    tbody.innerHTML = '<tr><td colspan="10" class="py-16 text-center text-slate-400 text-sm">No tasks found.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="11" class="py-16 text-center text-slate-400 text-sm">No tasks found.</td></tr>';
     return;
   }
   tbody.innerHTML = data.map(function(r) {
@@ -52,6 +52,7 @@ function _renderTasksTable(data) {
       '<td class="text-center text-sm text-gray-600">' + who + '</td>' +
       '<td class="text-center"><span class="badge ' + sc + '">' + (r[12]||"Pending") + '</span></td>' +
       '<td class="text-center font-semibold text-gray-600 text-sm">' + (Number(r[9])||0) + '</td>' +
+      '<td class="text-center font-semibold text-sky-600 text-sm">' + (Number(r[11])||'—') + '</td>' +
       '<td class="text-center font-bold text-blue-600 text-sm">' + (Number(r[10])||0) + '</td>' +
       '<td class="text-center text-xs text-gray-500">' + (r[15]||"—") + '</td>' +
       '<td class="text-center">' +
@@ -111,9 +112,10 @@ function _patchTaskRow(id, r) {
   cells[3].textContent = r[8] || "—";
   cells[4].textContent = who;
   cells[5].innerHTML = '<span class="badge ' + sc + '">' + (r[12]||"Pending") + '</span>';
-  cells[6].textContent = Number(r[9]) || 0;
-  cells[7].textContent = Number(r[10]) || 0;
-  cells[8].textContent = r[15] || "—";
+  cells[6].textContent = Number(r[9])  || 0;
+  cells[7].textContent = Number(r[11]) || '—';
+  cells[8].textContent = Number(r[10]) || 0;
+  cells[9].textContent = r[15] || '—';
 }
 
 /* ── snapshot of original values when edit form loads ── */

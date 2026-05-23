@@ -2,116 +2,216 @@
 /* ================================================================
    ScriptVendors.html
 ================================================================ */
-var ALL_VENDORS  = [];
-var _editVendorId = "";
+var ALL_VENDORS   = [];
+var _editVendorId = '';
+var _vndFiltered  = [];
+var _vndPage      = 1;
+var _VND_PER_PAGE = 5;
 
 function loadVendors() {
-  showLoader("Loading vendors...");
+  showLoader('Loading vendors...');
   google.script.run
-    .withFailureHandler(function(e){ hideLoader(); showToast("Could not load vendors: "+e.message,"error"); })
+    .withFailureHandler(function(e){ hideLoader(); showToast('Could not load vendors: ' + e.message, 'error'); })
     .withSuccessHandler(function(data){
-      ALL_VENDORS=data||[];
-      _renderVendorsTable(ALL_VENDORS);
+      ALL_VENDORS  = data || [];
+      _vndFiltered = ALL_VENDORS;
+      _vndPage     = 1;
+      _renderVendorStats(ALL_VENDORS);
+      _renderVendorsTable(_vndFiltered);
       hideLoader();
     })
     .getVendors();
 }
 
+function _renderVendorStats(data) {
+  var active   = data.filter(function(r){ return r[9] === 'Active'; }).length;
+  var inactive = data.filter(function(r){ return r[9] !== 'Active'; }).length;
+  var specs    = data.reduce(function(s,r){ if (r[5] && s.indexOf(r[5]) === -1) s.push(r[5]); return s; }, []).length;
+  function _s(id, v) { var el = document.getElementById(id); if (el) el.textContent = v; }
+  _s('vnd_stat_total',    data.length);
+  _s('vnd_stat_active',   active);
+  _s('vnd_stat_inactive', inactive);
+  _s('vnd_stat_specs',    specs);
+}
+
+function filterVendors() {
+  var q  = (_val('vnd_search')       || '').toLowerCase();
+  var st = _val('vnd_statusFilter')  || '';
+  _vndFiltered = ALL_VENDORS.filter(function(r) {
+    var mq = !q  || [r[1],r[5],r[6]].some(function(v){ return String(v||'').toLowerCase().includes(q); });
+    var ms = !st || r[9] === st;
+    return mq && ms;
+  });
+  _vndPage = 1;
+  _renderVendorsTable(_vndFiltered);
+}
+
+function _resetVendorFilters() {
+  var s = document.getElementById('vnd_search');       if (s) s.value = '';
+  var f = document.getElementById('vnd_statusFilter'); if (f) f.value = '';
+  _vndFiltered = ALL_VENDORS;
+  _vndPage = 1;
+  _renderVendorsTable(_vndFiltered);
+}
+
 function _renderVendorsTable(data) {
-  var tbody=document.getElementById("vendorsTable");
+  var tbody = document.getElementById('vendorsTable');
+  var label = document.getElementById('vnd_countLabel');
   if (!tbody) return;
-  if (!data.length){
-    tbody.innerHTML='<tr><td colspan="9" class="py-16 text-center text-slate-400 text-sm">No vendors yet.</td></tr>';
+  var total     = data.length;
+  var totalPages= Math.ceil(total / _VND_PER_PAGE) || 1;
+  if (_vndPage > totalPages) _vndPage = totalPages;
+  var start     = (_vndPage - 1) * _VND_PER_PAGE;
+  var pageData  = data.slice(start, start + _VND_PER_PAGE);
+  if (label) label.textContent = 'Showing ' + (total ? start + 1 : 0) + '–' + Math.min(start + _VND_PER_PAGE, total) + ' of ' + total + ' vendor' + (total !== 1 ? 's' : '');
+  _renderVndPagination(totalPages);
+  if (!total) {
+    tbody.innerHTML = '<tr><td colspan="7" class="py-16 text-center text-slate-400 text-sm">No vendors found.</td></tr>';
     return;
   }
-  tbody.innerHTML=data.map(function(r){
-    var sc=r[9]==="Active"?"bg-green-100 text-green-700":"bg-gray-100 text-gray-500";
-    return '<tr>'+
-      '<td class="font-mono text-[11px] text-gray-400">'+r[0]+'</td>'+
-      '<td class="font-semibold text-gray-900 text-sm">'+(r[1]||"—")+'</td>'+
-      '<td class="text-sm text-gray-600">'+(r[2]||"—")+'</td>'+
-      '<td class="text-sm text-gray-600">'+(r[3]||"—")+'</td>'+
-      '<td class="text-sm text-gray-600">'+(r[5]||"—")+'</td>'+
-      '<td class="text-sm text-gray-600">'+(r[6]||"—")+'</td>'+
-      '<td class="text-center text-sm font-semibold text-gray-700">'+(r[7]||0)+' '+(r[8]||"")+'</td>'+
-      '<td><span class="badge '+sc+'">'+(r[9]||"Active")+'</span></td>'+
-      '<td class="text-right">'+
-        '<div class="flex justify-end gap-1">'+
-          btnView(r[1],"viewVendorPerformance")+
-          btnEdit(r[0],"openVendorModal")+
-          btnDelete(r[0],"deleteVendorById")+
-        '</div>'+
-      '</td>'+
+  tbody.innerHTML = pageData.map(function(r) {
+    var active   = r[9] === 'Active';
+    var sc       = active ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-400';
+    var rate     = Number(r[7]) || 0;
+    var currency = String(r[8] || '').trim();
+    var rateStr  = rate > 0 ? (currency ? currency + '\u00a0' : '') + rate.toLocaleString() : '\u2014';
+    var initials = (r[1] || '?').split(' ').map(function(w){ return w[0]; }).slice(0,2).join('').toUpperCase();
+    var avatarBg = active ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-400';
+    /* Languages — show max 2 then +N */
+    var langs    = (r[6] || '').split(',').map(function(l){ return l.trim(); }).filter(Boolean);
+    var langStr  = langs.slice(0,2).join(', ') + (langs.length > 2 ? ' <span class="text-gray-400">+' + (langs.length-2) + '</span>' : '');
+    return '<tr data-id="' + r[0] + '">' +
+      '<td class="font-mono text-[10px] text-gray-400">' + r[0] + '</td>' +
+      '<td>' +
+        '<div class="flex items-center gap-2">' +
+          '<div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold ' + avatarBg + '">' + initials + '</div>' +
+          '<div>' +
+            '<p class="text-sm font-semibold text-gray-900 leading-none">' + (r[1] || '\u2014') + '</p>' +
+            '<p class="text-[11px] text-gray-400 mt-0.5">' + (r[2] ? r[2] : '') + (r[3] ? (r[2] ? ' \u00b7 ' : '') + r[3] : '') + '</p>' +
+          '</div>' +
+        '</div>' +
+      '</td>' +
+      '<td class="text-xs text-gray-500">' + (r[5] || '\u2014') + '</td>' +
+      '<td class="text-xs text-gray-500">' + (langStr || '\u2014') + '</td>' +
+      '<td class="text-center text-sm font-semibold text-emerald-700">' + rateStr + '</td>' +
+      '<td class="text-center"><span class="badge ' + sc + '">' + (r[9] || 'Active') + '</span></td>' +
+      '<td class="text-right">' +
+        '<div class="flex justify-end gap-1">' +
+          btnView(r[1], 'viewVendorPerformance') +
+          btnEdit(r[0], 'openVendorModal') +
+          btnDelete(r[0], 'deleteVendorById') +
+        '</div>' +
+      '</td>' +
     '</tr>';
-  }).join("");
+  }).join('');
+}
+
+function _renderVndPagination(totalPages) {
+  var el = document.getElementById('vnd_pagination');
+  if (!el) return;
+  if (totalPages <= 1) { el.innerHTML = ''; return; }
+  var btn = function(label, page, active, disabled) {
+    return '<button onclick="_vndGoPage(' + page + ')" ' +
+      (disabled ? 'disabled ' : '') +
+      'class="px-2.5 py-1 text-xs font-semibold rounded-lg transition-all ' +
+      (active   ? 'bg-sky-600 text-white' :
+       disabled ? 'text-gray-300 cursor-not-allowed' :
+                  'text-gray-500 hover:bg-gray-100') + '">' + label + '</button>';
+  };
+  var html = btn('&laquo;', _vndPage - 1, false, _vndPage === 1);
+  for (var i = 1; i <= totalPages; i++) {
+    html += btn(i, i, i === _vndPage, false);
+  }
+  html += btn('&raquo;', _vndPage + 1, false, _vndPage === totalPages);
+  el.innerHTML = html;
+}
+
+function _vndGoPage(page) {
+  _vndPage = page;
+  _renderVendorsTable(_vndFiltered);
 }
 
 function openVendorModal(id) {
-  _editVendorId=id||"";
-  var modal=document.getElementById("vendorModal");
+  _editVendorId = id || '';
+  var modal = document.getElementById('vendorModal');
   if (!modal) return;
-  document.getElementById("vendorModalTitle").innerText=id?"Edit Vendor":"Add Vendor";
-  if (id){
-    var v=ALL_VENDORS.find(function(r){ return r[0]===id; });
-    if (v){
-      _setVal("vm_name",v[1]); _setVal("vm_contact",v[2]); _setVal("vm_email",v[3]);
-      _setVal("vm_phone",v[4]); _setVal("vm_spec",v[5]); _setVal("vm_langs",v[6]);
-      _setVal("vm_rate",v[7]); _setVal("vm_currency",v[8]); _setVal("vm_status",v[9]); _setVal("vm_notes",v[10]);
+  document.getElementById('vendorModalTitle').innerText = id ? 'Edit Vendor' : 'Add Vendor';
+  if (id) {
+    var v = ALL_VENDORS.find(function(r){ return r[0] === id; });
+    if (v) {
+      _setVal('vm_name',    v[1]);
+      _setVal('vm_contact', v[2]);
+      _setVal('vm_email',   v[3]);
+      _setVal('vm_phone',   v[4]);
+      _setVal('vm_spec',    v[5]);
+      _setVal('vm_langs',   v[6]);
+      document.getElementById('vm_rate').value     = Number(v[7]) || '';
+      document.getElementById('vm_currency').value = String(v[8] || '');
+      document.getElementById('vm_status').value   = String(v[9] || 'Active');
+      _setVal('vm_notes',   v[10]);
     }
   } else {
-    ["vm_name","vm_contact","vm_email","vm_phone","vm_spec","vm_langs","vm_rate","vm_notes"].forEach(function(i){ _setVal(i,""); });
-    _setVal("vm_currency","USD"); _setVal("vm_status","Active");
+    ['vm_name','vm_contact','vm_email','vm_phone','vm_spec','vm_langs','vm_notes'].forEach(function(i){ _setVal(i,''); });
+    document.getElementById('vm_rate').value     = '';
+    document.getElementById('vm_currency').value = 'INR';
+    document.getElementById('vm_status').value   = 'Active';
   }
-  modal.style.display="flex";
+  modal.style.display = 'flex';
 }
 
 function closeVendorModal() {
-  var modal=document.getElementById("vendorModal");
-  if (modal) modal.style.display="none";
-  _editVendorId="";
+  var modal = document.getElementById('vendorModal');
+  if (modal) modal.style.display = 'none';
+  _editVendorId = '';
 }
 
 function saveVendor() {
-  var name=_val("vm_name");
-  if (!name){ showToast("Vendor name is required.","error"); return; }
-  var d={
+  var name = _val('vm_name');
+  if (!name) { showToast('Vendor name is required.', 'error'); document.getElementById('vm_name').focus(); return; }
+  var btn = document.querySelector('#vendorModal button[onclick="saveVendor()"]');
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
+  var d = {
     vendorName:    name,
-    contactPerson: _val("vm_contact"),
-    email:         _val("vm_email"),
-    phone:         _val("vm_phone"),
-    specialization:_val("vm_spec"),
-    languages:     _val("vm_langs"),
-    ratePerPage:   _val("vm_rate"),
-    currency:      _val("vm_currency"),
-    status:        _val("vm_status"),
-    notes:         _val("vm_notes")
+    contactPerson: _val('vm_contact'),
+    email:         _val('vm_email'),
+    phone:         _val('vm_phone'),
+    specialization:_val('vm_spec'),
+    languages:     _val('vm_langs'),
+    ratePerPage:   _val('vm_rate'),
+    currency:      _val('vm_currency'),
+    status:        _val('vm_status') || 'Active',
+    notes:         _val('vm_notes')
   };
-  showLoader("Saving vendor...");
-  if (_editVendorId){
+  function _done(msg, type) {
+    hideLoader();
+    if (btn) { btn.disabled = false; btn.textContent = 'Save Vendor'; }
+    showToast(msg, type);
+  }
+  showLoader('Saving vendor...');
+  if (_editVendorId) {
     google.script.run
-      .withFailureHandler(function(e){ hideLoader(); showToast("Error: "+e.message,"error"); })
-      .withSuccessHandler(function(){ hideLoader(); closeVendorModal(); showToast("Vendor updated!","success"); loadVendors(); })
-      .updateVendor(_editVendorId,d);
+      .withFailureHandler(function(e){ _done('Error: ' + e.message, 'error'); })
+      .withSuccessHandler(function(){ _done('Vendor updated!', 'success'); closeVendorModal(); loadVendors(); })
+      .updateVendor(_editVendorId, d);
   } else {
     google.script.run
-      .withFailureHandler(function(e){ hideLoader(); showToast("Error: "+e.message,"error"); })
-      .withSuccessHandler(function(){ hideLoader(); closeVendorModal(); showToast("Vendor added!","success"); loadVendors(); })
+      .withFailureHandler(function(e){ _done('Error: ' + e.message, 'error'); })
+      .withSuccessHandler(function(){ _done('Vendor added!', 'success'); closeVendorModal(); loadVendors(); })
       .addVendor(d);
   }
 }
 
 function deleteVendorById(id) {
-  customConfirm("Delete vendor "+id+"? This cannot be undone.", function(){
-    showLoader("Deleting...");
+  customConfirm('Delete vendor ' + id + '? This cannot be undone.', function(){
+    showLoader('Deleting...');
     google.script.run
-      .withFailureHandler(function(e){ hideLoader(); showToast("Delete failed: "+e.message,"error"); })
-      .withSuccessHandler(function(){ hideLoader(); showToast("Vendor deleted.","warning"); loadVendors(); })
+      .withFailureHandler(function(e){ hideLoader(); showToast('Delete failed: ' + e.message, 'error'); })
+      .withSuccessHandler(function(){ hideLoader(); showToast('Vendor deleted.', 'warning'); loadVendors(); })
       .deleteVendor(id);
   }, true);
 }
 
-/* Navigate to vendor performance view by vendor name */
 function viewVendorPerformance(vendorName) {
-  loadPage("vendorView", { vendorName: vendorName });
+  loadPage('vendorView', { vendorName: vendorName });
 }
 </script>

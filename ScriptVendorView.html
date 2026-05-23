@@ -1,23 +1,25 @@
 <script>
 /* ================================================================
-   ScriptVendorView.html — Vendor Performance Page Logic
+   ScriptVendorView.html
 ================================================================ */
-var _vvVendorName = "";
+var _vvVendorName = '';
 var _vvData       = null;
 
-/* ── Entry point: called from ScriptNav when page = vendorView ── */
 function loadVendorView(vendorName) {
-  _vvVendorName = vendorName || "";
+  _vvVendorName = vendorName || '';
   _vvInitYearFilter();
   _vvFetch();
 }
 
 function _vvInitYearFilter() {
-  var el = document.getElementById("vv_fYear");
+  var el = document.getElementById('vv_fYear');
   if (!el || el.options.length > 1) return;
   var now = new Date().getFullYear();
+  var blank = document.createElement('option');
+  blank.value = ''; blank.text = 'All Years';
+  el.appendChild(blank);
   for (var y = now; y >= now - 4; y--) {
-    var o = document.createElement("option");
+    var o = document.createElement('option');
     o.value = y; o.text = y;
     if (y === now) o.selected = true;
     el.appendChild(o);
@@ -26,181 +28,172 @@ function _vvInitYearFilter() {
 
 function vvApplyFilter() { _vvFetch(); }
 
+function _vvResetFilters() {
+  ['vv_fMonth','vv_fYear','vv_fProject'].forEach(function(id) {
+    var el = document.getElementById(id); if (el) el.value = '';
+  });
+  _vvFetch();
+}
+
 function _vvGetFilters() {
-  return {
-    month:     _val("vv_fMonth")   || "",
-    year:      _val("vv_fYear")    || "",
-    projectId: _val("vv_fProject") || "",
-    language:  _val("vv_fLang")    || "",
-    status:    _val("vv_fStatus")  || ""
+  var f = {
+    month:     _val('vv_fMonth')   || '',
+    year:      _val('vv_fYear')    || '',
+    projectId: _val('vv_fProject') || ''
   };
+  Object.keys(f).forEach(function(k){ if (!f[k]) delete f[k]; });
+  return f;
 }
 
 function _vvFetch() {
   if (!_vvVendorName) { hideLoader(); return; }
-  showLoader("Loading vendor performance…");
-  var filters = _vvGetFilters();
-  /* Strip empty strings so backend treats them as "no filter" */
-  Object.keys(filters).forEach(function(k) { if (!filters[k]) delete filters[k]; });
+  showLoader('Loading vendor performance…');
   google.script.run
-    .withFailureHandler(function(e) { hideLoader(); showToast("Error: " + e.message, "error"); })
-    .withSuccessHandler(function(data) {
-      hideLoader();
-      _vvData = data;
-      _vvRender(data);
-    })
-    .getVendorPerformance(_vvVendorName, filters);
+    .withFailureHandler(function(e){ hideLoader(); showToast('Error: ' + e.message, 'error'); })
+    .withSuccessHandler(function(data){ hideLoader(); _vvData = data; _vvRender(data); })
+    .getVendorPerformance(_vvVendorName, _vvGetFilters());
 }
 
 function _vvRender(d) {
   if (!d) return;
-  var v = d.vendor || {};
-  var s = d.stats  || {};
+  var v   = d.vendor || {};
+  var s   = d.stats  || {};
+  var cur = v.currency || s.currency || '';
 
-  /* ── Header ── */
-  _set("vv_title",    v.name || _vvVendorName);
-  _set("vv_subtitle", (v.specialization || "Vendor") + " · " + (v.status || "Active"));
+  /* Avatar initials */
+  var initials = (v.name || '?').split(' ').map(function(w){ return w[0]; }).slice(0,2).join('').toUpperCase();
+  var av = document.getElementById('vv_avatar');
+  if (av) av.textContent = initials;
 
-  /* ── Info card ── */
-  _set("vv_name",    v.name || "—");
-  _set("vv_contact", v.contactPerson || "—");
-  _set("vv_email",   v.email || "—");
-  _set("vv_phone",   v.phone || "—");
-  _set("vv_langs",   v.languages || "—");
-  _set("vv_rate",    (v.ratePerPage || 0).toLocaleString() + " " + (v.currency || "INR") + " / page");
+  /* Status dot color */
+  var dot = document.getElementById('vv_onlineDot');
+  if (dot) dot.className = 'h-2.5 w-2.5 rounded-full ' + (v.status === 'Active' ? 'bg-emerald-400' : 'bg-gray-300');
 
-  var sb = document.getElementById("vv_statusBadge");
+  /* Header */
+  _set('vv_title',    v.name || _vvVendorName);
+  _set('vv_subtitle', (v.specialization || 'Vendor') + ' \u00b7 ' + (v.status || 'Active'));
+
+  /* Info card */
+  _set('vv_name',    v.name           || '\u2014');
+  _set('vv_contact', v.contactPerson  || '\u2014');
+  _set('vv_email',   v.email          || '\u2014');
+  _set('vv_phone',   v.phone          || '\u2014');
+  _set('vv_langs',   v.languages      || '\u2014');
+  _set('vv_rate',    v.ratePerPage ? (cur ? cur + '\u00a0' : '') + Number(v.ratePerPage).toLocaleString() + ' / page' : '\u2014');
+
+  var sb = document.getElementById('vv_statusBadge');
   if (sb) {
-    sb.className = "badge " + (v.status === "Active" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500");
-    sb.innerText = v.status || "Active";
+    sb.className = 'badge ' + (v.status === 'Active' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-400');
+    sb.innerText = v.status || 'Active';
   }
-  var spb = document.getElementById("vv_specBadge");
-  if (spb) spb.innerText = v.specialization || "—";
+  var spb = document.getElementById('vv_specBadge');
+  if (spb) spb.innerText = v.specialization || '\u2014';
 
-  var cur = v.currency || s.currency || "";
+  /* Stat cards */
+  _set('vv_completedPages', (s.completedPages || 0).toLocaleString());
+  _set('vv_totalAssigned',  (s.totalAssigned  || 0).toLocaleString());
+  _set('vv_pendingPages',   (s.pendingPages   || 0).toLocaleString());
+  function _amt(v) { return v > 0 ? (cur ? cur + '\u00a0' : '') + Number(v).toLocaleString() : '\u2014'; }
+  _set('vv_estAmount', _amt((s.paidAmount || 0) + (s.partialAmount || 0)));
 
-  /* ── Stat cards ── */
-  _set("vv_totalAssigned",  (s.totalAssigned  || 0).toLocaleString());
-  _set("vv_completedPages", (s.completedPages || 0).toLocaleString());
-  _set("vv_pendingPages",   (s.pendingPages   || 0).toLocaleString());
-  _set("vv_estAmount",      cur + " " + (s.totalAmount || 0).toLocaleString());
+  /* Payment summary */
+  _set('vv_paidAmt',    _amt(s.paidAmount    || 0));
+  _set('vv_partialAmt', _amt(s.partialAmount || 0));
+  /* Unpaid = count only, no money */
+  var rows = d.rows || [];
+  var unpaidTasks = rows.filter(function(r){ return r.paymentStatus === 'Unpaid' && r.type === 'task'; }).length;
+  var unpaidRevs  = rows.filter(function(r){ return r.paymentStatus === 'Unpaid' && r.type === 'revision'; }).length;
+  var unpaidTotal = unpaidTasks + unpaidRevs;
+  _set('vv_unpaidCount',    unpaidTotal > 0 ? unpaidTotal + ' unpaid' : '\u2014');
+  _set('vv_unpaidBreakdown',unpaidTotal > 0 ? unpaidTasks + ' task' + (unpaidTasks !== 1 ? 's' : '') + ' \u00b7 ' + unpaidRevs + ' revision' + (unpaidRevs !== 1 ? 's' : '') : '');
 
-  /* ── Payment breakdown ── */
-  _set("vv_taskPages",    (s.taskPages || 0).toLocaleString() + " pages");
-  _set("vv_revPages",     (s.revPages  || 0).toLocaleString() + " pages");
-  _set("vv_paidAmt",      cur + " " + (s.paidAmount    || 0).toLocaleString());
-  _set("vv_partialAmt",   cur + " " + (s.partialAmount || 0).toLocaleString());
-  _set("vv_unpaidAmt",    cur + " " + (s.unpaidAmount  || 0).toLocaleString());
-  _set("vv_totalAmt",     cur + " " + (s.totalAmount   || 0).toLocaleString());
-  /* legacy IDs kept for compatibility */
-  _set("vv_payCompletedPages", (s.completedPages || 0).toLocaleString() + " pages");
-  _set("vv_payCompletedAmt",   cur + " " + (s.paidAmount    || 0).toLocaleString());
-  _set("vv_payPendingPages",   (s.pendingPages   || 0).toLocaleString() + " pages");
-  _set("vv_payPendingAmt",     cur + " " + (s.unpaidAmount  || 0).toLocaleString());
-  _set("vv_payPartialAmt",     cur + " " + (s.partialAmount || 0).toLocaleString());
-  _set("vv_payTotalPages",     (s.totalPages     || 0).toLocaleString() + " pages");
-  _set("vv_payTotalAmt",       cur + " " + (s.totalAmount   || 0).toLocaleString());
-
-  /* ── Populate filter dropdowns (only on first load) ── */
-  _vvPopulateDropdowns(d.projectOptions || [], d.langOptions || []);
-
-  /* ── Monthly chart ── */
-  _vvRenderMonthly(d.monthly || []);
-
-  /* ── Breakdown bars ── */
-  _vvRenderBars("vv_byProject",  d.byProject  || [], "projectName", "pages", "bg-sky-500");
-  _vvRenderBars("vv_byTaskType", d.byTaskType || [], "type",        "pages", "bg-violet-500");
-  _vvRenderBars("vv_byLanguage", d.byLanguage || [], "language",    "pages", "bg-teal-500");
-
-  /* ── Work table ── */
-  _vvRenderTable(d.rows || []);
-}
-
-function _vvPopulateDropdowns(projects, langs) {
-  var pEl = document.getElementById("vv_fProject");
+  /* Populate project dropdown once */
+  var pEl = document.getElementById('vv_fProject');
   if (pEl && pEl.options.length <= 1) {
-    projects.forEach(function(p) {
-      var o = document.createElement("option");
+    (d.projectOptions || []).forEach(function(p) {
+      var o = document.createElement('option');
       o.value = p.id; o.text = p.name;
       pEl.appendChild(o);
     });
   }
-  var lEl = document.getElementById("vv_fLang");
-  if (lEl && lEl.options.length <= 1) {
-    langs.forEach(function(l) {
-      var o = document.createElement("option");
-      o.value = l; o.text = l;
-      lEl.appendChild(o);
-    });
-  }
+
+  /* Charts */
+  _vvRenderMonthly(d.monthly || []);
+  _vvRenderBars('vv_byProject',  d.byProject  || [], 'projectName', 'pages', 'bg-emerald-500');
+  _vvRenderBars('vv_byTaskType', d.byTaskType || [], 'type',        'pages', 'bg-violet-500');
+
+  /* Table */
+  _vvRenderTable(rows, cur);
 }
 
 function _vvRenderMonthly(monthly) {
-  var el = document.getElementById("vv_monthlyChart");
+  var el = document.getElementById('vv_monthlyChart');
   if (!el) return;
-  if (!monthly.length) {
-    el.innerHTML = '<p class="text-sm text-slate-400 text-center py-4">No monthly data available.</p>';
-    return;
-  }
-  var max = Math.max.apply(null, monthly.map(function(m) { return m.pages; })) || 1;
-  el.innerHTML = monthly.map(function(m) {
+  if (!monthly.length) { el.innerHTML = '<p class="text-sm text-slate-400 text-center py-8">No data available.</p>'; return; }
+  var max = Math.max.apply(null, monthly.map(function(m){ return m.pages; })) || 1;
+  el.innerHTML = monthly.map(function(m, i) {
     var pct = Math.round(m.pages / max * 100);
-    return '<div class="flex items-center gap-3">' +
-      '<span class="text-[11px] text-slate-500 w-20 shrink-0 text-right">' + m.label + '</span>' +
-      '<div class="flex-1 bg-slate-100 rounded-full h-5 overflow-hidden">' +
-        '<div class="bg-emerald-500 h-5 rounded-full flex items-center justify-end pr-2 transition-all duration-700" style="width:' + Math.max(pct, 2) + '%">' +
-          (pct > 8 ? '<span class="text-[10px] font-bold text-white">' + m.pages.toLocaleString() + '</span>' : '') +
+    var isTop = pct === 100;
+    var barColor = isTop ? 'background:linear-gradient(90deg,#10b981,#0ea5e9)' : 'background:#10b981';
+    return '<div class="flex items-center gap-3 group">' +
+      '<span class="text-[11px] text-slate-500 w-20 shrink-0 text-right font-medium">' + m.label + '</span>' +
+      '<div class="flex-1 bg-slate-100 rounded-full h-4 overflow-hidden">' +
+        '<div class="h-4 rounded-full flex items-center justify-end pr-2 transition-all duration-700" style="width:' + Math.max(pct,2) + '%;' + barColor + '">' +
+          (pct > 12 ? '<span class="text-[9px] font-black text-white">' + m.pages.toLocaleString() + '</span>' : '') +
         '</div>' +
       '</div>' +
-      (pct <= 8 ? '<span class="text-[11px] font-bold text-slate-600 shrink-0">' + m.pages.toLocaleString() + '</span>' : '') +
+      (pct <= 12 ? '<span class="text-[11px] font-bold text-slate-600 shrink-0 w-10 text-right">' + m.pages.toLocaleString() + '</span>' : '<span class="w-10"></span>') +
     '</div>';
-  }).join("");
+  }).join('');
 }
 
-function _vvRenderBars(containerId, items, labelKey, valueKey, colorClass) {
-  var el = document.getElementById(containerId);
+function _vvRenderBars(id, items, labelKey, valueKey, colorClass) {
+  var el = document.getElementById(id);
   if (!el) return;
-  if (!items.length) {
-    el.innerHTML = '<p class="text-sm text-slate-400 text-center py-4">No data.</p>';
-    return;
-  }
-  var max = Math.max.apply(null, items.map(function(i) { return i[valueKey]; })) || 1;
-  el.innerHTML = items.slice(0, 8).map(function(i) {
-    var sub = (i.count !== undefined) ? (i[valueKey].toLocaleString() + " pages · " + i.count + " task" + (i.count !== 1 ? "s" : "")) : (i[valueKey].toLocaleString() + " pages");
+  if (!items.length) { el.innerHTML = '<p class="text-sm text-slate-400 text-center py-4">No data.</p>'; return; }
+  var max = Math.max.apply(null, items.map(function(i){ return i[valueKey]; })) || 1;
+  el.innerHTML = items.slice(0,8).map(function(i) {
+    var sub = i[valueKey].toLocaleString() + ' pages' + (i.count !== undefined ? ' \u00b7 ' + i.count + ' task' + (i.count !== 1 ? 's' : '') : '');
     return buildBar(i[labelKey], i[valueKey], max, colorClass, sub);
-  }).join("<div class='mt-3'></div>");
+  }).join('<div class="mt-2"></div>');
 }
 
-function _vvRenderTable(rows) {
-  var tbody = document.getElementById("vv_workTable");
-  var countEl = document.getElementById("vv_tableCount");
+function _vvRenderTable(rows, cur) {
+  var tbody   = document.getElementById('vv_workTable');
+  var countEl = document.getElementById('vv_tableCount');
   if (!tbody) return;
-  if (countEl) countEl.innerText = rows.length + " record" + (rows.length !== 1 ? "s" : "");
+  if (countEl) countEl.innerText = rows.length + ' record' + (rows.length !== 1 ? 's' : '');
   if (!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="10" class="py-12 text-center text-slate-400 text-sm">No work records found for the selected filters.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10" class="py-12 text-center text-slate-400 text-sm">No records found.</td></tr>';
     return;
   }
   tbody.innerHTML = rows.map(function(r) {
-    var sc  = getStatusClass(r.status || "Pending");
-    var tc  = r.type === "revision" ? "bg-purple-100 text-purple-700" : getTaskClass(r.taskType || "Main DTP");
-    var pc  = r.paymentStatus === "Paid"    ? "bg-green-100 text-green-700" :
-              r.paymentStatus === "Partial" ? "bg-yellow-100 text-yellow-700" :
-              r.paymentStatus === "N/A"     ? "bg-gray-100 text-gray-400" :
-                                             "bg-red-50 text-red-600";
-    var rateStr = r.ratePerPage ? (r.currency || "") + " " + Number(r.ratePerPage).toLocaleString() : "—";
-    var amtStr  = (r.amount !== undefined && r.ratePerPage) ? (r.currency || "") + " " + Number(r.amount).toLocaleString() : "—";
-    return '<tr>' +
-      '<td class="font-mono text-[11px] text-gray-400">' + (r.id || "—") + '</td>' +
-      '<td class="text-sm font-semibold text-gray-800 max-w-[140px] truncate">' + (r.projectName || "—") + '</td>' +
-      '<td><span class="badge ' + tc + '">' + (r.taskType || "—") + '</span></td>' +
-      '<td class="text-sm text-gray-600">' + (r.language || "—") + '</td>' +
-      '<td class="text-center text-sm font-black text-sky-700">' + (r.pages || 0).toLocaleString() + '</td>' +
-      '<td class="text-sm text-gray-600 text-right">' + rateStr + '</td>' +
-      '<td class="text-sm font-semibold text-emerald-700 text-right">' + amtStr + '</td>' +
-      '<td><span class="badge ' + sc + '">' + (r.status || "—") + '</span></td>' +
-      '<td><span class="badge ' + pc + '">' + (r.paymentStatus || "—") + '</span></td>' +
-      '<td class="text-sm text-gray-500">' + (r.completedDate || "—") + '</td>' +
+    var sc  = getStatusClass(r.status || 'Pending');
+    var tc  = r.type === 'revision' ? 'bg-purple-100 text-purple-700' : getTaskClass(r.taskType || 'Main DTP');
+    var pc  = r.paymentStatus === 'Paid'    ? 'bg-emerald-100 text-emerald-700' :
+              r.paymentStatus === 'Partial' ? 'bg-yellow-100 text-yellow-700'  :
+                                              'bg-red-50 text-red-600';
+    /* Only show rate/amount if paid and rate > 0 */
+    var rate    = Number(r.ratePerPage) || 0;
+    var amt     = Number(r.amount)      || 0;
+    var isPaid  = r.paymentStatus === 'Paid' || r.paymentStatus === 'Partial';
+    var rateStr = (rate > 0 && isPaid) ? (cur ? cur + '\u00a0' : '') + rate.toLocaleString() : '\u2014';
+    var amtStr  = (rate > 0 && isPaid) ? (cur ? cur + '\u00a0' : '') + amt.toLocaleString()  : '\u2014';
+    /* completedDate: use completedDate for tasks, startDate for revisions as fallback */
+    var completed = r.completedDate || (r.type === 'revision' ? r.startDate : '') || '\u2014';
+    var rowBg = r.type === 'revision' ? 'bg-purple-50/30' : '';
+    return '<tr class="' + rowBg + '">' +
+      '<td class="font-mono text-[10px] text-gray-400">'                        + (r.id          || '\u2014') + '</td>' +
+      '<td class="text-xs font-semibold text-gray-800 max-w-[140px] truncate">' + (r.projectName || '\u2014') + '</td>' +
+      '<td><span class="badge ' + tc + '">'                                      + (r.taskType    || '\u2014') + '</span></td>' +
+      '<td class="text-xs text-gray-500">'                                       + (r.language    || '\u2014') + '</td>' +
+      '<td class="text-center text-sm font-black text-sky-700">'                 + (r.pages || 0).toLocaleString() + '</td>' +
+      '<td class="text-center text-xs text-gray-600">'                           + rateStr + '</td>' +
+      '<td class="text-center text-sm font-semibold text-emerald-700">'          + amtStr  + '</td>' +
+      '<td class="text-center"><span class="badge ' + sc + '">'                  + (r.status        || '\u2014') + '</span></td>' +
+      '<td class="text-center"><span class="badge ' + pc + '">'                  + (r.paymentStatus || '\u2014') + '</span></td>' +
+      '<td class="text-xs text-gray-500">'                                       + completed + '</td>' +
     '</tr>';
-  }).join("");
+  }).join('');
 }
 </script>

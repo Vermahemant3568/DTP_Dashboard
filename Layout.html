@@ -108,63 +108,76 @@
         </div>
         <button onclick="closeVendorModal()" class="text-gray-400 hover:text-gray-600 text-xl leading-none transition-colors">✕</button>
       </div>
-      <div class="overflow-y-auto p-6 grid grid-cols-2 gap-4">
-        <div class="col-span-2">
-          <label class="label">Vendor Name *</label>
-          <input id="vm_name" class="input" placeholder="Vendor company or freelancer name">
-        </div>
+      <div class="overflow-y-auto p-5 space-y-4">
+        <!-- Vendor Name -->
         <div>
-          <label class="label">Contact Person</label>
-          <input id="vm_contact" class="input" placeholder="Contact name">
+          <label class="label">Vendor Name <span class="text-red-500">*</span></label>
+          <input id="vm_name" class="input" placeholder="Company or freelancer name" required>
         </div>
-        <div>
-          <label class="label">Email</label>
-          <input type="email" id="vm_email" class="input" placeholder="email@example.com">
+        <!-- Contact + Email -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="label">Contact Person</label>
+            <input id="vm_contact" class="input" placeholder="Contact name">
+          </div>
+          <div>
+            <label class="label">Email</label>
+            <input type="email" id="vm_email" class="input" placeholder="email@example.com">
+          </div>
         </div>
-        <div>
-          <label class="label">Phone</label>
-          <input id="vm_phone" class="input" placeholder="+91 98765 43210">
+        <!-- Phone + Specialization -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="label">Phone</label>
+            <input id="vm_phone" class="input" placeholder="+91 98765 43210">
+          </div>
+          <div>
+            <label class="label">Specialization</label>
+            <input id="vm_spec" class="input" placeholder="e.g. DTP, Translation, QC">
+          </div>
         </div>
-        <div>
-          <label class="label">Specialization</label>
-          <input id="vm_spec" class="input" placeholder="e.g. DTP, Translation, QC">
-        </div>
+        <!-- Languages -->
         <div>
           <label class="label">Languages</label>
-          <input id="vm_langs" class="input" placeholder="e.g. French, German, Hindi">
+          <input id="vm_langs" class="input" placeholder="e.g. French, German, Hindi (comma separated)">
         </div>
+        <!-- Rate + Currency + Status -->
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="label">Rate / Page</label>
+            <input type="number" id="vm_rate" class="input" placeholder="0.00" min="0" step="0.01">
+          </div>
+          <div>
+            <label class="label">Currency</label>
+            <select id="vm_currency" class="input">
+              <option value="INR">INR</option>
+              <option value="USD">USD</option>
+              <option value="EUR">EUR</option>
+              <option value="GBP">GBP</option>
+              <option value="AED">AED</option>
+            </select>
+          </div>
+          <div>
+            <label class="label">Status</label>
+            <select id="vm_status" class="input">
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+            </select>
+          </div>
+        </div>
+        <!-- Notes -->
         <div>
-          <label class="label">Rate Per Page</label>
-          <input type="number" id="vm_rate" class="input" placeholder="0.00" min="0" step="0.01">
-        </div>
-        <div>
-          <label class="label">Currency</label>
-          <select id="vm_currency" class="input">
-            <option>INR</option>
-            <option>USD</option>
-            <option>EUR</option>
-            <option>GBP</option>
-          </select>
-        </div>
-        <div>
-          <label class="label">Status</label>
-          <select id="vm_status" class="input">
-            <option>Active</option>
-            <option>Inactive</option>
-          </select>
-        </div>
-        <div class="col-span-2">
           <label class="label">Notes</label>
           <textarea id="vm_notes" rows="2" class="input" placeholder="Additional notes…"></textarea>
         </div>
       </div>
-      <div class="flex justify-end gap-3 border-t border-gray-100 px-6 py-4 shrink-0">
+      <div class="flex justify-end gap-3 border-t border-gray-100 px-5 py-4 shrink-0">
         <button onclick="closeVendorModal()"
-          class="px-5 py-2.5 text-sm font-semibold text-gray-500 hover:bg-gray-100 rounded-xl transition-colors">
+          class="px-4 py-2 text-sm font-semibold text-gray-500 hover:bg-gray-100 rounded-xl transition-colors">
           Cancel
         </button>
         <button onclick="saveVendor()"
-          class="px-5 py-2.5 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-colors">
+          class="px-5 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-colors">
           Save Vendor
         </button>
       </div>

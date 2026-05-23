@@ -2,7 +2,15 @@
 /* ================================================================
    ScriptViewProject.html
 ================================================================ */
-var _vpCurrentId = "";
+var _vpCurrentId = '';
+
+function _payBadge(status) {
+  var s = String(status || 'Unpaid').trim();
+  var c = s === 'Paid'    ? 'bg-emerald-100 text-emerald-700' :
+          s === 'Partial' ? 'bg-yellow-100 text-yellow-700'  :
+                            'bg-red-50 text-red-600';
+  return '<span class="badge ' + c + '">' + s + '</span>';
+}
 
 function renderViewProject(data) {
   if (!data) { hideLoader(); showToast("Project data not found.", "error"); return; }
@@ -117,7 +125,7 @@ function _renderVpTasks(tasks) {
   if (totalEl) totalEl.innerText = total.toLocaleString() + " pages";
 
   if (!tasks.length) {
-    tbody.innerHTML = '<tr><td colspan="10" class="py-10 text-center text-slate-400 text-sm">' +
+    tbody.innerHTML = '<tr><td colspan="11" class="py-10 text-center text-slate-400 text-sm">' +
       '<div class="flex flex-col items-center gap-2">' +
         '<span class="text-3xl">📋</span>' +
         '<p>No tasks yet.</p>' +
@@ -144,8 +152,9 @@ function _renderVpTasks(tasks) {
       '<td class="text-center text-sm text-gray-500">' + src + '</td>' +
       '<td class="text-center text-sm text-gray-500">' + lc + '</td>' +
       '<td class="text-center font-bold text-blue-600 text-sm">' + fin.toLocaleString() + '</td>' +
-      '<td><span class="badge ' + sc + '">' + (r[12] || "Pending") + '</span></td>' +
-      '<td class="text-xs text-gray-500">' + (r[15] || "—") + '</td>' +
+      '<td><span class="badge ' + sc + '">' + (r[12] || 'Pending') + '</span></td>' +
+      '<td class="text-center">' + _payBadge(r[24]) + '</td>' +
+      '<td class="text-xs text-gray-500">' + (r[15] || '—') + '</td>' +
       '<td class="text-right">' +
         '<div class="flex justify-end gap-1">' +
           btnView(r[0], "viewTaskById") +
@@ -166,7 +175,7 @@ function _renderVpRevisions(revs) {
   if (totalEl) totalEl.innerText = total.toLocaleString() + " pages";
 
   if (!revs.length) {
-    tbody.innerHTML = '<tr><td colspan="8" class="py-10 text-center text-slate-400 text-sm">' +
+    tbody.innerHTML = '<tr><td colspan="9" class="py-10 text-center text-slate-400 text-sm">' +
       '<div class="flex flex-col items-center gap-2">' +
         '<span class="text-3xl">🔁</span>' +
         '<p>No revisions yet.</p>' +
@@ -189,7 +198,8 @@ function _renderVpRevisions(revs) {
       '<td><span class="badge bg-purple-100 text-purple-700">' + (r[6] || "—") + '</span></td>' +
       '<td class="text-sm text-gray-700 font-medium">' + who + '</td>' +
       '<td><span class="badge ' + wc + '">' + (r[8] || "In-House") + '</span></td>' +
-      '<td><span class="badge ' + sc + '">' + (r[11] || "Pending") + '</span></td>' +
+      '<td><span class="badge ' + sc + '">' + (r[11] || 'Pending') + '</span></td>' +
+      '<td class="text-center">' + _payBadge(r[20]) + '</td>' +
       '<td class="text-center font-bold text-purple-600 text-sm">' + (Number(r[7]) || 0).toLocaleString() + '</td>' +
       '<td class="text-xs text-gray-500">' + (r[12] || "—") + '</td>' +
       '<td class="text-right">' + btnDelete(r[0], "_vpDeleteRevision") + '</td>' +
