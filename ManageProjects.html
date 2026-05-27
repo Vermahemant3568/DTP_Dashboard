@@ -1,61 +1,97 @@
-<div class="space-y-4 page-enter">
+<div class="space-y-5 page-enter">
 
-  <!-- HEADER -->
-  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-    <div>
-      <h2 class="text-xl font-bold text-slate-800">All Projects</h2>
-      <p class="text-xs text-slate-400 mt-0.5">Master project registry — select a project to add tasks</p>
-    </div>
-    <div class="flex items-center gap-2">
-      <button onclick="loadPage('addTask')"
-        class="inline-flex items-center gap-1.5 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold px-4 py-2 rounded-lg shadow-sm active:scale-95 transition-all">
-        ✅ Add Task
-      </button>
-      <button onclick="loadPage('addProject')"
-        class="inline-flex items-center gap-1.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 text-xs font-semibold px-4 py-2 rounded-lg transition-all">
-        ➕ New Project
-      </button>
+  <!-- ══ HERO HEADER ══ -->
+  <div class="relative rounded-2xl overflow-hidden bg-gradient-to-br from-slate-800 via-slate-900 to-sky-950 shadow-xl">
+    <div class="absolute -top-6 -right-6 h-32 w-32 rounded-full bg-sky-500/10 blur-2xl pointer-events-none"></div>
+    <div class="absolute bottom-0 left-8 h-20 w-20 rounded-full bg-emerald-500/10 blur-xl pointer-events-none"></div>
+    <div class="relative px-6 py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="h-11 w-11 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center text-2xl shrink-0">📁</div>
+        <div>
+          <h2 class="text-xl font-black text-white tracking-tight">All Projects</h2>
+          <p class="text-xs text-slate-400 mt-0.5 font-medium">Master project registry — select a project to add tasks</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="loadPage('addTask')"
+          class="inline-flex items-center gap-1.5 bg-sky-500 hover:bg-sky-400 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-sm active:scale-95 transition-all">
+          ✅ Add Task
+        </button>
+        <button onclick="loadPage('addProject')"
+          class="inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all">
+          ➕ New Project
+        </button>
+      </div>
     </div>
   </div>
 
-  <!-- DYNAMIC SUMMARY STATS -->
+  <!-- ══ STAT CARDS ══ -->
   <div id="proj_statsBar" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-    <div class="bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-3">
-      <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Total</p>
-      <p id="pstat_total" class="text-2xl font-black text-slate-800 mt-0.5">—</p>
+
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm px-4 py-3.5 flex flex-col gap-1 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+      <div class="flex items-center justify-between">
+        <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">Total</p>
+        <span class="text-base">🗂️</span>
+      </div>
+      <p id="pstat_total" class="text-2xl font-black text-slate-800 tabular-nums">—</p>
+      <p class="text-[10px] text-slate-400 font-medium">projects</p>
     </div>
-    <div class="bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-3">
-      <p class="text-[10px] font-bold uppercase tracking-wider text-emerald-500">Active</p>
-      <p id="pstat_active" class="text-2xl font-black text-emerald-600 mt-0.5">—</p>
+
+    <div class="bg-white rounded-2xl border border-emerald-100 shadow-sm px-4 py-3.5 flex flex-col gap-1 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+      <div class="flex items-center justify-between">
+        <p class="text-[10px] font-black uppercase tracking-widest text-emerald-500">Active</p>
+        <span class="text-base">🟢</span>
+      </div>
+      <p id="pstat_active" class="text-2xl font-black text-emerald-600 tabular-nums">—</p>
+      <p class="text-[10px] text-emerald-400 font-medium">in progress</p>
     </div>
-    <div class="bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-3">
-      <p class="text-[10px] font-bold uppercase tracking-wider text-sky-500">Pending</p>
-      <p id="pstat_pending" class="text-2xl font-black text-sky-600 mt-0.5">—</p>
+
+    <div class="bg-white rounded-2xl border border-sky-100 shadow-sm px-4 py-3.5 flex flex-col gap-1 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+      <div class="flex items-center justify-between">
+        <p class="text-[10px] font-black uppercase tracking-widest text-sky-500">Pending</p>
+        <span class="text-base">⏳</span>
+      </div>
+      <p id="pstat_pending" class="text-2xl font-black text-sky-600 tabular-nums">—</p>
+      <p class="text-[10px] text-sky-400 font-medium">awaiting start</p>
     </div>
-    <div class="bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-3">
-      <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Completed</p>
-      <p id="pstat_completed" class="text-2xl font-black text-gray-600 mt-0.5">—</p>
+
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm px-4 py-3.5 flex flex-col gap-1 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+      <div class="flex items-center justify-between">
+        <p class="text-[10px] font-black uppercase tracking-widest text-gray-400">Completed</p>
+        <span class="text-base">✅</span>
+      </div>
+      <p id="pstat_completed" class="text-2xl font-black text-gray-600 tabular-nums">—</p>
+      <p class="text-[10px] text-gray-400 font-medium">delivered</p>
     </div>
-    <div class="bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-3">
-      <p class="text-[10px] font-bold uppercase tracking-wider text-blue-500">Task Pages</p>
-      <p id="pstat_taskpages" class="text-2xl font-black text-blue-600 mt-0.5">—</p>
+
+    <div class="bg-white rounded-2xl border border-blue-100 shadow-sm px-4 py-3.5 flex flex-col gap-1 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+      <div class="flex items-center justify-between">
+        <p class="text-[10px] font-black uppercase tracking-widest text-blue-500">Task Pages</p>
+        <span class="text-base">📄</span>
+      </div>
+      <p id="pstat_taskpages" class="text-2xl font-black text-blue-600 tabular-nums">—</p>
+      <p class="text-[10px] text-blue-400 font-medium">total pages</p>
     </div>
-    <div class="bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-3">
-      <p class="text-[10px] font-bold uppercase tracking-wider text-amber-500">Rev Pages</p>
-      <p id="pstat_revpages" class="text-2xl font-black text-amber-600 mt-0.5">—</p>
+
+    <div class="bg-white rounded-2xl border border-amber-100 shadow-sm px-4 py-3.5 flex flex-col gap-1 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+      <div class="flex items-center justify-between">
+        <p class="text-[10px] font-black uppercase tracking-widest text-amber-500">Rev Pages</p>
+        <span class="text-base">🔁</span>
+      </div>
+      <p id="pstat_revpages" class="text-2xl font-black text-amber-600 tabular-nums">—</p>
+      <p class="text-[10px] text-amber-400 font-medium">revision pages</p>
     </div>
+
   </div>
 
-  <!-- FILTERS -->
-  <div class="bg-white rounded-xl border border-gray-100 shadow-sm">
-    <div class="flex flex-col sm:flex-row gap-2 p-3">
+  <!-- ══ FILTER BAR ══ -->
+  <div class="bg-white rounded-2xl border border-gray-100 shadow-sm px-4 py-3">
+    <div class="flex flex-col sm:flex-row gap-2">
       <div class="relative flex-1">
-        <span class="absolute inset-y-0 left-3 flex items-center text-gray-400">
-          <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-        </span>
+        <span class="absolute inset-y-0 left-3 flex items-center text-gray-400 text-sm">🔍</span>
         <input type="text" id="proj_search" oninput="filterProjects()"
-          placeholder="Search ID, client, project…"
-          class="input pl-8 py-2 text-xs">
+          placeholder="Search by ID, client or project name…"
+          class="input pl-9 py-2 text-xs">
       </div>
       <select id="proj_statusFilter" onchange="filterProjects()" class="input sm:w-36 py-2 text-xs">
         <option value="">All Statuses</option>
@@ -72,17 +108,18 @@
         <option>High</option>
         <option>Urgent</option>
       </select>
-      <button onclick="_resetProjFilters()" class="shrink-0 px-3 py-2 text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-all">
-        Reset
+      <button onclick="_resetProjFilters()"
+        class="shrink-0 px-3 py-2 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition-all">
+        ↺ Reset
       </button>
     </div>
   </div>
 
-  <!-- TABLE -->
-  <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-    <!-- table meta row -->
-    <div class="flex items-center justify-between px-4 py-2.5 border-b border-gray-50">
-      <p id="proj_countLabel" class="text-xs text-gray-400 font-medium">Loading…</p>
+  <!-- ══ TABLE ══ -->
+  <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+    <div class="flex items-center justify-between px-5 py-3 border-b border-gray-50">
+      <p id="proj_countLabel" class="text-xs text-gray-400 font-semibold">Loading…</p>
+      <span class="text-[10px] text-slate-300 font-medium uppercase tracking-widest">Project Registry</span>
     </div>
     <div class="overflow-x-auto">
       <table class="data-table">
