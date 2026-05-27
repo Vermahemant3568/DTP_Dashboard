@@ -106,17 +106,197 @@
   ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
   ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-  /* ── DASHBOARD ENHANCEMENTS ── */
-  #dashboardRoot .stat-card {
+  /* ══════════════════════════════════════════
+     DASHBOARD — named utility classes
+  ══════════════════════════════════════════ */
+
+  /* Hero banner */
+  .dash-hero {
+    position: relative;
+    border-radius: 20px;
+    overflow: hidden;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0c1a2e 100%);
+    box-shadow: 0 8px 32px rgba(0,0,0,.25);
+  }
+  .dash-hero-blob1 {
+    position: absolute; top: -2rem; right: -2rem;
+    height: 10rem; width: 10rem; border-radius: 9999px;
+    background: rgba(56,189,248,.08); filter: blur(2rem);
+    pointer-events: none;
+  }
+  .dash-hero-blob2 {
+    position: absolute; bottom: 0; left: 2.5rem;
+    height: 6rem; width: 6rem; border-radius: 9999px;
+    background: rgba(52,211,153,.08); filter: blur(1.5rem);
+    pointer-events: none;
+  }
+
+  /* Period pill inside hero */
+  .dash-period-pill {
+    display: flex; align-items: center;
+    background: rgba(255,255,255,.07);
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 12px;
+    padding: 6px 12px;
+    gap: 2px;
+  }
+  .dash-period-pill select option { background: #1e293b; color: #fff; }
+
+  /* Quick-add buttons */
+  .dash-qbtn {
+    display: inline-flex; align-items: center; gap: 5px;
+    color: #fff; font-size: 11px; font-weight: 700;
+    padding: 7px 12px; border-radius: 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.2);
+    transition: all .15s; cursor: pointer; border: none;
+  }
+  .dash-qbtn:active { transform: scale(.95); }
+
+  /* Section divider label */
+  .dash-section-label {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 12px;
+    font-size: 10px; font-weight: 900;
+    text-transform: uppercase; letter-spacing: .12em;
+    color: #94a3b8;
+  }
+
+  /* ── Summary cards (all-time row) ── */
+  .dash-summary-card {
+    display: flex; align-items: center; gap: 14px;
+    background: #fff;
+    border-radius: 18px;
+    border: 1px solid #e5e7eb;
+    padding: 18px 20px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.05);
     transition: transform .2s ease, box-shadow .2s ease;
   }
-  #dashboardRoot select option {
-    background: #1e293b;
-    color: #fff;
+  .dash-summary-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0,0,0,.09);
   }
-  /* Grand total hero number pulse on load */
+  .dash-summary-icon {
+    height: 48px; width: 48px; border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; flex-shrink: 0;
+    transition: background .15s;
+  }
+
+  /* ── Shared card typography ── */
+  .dash-card-label {
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .08em;
+  }
+  .dash-card-number {
+    font-size: 2.4rem; font-weight: 900;
+    line-height: 1; font-variant-numeric: tabular-nums;
+    margin-top: 2px;
+  }
+  .dash-card-hint {
+    font-size: 11px; color: #94a3b8; margin-top: 3px; font-weight: 500;
+  }
+  .dash-pill {
+    display: inline-flex; align-items: center;
+    padding: 2px 8px; border-radius: 999px;
+    font-size: 10px; font-weight: 700;
+    border-width: 1px; border-style: solid;
+    white-space: nowrap;
+  }
+
+  /* ── Grand Total card ── */
+  .dash-grand-card {
+    position: relative; overflow: hidden;
+    background: linear-gradient(135deg, #10b981 0%, #0d9488 60%, #0891b2 100%);
+    border-radius: 20px;
+    padding: 22px;
+    box-shadow: 0 8px 28px rgba(16,185,129,.30);
+    display: flex; flex-direction: column; justify-content: space-between;
+  }
+  .dash-split-tile {
+    background: rgba(255,255,255,.13);
+    border: 1px solid rgba(255,255,255,.18);
+    border-radius: 14px;
+    padding: 12px 14px;
+    text-align: center;
+    backdrop-filter: blur(4px);
+  }
+
+  /* ── Month cards (revisions / in-progress) ── */
+  .dash-month-card {
+    background: #fff;
+    border-radius: 18px;
+    border: 1px solid #e5e7eb;
+    border-left-width: 4px;
+    padding: 18px 20px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.05);
+    transition: transform .2s ease, box-shadow .2s ease;
+  }
+  .dash-month-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0,0,0,.09);
+  }
+
+  /* ── Task-type breakdown cards ── */
+  .dash-type-card {
+    background: #fff;
+    border-radius: 16px;
+    border: 1px solid #e5e7eb;
+    padding: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.05);
+    transition: transform .2s ease, box-shadow .2s ease;
+    display: flex; flex-direction: column; gap: 0;
+  }
+  .dash-type-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0,0,0,.09);
+  }
+  .dash-type-dot {
+    height: 8px; width: 8px; border-radius: 9999px;
+    margin-bottom: 8px;
+  }
+  .dash-type-label {
+    font-size: 10px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: .08em;
+    color: #94a3b8; line-height: 1;
+  }
+  .dash-type-number {
+    font-size: 2rem; font-weight: 900;
+    font-variant-numeric: tabular-nums;
+    line-height: 1; margin-top: 4px;
+  }
+  .dash-type-unit {
+    font-size: 10px; color: #cbd5e1; margin-top: 2px; font-weight: 500;
+  }
+  .dash-type-split {
+    margin-top: 10px;
+    background: #f8fafc;
+    border-radius: 10px;
+    padding: 8px 10px;
+    display: flex; flex-direction: column; gap: 5px;
+  }
+  .dash-type-split-row {
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .dash-type-split-label {
+    font-size: 11px; color: #94a3b8; font-weight: 600;
+  }
+  .dash-type-split-val {
+    font-size: 12px; font-weight: 900;
+    font-variant-numeric: tabular-nums;
+  }
+  .dash-type-bar-track {
+    margin-top: 10px;
+    height: 5px; background: #f1f5f9;
+    border-radius: 999px; overflow: hidden;
+  }
+  .dash-type-bar-fill {
+    height: 5px; border-radius: 999px;
+    transition: width .7s cubic-bezier(.4,0,.2,1);
+  }
+
+  /* Grand total entrance animation */
   @keyframes countUp {
-    from { opacity: 0; transform: translateY(6px); }
+    from { opacity: 0; transform: translateY(8px); }
     to   { opacity: 1; transform: translateY(0); }
   }
   #dash_grandTotal { animation: countUp .5s ease-out forwards; }

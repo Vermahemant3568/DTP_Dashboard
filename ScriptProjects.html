@@ -48,7 +48,7 @@ function _renderProjectsTable(data) {
   if (!tbody) return;
   if (label) label.textContent = data.length + ' project' + (data.length !== 1 ? 's' : '') + ' shown';
   if (!data.length) {
-    tbody.innerHTML = '<tr><td colspan="14" class="py-16 text-center text-slate-400 text-sm">No projects found.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="13" class="py-16 text-center text-slate-400 text-sm">No projects found.</td></tr>';
     return;
   }
   tbody.innerHTML = data.map(function(r) {
@@ -69,8 +69,8 @@ function _renderProjectsTable(data) {
       '<td class="font-mono text-[11px] text-gray-400">' + r[0] + '</td>' +
       '<td><div class="font-semibold text-gray-900 text-sm">' + (r[1] || '\u2014') + '</div>' +
           '<div class="text-xs text-gray-500">' + (r[2] || '\u2014') + '</div></td>' +
-      '<td class="text-xs text-gray-600">' + _fmtLangs(r[4], r[5]) +
-          '<div class="text-gray-400">' + (r[6] || 0) + ' langs</div></td>' +
+      /* Languages column hidden — not needed currently */
+      /* '<td class="text-xs text-gray-600">' + _fmtLangs(r[4], r[5]) + '<div class="text-gray-400">' + (r[6] || 0) + ' langs</div></td>' + */
       '<td class="text-center text-sm text-gray-600">' + (srcPages || '\u2014') + '</td>' +
       '<td class="text-sm text-gray-600">' + (r[3] || '\u2014') + '</td>' +
       '<td><span class="badge ' + pc + '">' + (r[8] || 'Medium') + '</span></td>' +
@@ -256,22 +256,23 @@ function _patchProjectRow(id, r) {
            r[8] === 'High'   ? 'bg-orange-100 text-orange-700' :
            r[8] === 'Low'    ? 'bg-gray-100 text-gray-500' : 'bg-blue-100 text-blue-700';
   var cells = row.cells;
-  if (!cells || cells.length < 14) return;
+  if (!cells || cells.length < 13) return;
+  /* Languages column hidden — not needed currently (was cells[2]) */
+  /* Shift all cell indices down by 1 */
   cells[1].innerHTML   = '<div class="font-semibold text-gray-900 text-sm">' + (r[1]||'\u2014') + '</div><div class="text-xs text-gray-500">' + (r[2]||'\u2014') + '</div>';
-  cells[2].innerHTML   = _fmtLangs(r[4], r[5]) + '<div class="text-gray-400">' + (r[6]||0) + ' langs</div>';
-  cells[3].textContent = Number(r[7]) || '\u2014';
-  cells[4].textContent = r[3] || '\u2014';
-  cells[5].innerHTML   = '<span class="badge ' + pc + '">' + (r[8]||'Medium') + '</span>';
-  cells[6].innerHTML   = '<span class="badge ' + sc + '">' + (r[9]||'Active') + '</span>';
-  cells[7].textContent = Number(r[14]) || 0;
-  cells[8].textContent = (Number(r[15]) || 0).toLocaleString();
+  cells[2].textContent = Number(r[7]) || '\u2014';
+  cells[3].textContent = r[3] || '\u2014';
+  cells[4].innerHTML   = '<span class="badge ' + pc + '">' + (r[8]||'Medium') + '</span>';
+  cells[5].innerHTML   = '<span class="badge ' + sc + '">' + (r[9]||'Active') + '</span>';
+  cells[6].textContent = Number(r[14]) || 0;
+  cells[7].textContent = (Number(r[15]) || 0).toLocaleString();
   var revCount = Number(r[16]) || 0;
-  cells[9].innerHTML   = revCount > 0
+  cells[8].innerHTML   = revCount > 0
     ? '<span class="inline-flex items-center bg-amber-100 text-amber-700 text-xs font-semibold px-2 py-0.5 rounded-full">R' + revCount + '</span>'
     : '<span class="text-gray-300 text-xs">\u2014</span>';
-  cells[10].textContent = Number(r[17]) ? Number(r[17]).toLocaleString() : '\u2014';
-  cells[11].textContent = Number(r[18]) ? Number(r[18]).toLocaleString() : '\u2014';
-  cells[12].textContent = r[10] || '\u2014';
+  cells[9].textContent  = Number(r[17]) ? Number(r[17]).toLocaleString() : '\u2014';
+  cells[10].textContent = Number(r[18]) ? Number(r[18]).toLocaleString() : '\u2014';
+  cells[11].textContent = r[10] || '\u2014';
 }
 
 /* ================================================================

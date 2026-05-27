@@ -334,7 +334,8 @@ function getVendorPerformance(vendorName, filters) {
         currency: r[TC.CURRENCY] || cur,
         workStatus: r[TC.STATUS] || "Pending",
         paymentStatus: String(r[TC.PAYMENT_STATUS] || "Unpaid").trim(),
-        startDate: r[TC.START_DATE], completedDate: r[TC.COMPLETED_DATE],
+        startDate: r[TC.START_DATE],
+        completedDate: r[TC.COMPLETED_DATE] || r[TC.DELIVERY_DATE],
         date: r[TC.START_DATE] || r[TC.CREATED_AT],
         type: "task"
       };
@@ -350,7 +351,8 @@ function getVendorPerformance(vendorName, filters) {
         currency: r[RC.CURRENCY] || cur,
         workStatus: r[RC.STATUS] || "Pending",
         paymentStatus: String(r[RC.PAYMENT_STATUS] || "Unpaid").trim(),
-        startDate: r[RC.REV_DATE] || r[RC.CREATED_AT], completedDate: r[RC.COMPLETED_DATE],
+        startDate: r[RC.REV_DATE] || r[RC.CREATED_AT],
+        completedDate: r[RC.COMPLETED_DATE] || r[RC.DELIVERY_DATE],
         date: r[RC.REV_DATE] || r[RC.CREATED_AT],
         type: "revision"
       };
@@ -437,7 +439,8 @@ function getTeamMemberPerformance(memberName, filters) {
         currency: r[TC.CURRENCY] || cur,
         workStatus: r[TC.STATUS] || "Pending",
         paymentStatus: String(r[TC.PAYMENT_STATUS] || "Unpaid").trim(),
-        startDate: r[TC.START_DATE], completedDate: r[TC.COMPLETED_DATE],
+        startDate: r[TC.START_DATE],
+        completedDate: r[TC.COMPLETED_DATE] || r[TC.DELIVERY_DATE],
         date: r[TC.START_DATE] || r[TC.CREATED_AT],
         type: "task"
       };
@@ -453,7 +456,8 @@ function getTeamMemberPerformance(memberName, filters) {
         currency: r[RC.CURRENCY] || cur,
         workStatus: r[RC.STATUS] || "Pending",
         paymentStatus: String(r[RC.PAYMENT_STATUS] || "Unpaid").trim(),
-        startDate: r[RC.REV_DATE] || r[RC.CREATED_AT], completedDate: r[RC.COMPLETED_DATE],
+        startDate: r[RC.REV_DATE] || r[RC.CREATED_AT],
+        completedDate: r[RC.COMPLETED_DATE] || r[RC.DELIVERY_DATE],
         date: r[RC.REV_DATE] || r[RC.CREATED_AT],
         type: "revision"
       };
