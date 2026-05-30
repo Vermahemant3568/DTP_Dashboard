@@ -113,6 +113,49 @@ function _setVal(id, val) {
   if (el) el.value = val || "";
 }
 
+/* ── REVISION DETAIL MODAL ── */
+function openRevDetailModal(r) {
+  /* r is the full revision array row */
+  var sc  = getStatusClass(r[11] || "Pending");
+  var wc  = getWorkClass(r[8]   || "In-House");
+  var who = r[8] === "Vendor" ? (r[10] || r[9] || "—") : (r[9] || "—");
+  var paid = r[20] === "Paid";
+  var payC = paid ? "bg-emerald-100 text-emerald-700" : "bg-red-50 text-red-500";
+  var rate = Number(r[18]) > 0 ? (r[19] ? r[19] + " " : "") + Number(r[18]).toLocaleString() + " /pg" : "—";
+
+  document.getElementById("rdm_revId").innerText        = r[0] || "—";
+  document.getElementById("rdm_revIdFooter").innerText  = r[0] || "—";
+  document.getElementById("rdm_title").innerText        = (r[3] || r[1] || "—") + " · " + (r[4] || "") + (r[6] ? " · " + r[6] : "");
+  document.getElementById("rdm_statusBadge").innerText  = r[11] || "Pending";
+  document.getElementById("rdm_statusBadge").className  = "badge " + sc;
+  document.getElementById("rdm_typeBadge").innerText    = r[5]  || "—";
+  document.getElementById("rdm_workBadge").innerText    = r[8]  || "In-House";
+  document.getElementById("rdm_workBadge").className    = "badge " + wc;
+  document.getElementById("rdm_payBadge").innerText     = r[20] || "Unpaid";
+  document.getElementById("rdm_payBadge").className     = "badge " + payC;
+  document.getElementById("rdm_project").innerText      = (r[3] || r[1] || "—");
+  document.getElementById("rdm_taskId").innerText       = r[2]  || "—";
+  document.getElementById("rdm_language").innerText     = r[6]  || "—";
+  document.getElementById("rdm_who").innerText          = who;
+  document.getElementById("rdm_pages").innerText        = (Number(r[7]) || 0) + " pages";
+  document.getElementById("rdm_rate").innerText         = rate;
+  document.getElementById("rdm_revDate").innerText      = r[12] || "—";
+  document.getElementById("rdm_deliveryDate").innerText = r[13] || "—";
+  document.getElementById("rdm_notes").innerText        = (r[15] && r[15] !== "—" && r[15] !== "") ? r[15] : "No notes added for this revision.";
+
+  var editBtn = document.getElementById("rdm_editBtn");
+  if (editBtn) editBtn.onclick = function() { closeRevDetailModal(); editRevisionFull(r[0]); };
+
+  document.getElementById("revDetailModal").style.display = "flex";
+}
+function closeRevDetailModal() {
+  document.getElementById("revDetailModal").style.display = "none";
+}
+document.addEventListener("click", function(e) {
+  var modal = document.getElementById("revDetailModal");
+  if (modal && e.target === modal) closeRevDetailModal();
+});
+
 /* ── PROGRESS BAR ── */
 function buildBar(label, val, max, colorClass, subLabel) {
   var pct = max > 0 ? Math.round((val / max) * 100) : 0;

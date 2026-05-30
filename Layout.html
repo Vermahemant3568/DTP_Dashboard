@@ -97,6 +97,97 @@
   <!-- TOAST CONTAINER -->
   <div id="toast-container" class="fixed bottom-5 right-5 z-[3000] flex flex-col gap-3 pointer-events-none"></div>
 
+  <!-- REVISION DETAIL MODAL -->
+  <div id="revDetailModal" style="display:none"
+    class="fixed inset-0 z-[7000] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4 py-6">
+    <div class="w-full max-w-lg bg-white rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+
+      <!-- Header -->
+      <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100 shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="h-9 w-9 rounded-xl bg-purple-100 flex items-center justify-center text-lg shrink-0">🔁</div>
+          <div>
+            <p id="rdm_revId" class="font-mono text-[10px] text-purple-400">—</p>
+            <h3 id="rdm_title" class="text-base font-bold text-gray-800 leading-tight">Revision Details</h3>
+          </div>
+        </div>
+        <button onclick="closeRevDetailModal()"
+          class="h-8 w-8 flex items-center justify-center rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors text-lg leading-none">✕</button>
+      </div>
+
+      <!-- Scrollable body -->
+      <div class="overflow-y-auto p-5 space-y-4">
+
+        <!-- Badges row -->
+        <div class="flex flex-wrap gap-2">
+          <span id="rdm_statusBadge" class="badge">—</span>
+          <span id="rdm_typeBadge"   class="badge bg-violet-100 text-violet-700">—</span>
+          <span id="rdm_workBadge"   class="badge">—</span>
+          <span id="rdm_payBadge"    class="badge">—</span>
+        </div>
+
+        <!-- Info grid -->
+        <div class="grid grid-cols-2 gap-3">
+          <div class="bg-gray-50 rounded-xl p-3">
+            <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Project</p>
+            <p id="rdm_project" class="text-sm font-semibold text-gray-800 mt-0.5 break-words">—</p>
+          </div>
+          <div class="bg-gray-50 rounded-xl p-3">
+            <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Task ID</p>
+            <p id="rdm_taskId" class="text-sm font-mono text-gray-600 mt-0.5">—</p>
+          </div>
+          <div class="bg-gray-50 rounded-xl p-3">
+            <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Language</p>
+            <p id="rdm_language" class="text-sm font-semibold text-purple-700 mt-0.5">—</p>
+          </div>
+          <div class="bg-gray-50 rounded-xl p-3">
+            <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Assigned / Vendor</p>
+            <p id="rdm_who" class="text-sm font-semibold text-gray-800 mt-0.5">—</p>
+          </div>
+          <div class="bg-gray-50 rounded-xl p-3">
+            <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Pages</p>
+            <p id="rdm_pages" class="text-sm font-bold text-purple-600 mt-0.5">—</p>
+          </div>
+          <div class="bg-gray-50 rounded-xl p-3">
+            <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Rate / Page</p>
+            <p id="rdm_rate" class="text-sm font-semibold text-emerald-700 mt-0.5">—</p>
+          </div>
+          <div class="bg-gray-50 rounded-xl p-3">
+            <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Revision Date</p>
+            <p id="rdm_revDate" class="text-sm text-gray-600 mt-0.5">—</p>
+          </div>
+          <div class="bg-gray-50 rounded-xl p-3">
+            <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Delivery Date</p>
+            <p id="rdm_deliveryDate" class="text-sm text-gray-600 mt-0.5">—</p>
+          </div>
+        </div>
+
+        <!-- Notes — full width, full text -->
+        <div class="rounded-xl border border-purple-100 bg-purple-50 p-4">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-purple-400 mb-2">📝 Revision Notes</p>
+          <p id="rdm_notes" class="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed min-h-[48px]">—</p>
+        </div>
+
+      </div>
+
+      <!-- Footer -->
+      <div class="flex justify-between items-center gap-3 border-t border-gray-100 px-5 py-3.5 shrink-0">
+        <p id="rdm_revIdFooter" class="font-mono text-[10px] text-gray-300">—</p>
+        <div class="flex gap-2">
+          <button id="rdm_editBtn"
+            class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-xl hover:bg-amber-100 transition-colors">
+            ✏️ Edit
+          </button>
+          <button onclick="closeRevDetailModal()"
+            class="px-4 py-2 text-sm font-semibold text-gray-500 hover:bg-gray-100 rounded-xl transition-colors">
+            Close
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
   <!-- VENDOR MODAL -->
   <div id="vendorModal" style="display:none"
     class="fixed inset-0 z-[6000] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">

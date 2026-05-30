@@ -174,6 +174,9 @@ function _renderVpRevisions(revs) {
   var total = revs.reduce(function(s, r) { return s + (Number(r[7]) || 0); }, 0);
   if (totalEl) totalEl.innerText = total.toLocaleString() + " pages";
 
+  /* Cache for modal lookup */
+  window._vpRevCache = revs;
+
   if (!revs.length) {
     tbody.innerHTML = '<tr><td colspan="10" class="py-10 text-center text-slate-400 text-sm">' +
       '<div class="flex flex-col items-center gap-2">' +
@@ -186,10 +189,16 @@ function _renderVpRevisions(revs) {
     return;
   }
 
-  tbody.innerHTML = revs.map(function(r) {
+  tbody.innerHTML = revs.map(function(r, idx) {
     var sc  = getStatusClass(r[11] || "Pending");
     var wc  = getWorkClass(r[8]   || "In-House");
     var who = r[8] === "Vendor" ? (r[10] || r[9] || "—") : (r[9] || "—");
+    var noteCell = r[15]
+      ? '<button onclick="openRevDetailModal(window._vpRevCache[' + idx + '])" class="group flex items-start gap-1.5 text-left w-full hover:opacity-80 transition-opacity" title="Click to view full notes">'
+          + '<span class="mt-0.5 text-purple-400 shrink-0 text-xs">📝</span>'
+          + '<span class="text-xs text-gray-600 line-clamp-2 leading-relaxed group-hover:text-purple-700 transition-colors">' + r[15] + '</span>'
+        + '</button>'
+      : '<span class="text-gray-300 text-xs">—</span>';
     return '<tr>' +
       '<td>' +
         '<div class="text-sm font-semibold text-gray-700">' + (r[4] || "—") + '</div>' +
@@ -202,8 +211,13 @@ function _renderVpRevisions(revs) {
       '<td class="text-center">' + _payBadge(r[20]) + '</td>' +
       '<td class="text-center font-bold text-purple-600 text-sm">' + (Number(r[7]) || 0).toLocaleString() + '</td>' +
       '<td class="text-xs text-gray-500">' + (r[12] || "—") + '</td>' +
-      '<td class="text-sm text-gray-500 max-w-[180px] truncate" title="' + (r[15]||'') + '">' + (r[15] || '—') + '</td>' +
-      '<td class="text-right">' + btnDelete(r[0], "_vpDeleteRevision") + '</td>' +
+      '<td class="max-w-[160px]">' + noteCell + '</td>' +
+      '<td class="text-right">' +
+        '<div class="flex justify-end gap-1">' +
+          '<button onclick="openRevDetailModal(window._vpRevCache[' + idx + '])" title="View Details" class="px-2 py-1 text-xs font-semibold text-purple-600 hover:bg-purple-50 rounded-lg transition-all">View</button>' +
+          btnDelete(r[0], "_vpDeleteRevision") +
+        '</div>' +
+      '</td>' +
     '</tr>';
   }).join("");
 }

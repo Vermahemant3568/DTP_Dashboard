@@ -41,14 +41,20 @@ function _renderRevisionsTable(data) {
     var taskCell = r[2]
       ? '<span class="font-mono text-[10px] text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">' + r[2] + '</span>'
       : '<span class="text-slate-300 text-xs">—</span>';
+    var noteCell = r[15]
+      ? '<button onclick="openRevDetailModal(ALL_REVISIONS.find(function(x){return x[0]===\'' + r[0] + '\';}))" class="group flex items-start gap-1.5 text-left w-full hover:opacity-80 transition-opacity" title="Click to view full notes">'
+          + '<span class="mt-0.5 text-purple-400 shrink-0 text-xs">📝</span>'
+          + '<span class="text-xs text-gray-600 line-clamp-2 leading-relaxed group-hover:text-purple-700 transition-colors">' + r[15] + '</span>'
+        + '</button>'
+      : '<span class="text-gray-300 text-xs">—</span>';
     return '<tr data-id="' + r[0] + '">' +
       '<td class="text-center font-mono text-[11px] text-gray-400">' + r[0] + '</td>' +
-      '<td class="text-center"><div class="font-semibold text-gray-900 text-sm">' + (r[3]||r[1]||"—") + '</div>' +
+      '<td class="text-center"><div class="font-semibold text-gray-900 text-sm">' + (r[3]||r[1]||"\u2014") + '</div>' +
           '<div class="font-mono text-[10px] text-gray-400">' + r[1] + '</div></td>' +
       '<td class="text-center">' + taskCell + '</td>' +
-      '<td class="text-center"><div class="text-sm font-semibold text-gray-700">' + (r[4]||"—") + '</div>' +
-          '<div class="text-xs text-gray-400">' + (r[5]||"—") + '</div></td>' +
-      '<td class="text-center"><span class="badge bg-purple-100 text-purple-700">' + (r[6]||"—") + '</span></td>' +
+      '<td class="text-center"><div class="text-sm font-semibold text-gray-700">' + (r[4]||"\u2014") + '</div>' +
+          '<div class="text-xs text-gray-400">' + (r[5]||"\u2014") + '</div></td>' +
+      '<td class="text-center"><span class="badge bg-purple-100 text-purple-700">' + (r[6]||"\u2014") + '</span></td>' +
       '<td class="text-center text-sm text-gray-600">' + who + '</td>' +
       '<td class="text-center"><span class="badge ' + wc + '">' + (r[8]||"In-House") + '</span></td>' +
       '<td class="text-center"><span class="badge ' + sc + '">' + (r[11]||"Pending") + '</span></td>' +
@@ -56,11 +62,12 @@ function _renderRevisionsTable(data) {
       '<td class="text-center">' + (r[20] === "Paid"
         ? '<span class="badge bg-green-100 text-green-700">Paid</span>'
         : '<span class="badge bg-red-50 text-red-500">Unpaid</span>') + '</td>' +
-      '<td class="text-center text-sm font-semibold text-emerald-700">' + (Number(r[18]) > 0 ? Number(r[18]).toLocaleString() : '—') + '</td>' +
-      '<td class="text-center text-xs text-gray-500">' + (r[12]||"—") + '</td>' +
-      '<td class="text-sm text-gray-500 max-w-[180px] truncate" title="' + (r[15]||'') + '">' + (r[15] || '—') + '</td>' +
+      '<td class="text-center text-sm font-semibold text-emerald-700">' + (Number(r[18]) > 0 ? Number(r[18]).toLocaleString() : '\u2014') + '</td>' +
+      '<td class="text-center text-xs text-gray-500">' + (r[12]||"\u2014") + '</td>' +
+      '<td class="max-w-[160px]">' + noteCell + '</td>' +
       '<td class="text-center">' +
         '<div class="flex justify-center gap-1">' +
+          '<button onclick="openRevDetailModal(ALL_REVISIONS.find(function(x){return x[0]===\'' + r[0] + '\';}))" title="View Details" class="px-2 py-1 text-xs font-semibold text-purple-600 hover:bg-purple-50 rounded-lg transition-all">View</button>' +
           btnStatus(r[0], "openRevisionQuickEdit") +
           btnEdit(r[0],   "editRevisionFull") +
           btnDelete(r[0], "deleteRevisionById") +
@@ -234,7 +241,13 @@ function _patchRevisionRow(id, r) {
     : '<span class="badge bg-red-50 text-red-500">Unpaid</span>';
   cells[10].textContent = Number(r[18]) > 0 ? Number(r[18]).toLocaleString() : '—';
   cells[11].textContent = r[12] || "—";
-  cells[12].textContent = r[15] || "—";
+  var noteCell = r[15]
+    ? '<button onclick="openRevDetailModal(ALL_REVISIONS.find(function(x){return x[0]===\'' + id + '\';}))" class="group flex items-start gap-1.5 text-left w-full hover:opacity-80 transition-opacity">'
+        + '<span class="mt-0.5 text-purple-400 shrink-0 text-xs">📝</span>'
+        + '<span class="text-xs text-gray-600 line-clamp-2 leading-relaxed group-hover:text-purple-700 transition-colors">' + r[15] + '</span>'
+      + '</button>'
+    : '<span class="text-gray-300 text-xs">—</span>';
+  cells[12].innerHTML = noteCell;
 }
 
 /* ================================================================
