@@ -60,11 +60,19 @@
         <option>In-House</option>
         <option>Vendor</option>
       </select>
+      <button onclick="_resetRevFilters()"
+        class="shrink-0 px-3 py-2 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition-all">
+        ↺ Reset
+      </button>
     </div>
   </div>
 
   <!-- TABLE -->
   <div class="section-card overflow-hidden">
+    <div class="flex items-center justify-between px-5 py-3 border-b border-gray-50">
+      <p id="rev_countLabel" class="text-xs text-gray-400 font-semibold">Loading…</p>
+      <span class="text-[10px] text-slate-300 font-medium uppercase tracking-widest">Revision Registry</span>
+    </div>
     <div class="overflow-x-auto">
       <table class="data-table">
         <thead>
@@ -90,6 +98,23 @@
         </tbody>
       </table>
     </div>
+
+    <!-- PAGINATION -->
+    <div id="rev_pagination" class="flex items-center justify-between gap-3 px-5 py-3.5 border-t border-gray-50">
+      <p id="rev_pageInfo" class="text-xs text-gray-400 font-semibold">—</p>
+      <div class="flex items-center gap-1.5">
+        <button id="rev_prevBtn" onclick="_revChangePage(-1)"
+          class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+          ← Prev
+        </button>
+        <div id="rev_pageNumbers" class="flex items-center gap-1"></div>
+        <button id="rev_nextBtn" onclick="_revChangePage(1)"
+          class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+          Next →
+        </button>
+      </div>
+    </div>
+
   </div>
 
 </div>

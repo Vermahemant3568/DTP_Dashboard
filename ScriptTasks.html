@@ -2,7 +2,10 @@
 /* ================================================================
    ScriptTasks.html
 ================================================================ */
-var ALL_TASKS = [];
+var ALL_TASKS      = [];
+var _taskFiltered  = [];   /* current filtered set */
+var _taskPage      = 1;
+var _taskPageSize  = 10;
 
 /* ── state for the task form project link ── */
 var _taskProjectLinked  = false;  // true = existing project confirmed
@@ -16,7 +19,9 @@ function loadTasks() {
     .withSuccessHandler(function(data){
       ALL_TASKS = data || [];
       _renderTaskStats(ALL_TASKS);
-      _renderTasksTable(ALL_TASKS);
+      _taskFiltered = ALL_TASKS;
+      _taskPage = 1;
+      _renderTasksPage();
       hideLoader();
     })
     .getTasks();
@@ -32,9 +37,62 @@ function _renderTaskStats(data) {
   _set("task_stat_done",   done);
 }
 
-function _renderTasksTable(data) {
+/* Render only the current page slice */
+function _renderTasksPage() {
+  var total      = _taskFiltered.length;
+  var totalPages = Math.max(1, Math.ceil(total / _taskPageSize));
+  if (_taskPage > totalPages) _taskPage = totalPages;
+  var start = (_taskPage - 1) * _taskPageSize;
+  var end   = Math.min(start + _taskPageSize, total);
+  _renderTasksTable(_taskFiltered.slice(start, end), total, start, end);
+  _renderTaskPagination(totalPages, total, start, end);
+}
+
+function _renderTaskPagination(totalPages, total, start, end) {
+  var infoEl  = document.getElementById('task_pageInfo');
+  var prevBtn = document.getElementById('task_prevBtn');
+  var nextBtn = document.getElementById('task_nextBtn');
+  var numsEl  = document.getElementById('task_pageNumbers');
+  var pagEl   = document.getElementById('task_pagination');
+
+  if (infoEl) infoEl.textContent = total === 0
+    ? 'No tasks found'
+    : 'Showing ' + (start + 1) + '\u2013' + end + ' of ' + total + ' task' + (total !== 1 ? 's' : '');
+
+  if (prevBtn) prevBtn.disabled = _taskPage <= 1;
+  if (nextBtn) nextBtn.disabled = _taskPage >= totalPages;
+
+  if (numsEl) {
+    var pages = [];
+    for (var i = Math.max(1, _taskPage - 2); i <= Math.min(totalPages, _taskPage + 2); i++) pages.push(i);
+    numsEl.innerHTML = pages.map(function(p) {
+      var cls = p === _taskPage
+        ? 'bg-blue-600 text-white font-bold shadow-sm'
+        : 'bg-gray-100 text-gray-500 hover:bg-gray-200';
+      return '<button onclick="_taskGoToPage(' + p + ')" class="h-7 w-7 flex items-center justify-center text-xs rounded-lg transition-all ' + cls + '">' + p + '</button>';
+    }).join('');
+  }
+
+  if (pagEl) pagEl.style.display = totalPages <= 1 && total <= _taskPageSize ? 'none' : 'flex';
+}
+
+function _taskChangePage(delta) {
+  var totalPages = Math.max(1, Math.ceil(_taskFiltered.length / _taskPageSize));
+  _taskPage = Math.max(1, Math.min(_taskPage + delta, totalPages));
+  _renderTasksPage();
+}
+
+function _taskGoToPage(p) {
+  _taskPage = p;
+  _renderTasksPage();
+}
+
+function _renderTasksTable(data, total, start, end) {
   var tbody = document.getElementById("tasksTable");
+  var label = document.getElementById("task_countLabel");
   if (!tbody) return;
+  var shown = (total !== undefined) ? total : data.length;
+  if (label) label.textContent = shown + ' task' + (shown !== 1 ? 's' : '') + ' total';
   if (!data.length) {
     tbody.innerHTML = '<tr><td colspan="11" class="py-16 text-center text-slate-400 text-sm">No tasks found.</td></tr>';
     return;
@@ -72,14 +130,25 @@ function filterTasks() {
   var st = _val("task_statusFilter") ||"";
   var tt = _val("task_typeFilter")   ||"";
   var wt = _val("task_workFilter")   ||"";
-  var filtered = ALL_TASKS.filter(function(r){
+  _taskFiltered = ALL_TASKS.filter(function(r){
     var mq = !q  || [r[0],r[1],r[2],r[3],r[8]].some(function(v){ return String(v).toLowerCase().includes(q); });
     var ms = !st || r[12]===st;
     var mt = !tt || r[4] ===tt;
     var mw = !wt || r[5] ===wt;
     return mq&&ms&&mt&&mw;
   });
-  _renderTasksTable(filtered);
+  _taskPage = 1;
+  _renderTasksPage();
+}
+
+function _resetTaskFilters() {
+  var s  = document.getElementById('task_search');       if (s)  s.value  = '';
+  var st = document.getElementById('task_statusFilter'); if (st) st.value = '';
+  var tt = document.getElementById('task_typeFilter');   if (tt) tt.value = '';
+  var wt = document.getElementById('task_workFilter');   if (wt) wt.value = '';
+  _taskFiltered = ALL_TASKS;
+  _taskPage = 1;
+  _renderTasksPage();
 }
 
 function openTaskQuickEdit(id) {
@@ -518,7 +587,6 @@ var _taskSubmitting = false;
           _taskSubmitting=false;
           hideLoader();
           showToast("Task updated!","success");
-          /* Patch in-memory cache and re-render only the changed row + stats */
           if (res && res.updated) {
             var idx = ALL_TASKS.findIndex(function(r){ return r[0]===editId; });
             if (idx !== -1) {
@@ -527,7 +595,17 @@ var _taskSubmitting = false;
               _renderTaskStats(ALL_TASKS);
             }
           }
-          loadPage("tasks");
+          /* Redirect to the project view the task belongs to */
+          var projId = _val("task_projectId");
+          if (projId) {
+            showLoader("Loading project...");
+            google.script.run
+              .withFailureHandler(function(){ loadPage("tasks"); })
+              .withSuccessHandler(function(data){ data ? loadPage("viewProject", data) : loadPage("tasks"); })
+              .getProjectSummary(projId);
+          } else {
+            loadPage("tasks");
+          }
         })
         .updateTask(editId, diff);
       return;
@@ -544,7 +622,17 @@ var _taskSubmitting = false;
       showLoader("Saving task...");
       google.script.run
         .withFailureHandler(function(er){ _taskSubmitting=false; hideLoader(); btn.disabled=false; if(lblEl) lblEl.innerText="Save Task"; showToast("Error: "+er.message,"error"); })
-        .withSuccessHandler(function(){ _taskSubmitting=false; hideLoader(); showToast("Task saved!","success"); loadPage("tasks"); })
+        .withSuccessHandler(function(){
+          _taskSubmitting=false;
+          hideLoader();
+          showToast("Task saved!","success");
+          /* Redirect to the project view the task was added to */
+          showLoader("Loading project...");
+          google.script.run
+            .withFailureHandler(function(){ loadPage("tasks"); })
+            .withSuccessHandler(function(data){ data ? loadPage("viewProject", data) : loadPage("tasks"); })
+            .getProjectSummary(projId);
+        })
         .addTask(taskData);
       return;
     }
@@ -580,7 +668,12 @@ var _taskSubmitting = false;
             ? "Linked to existing project (" + res.projectId + ") & task saved!"
             : "New project created (" + res.projectId + ") & task saved!";
           showToast(msg, "success");
-          loadPage("tasks");
+          /* Redirect to the project view that was just created/linked */
+          showLoader("Loading project...");
+          google.script.run
+            .withFailureHandler(function(){ loadPage("tasks"); })
+            .withSuccessHandler(function(data){ data ? loadPage("viewProject", data) : loadPage("tasks"); })
+            .getProjectSummary(res.projectId);
         })
         .addTaskWithProject(projectData, taskData);
       return;

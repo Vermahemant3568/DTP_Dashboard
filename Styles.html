@@ -91,7 +91,12 @@
   }
 
   /* ── SIDEBAR + MAIN LAYOUT ── */
-  #mainContent { transition: margin-left 0.3s ease; }
+  #mainContent {
+    transition: margin-left 0.3s ease;
+    margin-left: 256px;   /* matches sidebar w-64 */
+  }
+  /* When sidebar is collapsed (toggled), JS adds .sidebar-collapsed to body */
+  body.sidebar-collapsed #mainContent { margin-left: 0; }
 
   /* ── PAGE FADE IN ── */
   @keyframes fadeUp {

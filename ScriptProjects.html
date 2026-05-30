@@ -2,7 +2,10 @@
 /* ================================================================
    ScriptProjects.html
 ================================================================ */
-var ALL_PROJECTS = [];
+var ALL_PROJECTS    = [];
+var _projFiltered   = [];   /* current filtered set */
+var _projPage       = 1;
+var _projPageSize   = 10;
 
 function loadProjects() {
   showLoader("Loading projects...");
@@ -11,7 +14,10 @@ function loadProjects() {
     .withSuccessHandler(function(data) {
       ALL_PROJECTS = data || [];
       _renderProjStats(ALL_PROJECTS);
-      _renderProjectsTable(ALL_PROJECTS);
+      _populateCoordinatorFilter(ALL_PROJECTS);
+      _projFiltered = ALL_PROJECTS;
+      _projPage = 1;
+      _renderProjectsPage();
       hideLoader();
     })
     .getProjectsWithTaskCount();
@@ -33,6 +39,81 @@ function _renderProjStats(data) {
   _set('pstat_revpages',  revPg.toLocaleString());
 }
 
+/* Populate coordinator dropdown from unique coordinator names in loaded data */
+function _populateCoordinatorFilter(data) {
+  var sel = document.getElementById('proj_coordinatorFilter');
+  if (!sel) return;
+  var names = [];
+  data.forEach(function(r) {
+    var n = (r[3] || '').trim();
+    if (n && names.indexOf(n) === -1) names.push(n);
+  });
+  names.sort();
+  var current = sel.value;
+  sel.innerHTML = '<option value="">All Coordinators</option>' +
+    names.map(function(n) {
+      return '<option value="' + n + '"' + (n === current ? ' selected' : '') + '>' + n + '</option>';
+    }).join('');
+}
+
+/* Render only the current page slice */
+function _renderProjectsPage() {
+  var total     = _projFiltered.length;
+  var totalPages = Math.max(1, Math.ceil(total / _projPageSize));
+  if (_projPage > totalPages) _projPage = totalPages;
+  var start  = (_projPage - 1) * _projPageSize;
+  var end    = Math.min(start + _projPageSize, total);
+  var slice  = _projFiltered.slice(start, end);
+
+  _renderProjectsTable(slice, total, start, end);
+  _renderProjPagination(totalPages, total, start, end);
+}
+
+function _renderProjPagination(totalPages, total, start, end) {
+  var infoEl    = document.getElementById('proj_pageInfo');
+  var prevBtn   = document.getElementById('proj_prevBtn');
+  var nextBtn   = document.getElementById('proj_nextBtn');
+  var numsEl    = document.getElementById('proj_pageNumbers');
+  var paginEl   = document.getElementById('proj_pagination');
+
+  if (infoEl) infoEl.textContent = total === 0
+    ? 'No projects found'
+    : 'Showing ' + (start + 1) + '\u2013' + end + ' of ' + total + ' project' + (total !== 1 ? 's' : '');
+
+  if (prevBtn) prevBtn.disabled = _projPage <= 1;
+  if (nextBtn) nextBtn.disabled = _projPage >= totalPages;
+
+  /* Page number buttons — show max 5 around current page */
+  if (numsEl) {
+    var pages = [];
+    var range = 2;
+    for (var i = Math.max(1, _projPage - range); i <= Math.min(totalPages, _projPage + range); i++) {
+      pages.push(i);
+    }
+    numsEl.innerHTML = pages.map(function(p) {
+      var active = p === _projPage
+        ? 'bg-sky-600 text-white font-bold shadow-sm'
+        : 'bg-gray-100 text-gray-500 hover:bg-gray-200';
+      return '<button onclick="_projGoToPage(' + p + ')" class="h-7 w-7 flex items-center justify-center text-xs rounded-lg transition-all ' + active + '">' + p + '</button>';
+    }).join('');
+  }
+
+  /* Hide pagination bar entirely when only 1 page */
+  if (paginEl) paginEl.style.display = totalPages <= 1 && total <= _projPageSize ? 'none' : 'flex';
+}
+
+function _projChangePage(delta) {
+  var total      = _projFiltered.length;
+  var totalPages = Math.max(1, Math.ceil(total / _projPageSize));
+  _projPage = Math.max(1, Math.min(_projPage + delta, totalPages));
+  _renderProjectsPage();
+}
+
+function _projGoToPage(p) {
+  _projPage = p;
+  _renderProjectsPage();
+}
+
 function _fmtLangs(src, targets) {
   var srcStr = (src || "").trim();
   var parts  = (targets || "").split(",").map(function(s){ return s.trim(); }).filter(Boolean);
@@ -42,11 +123,12 @@ function _fmtLangs(src, targets) {
   return (srcStr || "—") + arrow + (shown || (srcStr ? "" : "—")) + more;
 }
 
-function _renderProjectsTable(data) {
+function _renderProjectsTable(data, total, start, end) {
   var tbody = document.getElementById("projectsTable");
   var label = document.getElementById("proj_countLabel");
   if (!tbody) return;
-  if (label) label.textContent = data.length + ' project' + (data.length !== 1 ? 's' : '') + ' shown';
+  var shown = (total !== undefined) ? total : data.length;
+  if (label) label.textContent = shown + ' project' + (shown !== 1 ? 's' : '') + ' total';
   if (!data.length) {
     tbody.innerHTML = '<tr><td colspan="13" class="py-16 text-center text-slate-400 text-sm">No projects found.</td></tr>';
     return;
@@ -93,24 +175,26 @@ function _renderProjectsTable(data) {
 }
 
 function _resetProjFilters() {
-  var s = document.getElementById('proj_search');        if (s) s.value = '';
-  var st = document.getElementById('proj_statusFilter'); if (st) st.value = '';
-  var pr = document.getElementById('proj_priorityFilter'); if (pr) pr.value = '';
-  _renderProjectsTable(ALL_PROJECTS);
+  var s  = document.getElementById('proj_search');             if (s)  s.value  = '';
+  var st = document.getElementById('proj_statusFilter');       if (st) st.value = '';
+  var co = document.getElementById('proj_coordinatorFilter');  if (co) co.value = '';
+  _projFiltered = ALL_PROJECTS;
+  _projPage = 1;
+  _renderProjectsPage();
 }
 
 function filterProjects() {
-  var q  = (_val("proj_search")        || "").toLowerCase();
-  var st = _val("proj_statusFilter")   || "";
-  var pr = _val("proj_priorityFilter") || "";
-  /* reset: clear all filters if called with no active filter values */
-  var filtered = ALL_PROJECTS.filter(function(r) {
+  var q  = (_val("proj_search")             || "").toLowerCase();
+  var st = _val("proj_statusFilter")        || "";
+  var co = _val("proj_coordinatorFilter")   || "";
+  _projFiltered = ALL_PROJECTS.filter(function(r) {
     var mq = !q  || [r[0],r[1],r[2]].some(function(v){ return String(v).toLowerCase().includes(q); });
     var ms = !st || r[9] === st;
-    var mp = !pr || r[8] === pr;
-    return mq && ms && mp;
+    var mc = !co || (r[3] || '').trim() === co;
+    return mq && ms && mc;
   });
-  _renderProjectsTable(filtered);
+  _projPage = 1;
+  _renderProjectsPage();
 }
 
 function viewProjectById(id) {
@@ -198,11 +282,11 @@ var _projOriginal = {};
           if (res && res.updated) {
             var idx = ALL_PROJECTS.findIndex(function(r){ return r[0]===editId; });
             if (idx !== -1) {
-              /* Preserve appended task/revision stats columns */
               var saved = ALL_PROJECTS[idx].slice(14, 19);
               ALL_PROJECTS[idx] = res.updated;
               for (var i = 0; i < saved.length; i++) ALL_PROJECTS[idx][14 + i] = saved[i];
-              _patchProjectRow(editId, ALL_PROJECTS[idx]);
+              /* Re-apply current filter so the patched row is reflected */
+              filterProjects();
             }
           }
           loadPage("projects");

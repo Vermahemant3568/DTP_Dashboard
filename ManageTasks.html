@@ -93,7 +93,7 @@
         <option>In-House</option>
         <option>Vendor</option>
       </select>
-      <button onclick="document.getElementById('task_search').value='';document.getElementById('task_statusFilter').value='';document.getElementById('task_typeFilter').value='';document.getElementById('task_workFilter').value='';filterTasks();"
+      <button onclick="_resetTaskFilters()"
         class="shrink-0 px-3 py-2 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition-all">
         ↺ Reset
       </button>
@@ -103,7 +103,7 @@
   <!-- ══ TABLE ══ -->
   <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
     <div class="flex items-center justify-between px-5 py-3 border-b border-gray-50">
-      <p class="text-xs text-gray-400 font-semibold">Work entries</p>
+      <p id="task_countLabel" class="text-xs text-gray-400 font-semibold">Loading…</p>
       <span class="text-[10px] text-slate-300 font-medium uppercase tracking-widest">Task Registry</span>
     </div>
     <div class="overflow-x-auto">
@@ -128,6 +128,23 @@
         </tbody>
       </table>
     </div>
+
+    <!-- ══ PAGINATION ══ -->
+    <div id="task_pagination" class="flex items-center justify-between gap-3 px-5 py-3.5 border-t border-gray-50">
+      <p id="task_pageInfo" class="text-xs text-gray-400 font-semibold">—</p>
+      <div class="flex items-center gap-1.5">
+        <button id="task_prevBtn" onclick="_taskChangePage(-1)"
+          class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+          ← Prev
+        </button>
+        <div id="task_pageNumbers" class="flex items-center gap-1"></div>
+        <button id="task_nextBtn" onclick="_taskChangePage(1)"
+          class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+          Next →
+        </button>
+      </div>
+    </div>
+
   </div>
 
 </div>

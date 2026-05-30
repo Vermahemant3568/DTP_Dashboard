@@ -2,7 +2,10 @@
 /* ================================================================
    ScriptRevisions.html
 ================================================================ */
-var ALL_REVISIONS = [];
+var ALL_REVISIONS   = [];
+var _revFiltered    = [];   /* current filtered set */
+var _revPage        = 1;
+var _revPageSize    = 10;
 
 function loadRevisions() {
   showLoader("Loading revisions...");
@@ -11,7 +14,9 @@ function loadRevisions() {
     .withSuccessHandler(function(data){
       ALL_REVISIONS = data||[];
       _renderRevStats(ALL_REVISIONS);
-      _renderRevisionsTable(ALL_REVISIONS);
+      _revFiltered = ALL_REVISIONS;
+      _revPage = 1;
+      _renderRevisionsPage();
       hideLoader();
     })
     .getRevisions();
@@ -27,9 +32,62 @@ function _renderRevStats(data) {
   _set("rev_stat_done",   done);
 }
 
-function _renderRevisionsTable(data) {
+/* Render only the current page slice */
+function _renderRevisionsPage() {
+  var total      = _revFiltered.length;
+  var totalPages = Math.max(1, Math.ceil(total / _revPageSize));
+  if (_revPage > totalPages) _revPage = totalPages;
+  var start = (_revPage - 1) * _revPageSize;
+  var end   = Math.min(start + _revPageSize, total);
+  _renderRevisionsTable(_revFiltered.slice(start, end), total, start, end);
+  _renderRevPagination(totalPages, total, start, end);
+}
+
+function _renderRevPagination(totalPages, total, start, end) {
+  var infoEl  = document.getElementById('rev_pageInfo');
+  var prevBtn = document.getElementById('rev_prevBtn');
+  var nextBtn = document.getElementById('rev_nextBtn');
+  var numsEl  = document.getElementById('rev_pageNumbers');
+  var pagEl   = document.getElementById('rev_pagination');
+
+  if (infoEl) infoEl.textContent = total === 0
+    ? 'No revisions found'
+    : 'Showing ' + (start + 1) + '\u2013' + end + ' of ' + total + ' revision' + (total !== 1 ? 's' : '');
+
+  if (prevBtn) prevBtn.disabled = _revPage <= 1;
+  if (nextBtn) nextBtn.disabled = _revPage >= totalPages;
+
+  if (numsEl) {
+    var pages = [];
+    for (var i = Math.max(1, _revPage - 2); i <= Math.min(totalPages, _revPage + 2); i++) pages.push(i);
+    numsEl.innerHTML = pages.map(function(p) {
+      var cls = p === _revPage
+        ? 'bg-purple-600 text-white font-bold shadow-sm'
+        : 'bg-gray-100 text-gray-500 hover:bg-gray-200';
+      return '<button onclick="_revGoToPage(' + p + ')" class="h-7 w-7 flex items-center justify-center text-xs rounded-lg transition-all ' + cls + '">' + p + '</button>';
+    }).join('');
+  }
+
+  if (pagEl) pagEl.style.display = totalPages <= 1 && total <= _revPageSize ? 'none' : 'flex';
+}
+
+function _revChangePage(delta) {
+  var totalPages = Math.max(1, Math.ceil(_revFiltered.length / _revPageSize));
+  _revPage = Math.max(1, Math.min(_revPage + delta, totalPages));
+  _renderRevisionsPage();
+}
+
+function _revGoToPage(p) {
+  _revPage = p;
+  _renderRevisionsPage();
+}
+
+function _renderRevisionsTable(data, total, start, end) {
   var tbody = document.getElementById("revisionsTable");
+  var label = document.getElementById("rev_countLabel");
   if (!tbody) return;
+  var shown = (total !== undefined) ? total : data.length;
+  if (label) label.textContent = shown + ' revision' + (shown !== 1 ? 's' : '') + ' total';
   if (!data.length) {
     tbody.innerHTML = '<tr><td colspan="14" class="py-16 text-center text-slate-400 text-sm">No revisions found.</td></tr>';
     return;
@@ -82,14 +140,25 @@ function filterRevisions() {
   var st = _val("rev_statusFilter")||"";
   var rt = _val("rev_typeFilter")||"";
   var wt = _val("rev_workFilter")||"";
-  var filtered = ALL_REVISIONS.filter(function(r){
+  _revFiltered = ALL_REVISIONS.filter(function(r){
     var mq = !q  || [r[0],r[1],r[2],r[3],r[6]].some(function(v){ return String(v).toLowerCase().includes(q); });
     var ms = !st || r[11]===st;
     var mr = !rt || r[5]===rt;
     var mw = !wt || r[8]===wt;
     return mq&&ms&&mr&&mw;
   });
-  _renderRevisionsTable(filtered);
+  _revPage = 1;
+  _renderRevisionsPage();
+}
+
+function _resetRevFilters() {
+  var s  = document.getElementById('rev_search');       if (s)  s.value  = '';
+  var st = document.getElementById('rev_statusFilter'); if (st) st.value = '';
+  var rt = document.getElementById('rev_typeFilter');   if (rt) rt.value = '';
+  var wt = document.getElementById('rev_workFilter');   if (wt) wt.value = '';
+  _revFiltered = ALL_REVISIONS;
+  _revPage = 1;
+  _renderRevisionsPage();
 }
 
 function openRevisionQuickEdit(id) {
@@ -650,6 +719,7 @@ function _syncRevAssignmentFields() {
             var idx = ALL_REVISIONS.findIndex(function(r){ return r[0]===editId; });
             if (idx !== -1) {
               ALL_REVISIONS[idx] = res.updated;
+              _revFiltered = _revFiltered.map(function(r){ return r[0]===editId ? res.updated : r; });
               _patchRevisionRow(editId, res.updated);
               _renderRevStats(ALL_REVISIONS);
             }

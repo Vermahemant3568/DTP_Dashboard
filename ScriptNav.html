@@ -75,7 +75,7 @@ function loadPage(page, ctx) {
       var area = document.getElementById("contentArea");
       if (!area) { _setLoading(false); hideLoader(); return; }
       area.innerHTML = html;
-      area.className = "w-full px-4 py-4 page-enter";
+      area.className = "max-w-[1400px] mx-auto px-6 sm:px-8 lg:px-10 py-6 page-enter";
       _setLoading(false);
       _initPage(page, ctx);
     })

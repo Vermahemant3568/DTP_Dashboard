@@ -101,12 +101,8 @@
         <option>On Hold</option>
         <option>Cancelled</option>
       </select>
-      <select id="proj_priorityFilter" onchange="filterProjects()" class="input sm:w-32 py-2 text-xs">
-        <option value="">All Priorities</option>
-        <option>Low</option>
-        <option>Medium</option>
-        <option>High</option>
-        <option>Urgent</option>
+      <select id="proj_coordinatorFilter" onchange="filterProjects()" class="input sm:w-40 py-2 text-xs">
+        <option value="">All Coordinators</option>
       </select>
       <button onclick="_resetProjFilters()"
         class="shrink-0 px-3 py-2 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition-all">
@@ -145,6 +141,23 @@
         </tbody>
       </table>
     </div>
+
+    <!-- ══ PAGINATION ══ -->
+    <div id="proj_pagination" class="flex items-center justify-between gap-3 px-5 py-3.5 border-t border-gray-50">
+      <p id="proj_pageInfo" class="text-xs text-gray-400 font-semibold">—</p>
+      <div class="flex items-center gap-1.5">
+        <button id="proj_prevBtn" onclick="_projChangePage(-1)"
+          class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+          ← Prev
+        </button>
+        <div id="proj_pageNumbers" class="flex items-center gap-1"></div>
+        <button id="proj_nextBtn" onclick="_projChangePage(1)"
+          class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+          Next →
+        </button>
+      </div>
+    </div>
+
   </div>
 
 </div>
