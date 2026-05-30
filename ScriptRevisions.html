@@ -31,7 +31,7 @@ function _renderRevisionsTable(data) {
   var tbody = document.getElementById("revisionsTable");
   if (!tbody) return;
   if (!data.length) {
-    tbody.innerHTML = '<tr><td colspan="13" class="py-16 text-center text-slate-400 text-sm">No revisions found.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="14" class="py-16 text-center text-slate-400 text-sm">No revisions found.</td></tr>';
     return;
   }
   tbody.innerHTML = data.map(function(r) {
@@ -58,6 +58,7 @@ function _renderRevisionsTable(data) {
         : '<span class="badge bg-red-50 text-red-500">Unpaid</span>') + '</td>' +
       '<td class="text-center text-sm font-semibold text-emerald-700">' + (Number(r[18]) > 0 ? Number(r[18]).toLocaleString() : '—') + '</td>' +
       '<td class="text-center text-xs text-gray-500">' + (r[12]||"—") + '</td>' +
+      '<td class="text-sm text-gray-500 max-w-[180px] truncate" title="' + (r[15]||'') + '">' + (r[15] || '—') + '</td>' +
       '<td class="text-center">' +
         '<div class="flex justify-center gap-1">' +
           btnStatus(r[0], "openRevisionQuickEdit") +
@@ -233,6 +234,7 @@ function _patchRevisionRow(id, r) {
     : '<span class="badge bg-red-50 text-red-500">Unpaid</span>';
   cells[10].textContent = Number(r[18]) > 0 ? Number(r[18]).toLocaleString() : '—';
   cells[11].textContent = r[12] || "—";
+  cells[12].textContent = r[15] || "—";
 }
 
 /* ================================================================
@@ -525,7 +527,6 @@ function loadRevisionDropdowns(cb) {
 
 function _autoFillRevRateFromMember() {}
 function _autoFillRevRateFromVendor() {}
-function _updateRevEstimate() {}
 
 function _onRevPaymentStatusChange() {
   var sel  = document.getElementById("rev_paymentStatus");
@@ -592,7 +593,7 @@ function _syncRevAssignmentFields() {
       deliveryDate:  _val("rev_deliveryDate"),
       notes:         _val("rev_notes"),
       ratePerPage:   _val("rev_ratePerPage"),
-      currency:      "",
+      currency:      _val("rev_currency") || "",
       paymentStatus: _val("rev_paymentStatus") || "Unpaid"
     };
 
@@ -621,7 +622,7 @@ function _syncRevAssignmentFields() {
           diff[k] = current[k];
         }
       });
-      if (!Object.keys(diff).length) { showToast("No changes detected.", "info"); return; }
+      if (!Object.keys(diff).length) { _revSubmitting = false; btn.disabled = false; if (lblEl) lblEl.innerText = "Update Revision"; hideLoader(); showToast("No changes detected.", "info"); return; }
       _revSubmitting = true;
       btn.disabled = true;
       if (lblEl) lblEl.innerText = "Saving...";

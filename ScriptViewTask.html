@@ -103,9 +103,9 @@ function _renderTaskView(t, revs) {
   var editBtn = document.getElementById("vt_editBtn");
   if (editBtn) editBtn.onclick = function() { loadPage("addTask", { editId: _vtCurrentTaskId }); };
   var addRevBtn = document.getElementById("vt_addRevBtn");
-  if (addRevBtn) addRevBtn.onclick = function() { loadPage("addRevision", { projectId: _vtCurrentProjId }); };
+  if (addRevBtn) addRevBtn.onclick = function() { loadPage("addRevision", { projectId: _vtCurrentProjId, taskId: _vtCurrentTaskId }); };
   var addRevBtn2 = document.getElementById("vt_addRevBtn2");
-  if (addRevBtn2) addRevBtn2.onclick = function() { loadPage("addRevision", { projectId: _vtCurrentProjId }); };
+  if (addRevBtn2) addRevBtn2.onclick = function() { loadPage("addRevision", { projectId: _vtCurrentProjId, taskId: _vtCurrentTaskId }); };
 
   _renderVtRevisions(revs);
 }
@@ -119,11 +119,11 @@ function _renderVtRevisions(revs) {
   if (totalEl) totalEl.innerText = total.toLocaleString() + " pages";
 
   if (!revs.length) {
-    tbody.innerHTML = '<tr><td colspan="8" class="py-10 text-center text-slate-400 text-sm">' +
+    tbody.innerHTML = '<tr><td colspan="9" class="py-10 text-center text-slate-400 text-sm">' +
       '<div class="flex flex-col items-center gap-2">' +
         '<span class="text-3xl">🔁</span>' +
         '<p>No revisions linked to this task yet.</p>' +
-        '<button onclick="loadPage(\'addRevision\',{projectId:_vtCurrentProjId})" ' +
+        '<button onclick="loadPage(\'addRevision\',{projectId:_vtCurrentProjId,taskId:_vtCurrentTaskId})" ' +
           'class="mt-1 text-xs font-semibold text-purple-600 hover:underline">+ Add a revision</button>' +
       '</div>' +
     '</td></tr>';
@@ -145,6 +145,7 @@ function _renderVtRevisions(revs) {
       '<td class="text-center"><span class="badge ' + sc + '">' + (r[11] || "Pending") + '</span></td>' +
       '<td class="text-center font-bold text-purple-600 text-sm">' + (Number(r[7]) || 0).toLocaleString() + '</td>' +
       '<td class="text-center text-xs text-gray-500">' + (r[12] || "—") + '</td>' +
+      '<td class="text-sm text-gray-500 max-w-[180px] truncate" title="' + (r[15]||'') + '">' + (r[15] || '—') + '</td>' +
       '<td class="text-center">' + btnDelete(r[0], "_vtDeleteRevision") + '</td>' +
     '</tr>';
   }).join("");
