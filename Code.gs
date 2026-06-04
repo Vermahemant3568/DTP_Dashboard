@@ -195,9 +195,11 @@ function getMonthlySummary(params) {
       byTaskType[TASK_KEYS[t]] = { label:t, total:ih+vd, inHouse:ih, vendor:vd, count:rows.length };
     });
 
-    const revIH    = monthRevs.filter(r => r[RC.WORK_TYPE] === "In-House").reduce((s,r) => s+(Number(r[RC.REV_PAGES])||0), 0);
-    const revVD    = monthRevs.filter(r => r[RC.WORK_TYPE] === "Vendor").reduce((s,r)   => s+(Number(r[RC.REV_PAGES])||0), 0);
-    byTaskType.revisions = { label:"Revisions", total:revIH+revVD, inHouse:revIH, vendor:revVD, count:monthRevs.length };
+    const revIHRows = monthRevs.filter(r => r[RC.WORK_TYPE] === "In-House");
+    const revVDRows = monthRevs.filter(r => r[RC.WORK_TYPE] === "Vendor");
+    const revIH    = revIHRows.reduce((s,r) => s+(Number(r[RC.REV_PAGES])||0), 0);
+    const revVD    = revVDRows.reduce((s,r) => s+(Number(r[RC.REV_PAGES])||0), 0);
+    byTaskType.revisions = { label:"Revisions", total:revIH+revVD, inHouse:revIH, vendor:revVD, count:monthRevs.length, inHouseCount:revIHRows.length, vendorCount:revVDRows.length };
 
     const allTaskPages = monthTasks.reduce((s,r) => s+(Number(r[TC.FINAL_PAGES])||0), 0);
     const allRevPages  = monthRevs.reduce((s,r)  => s+(Number(r[RC.REV_PAGES])||0), 0);
@@ -276,9 +278,12 @@ function getDashboardData(params) {
         totalTasks:        allTasks.length,
         pendingTasks:      allTasks.filter(r => r[TC.STATUS] === "Pending").length,
         inProgressTasks:   allTasks.filter(r => r[TC.STATUS] === "In Progress").length,
+        totalTaskPages:    allTasks.reduce((s,r) => s+(Number(r[TC.FINAL_PAGES])||0), 0),
         totalRevisions:    allRevisions.length,
         pendingRevisions:  allRevisions.filter(r => r[RC.STATUS] === "Pending" || r[RC.STATUS] === "In Progress").length,
         totalRevPages:     allRevisions.reduce((s,r) => s+(Number(r[RC.REV_PAGES])||0), 0),
+        totalRevIHPages:   allRevisions.filter(r => r[RC.WORK_TYPE] === "In-House").reduce((s,r) => s+(Number(r[RC.REV_PAGES])||0), 0),
+        totalRevVDPages:   allRevisions.filter(r => r[RC.WORK_TYPE] === "Vendor").reduce((s,r) => s+(Number(r[RC.REV_PAGES])||0), 0),
         inProgressPages:   allTasks.filter(r => r[TC.STATUS]==="In Progress").reduce((s,r) => s+(Number(r[TC.FINAL_PAGES])||0), 0),
         totalPaidAmt,
         totalUnpaidAmt,

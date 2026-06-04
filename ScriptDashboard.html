@@ -69,9 +69,9 @@ function _renderDashboard(d) {
   _set("dash_totalTasks",       (at.totalTasks       || 0));
   _set("dash_pendingTasks",     (at.pendingTasks     || 0) + " pending");
   _set("dash_inProgressTasks",  (at.inProgressTasks  || 0) + " in progress");
-  _set("dash_totalRevisions",   (at.totalRevPages    || 0).toLocaleString());
-  _set("dash_pendingRevisions", (at.pendingRevisions || 0) + " pending");
-  _set("dash_totalRevPages",    (at.totalRevisions   || 0).toLocaleString() + " rounds");
+  _set("dash_totalAllPages",        ((at.totalTaskPages || 0) + (at.totalRevPages || 0)).toLocaleString());
+  _set("dash_totalTaskPagesAllTime", (at.totalTaskPages || 0).toLocaleString() + " task pg");
+  _set("dash_totalRevPagesAllTime",  (at.totalRevPages  || 0).toLocaleString() + " rev pg");
 
   /* ROW 2 — THIS MONTH VOLUME */
   _set("dash_grandTotal", (m.grandTotal || 0).toLocaleString());
@@ -100,10 +100,13 @@ function _renderDashboard(d) {
   _typeCard("qc",        "dash_qcTotal",     "dash_qcIH",     "dash_qcVD",     "dash_qcBarFill");
   _typeCard("others",    "dash_othersTotal", "dash_othersIH", "dash_othersVD", "dash_othersBarFill");
 
-  var revM = bt.revisions || {total:0, inHouse:0, vendor:0};
-  _set("dash_revTotal", revM.total.toLocaleString());
-  _set("dash_revIH",    revM.inHouse.toLocaleString());
-  _set("dash_revVD",    revM.vendor.toLocaleString());
+  var revM = bt.revisions || {total:0, inHouse:0, vendor:0, count:0, inHouseCount:0, vendorCount:0};
+  _set("dash_revCount",   revM.count.toLocaleString());
+  _set("dash_revIHCount", revM.inHouseCount.toLocaleString());
+  _set("dash_revVDCount", revM.vendorCount.toLocaleString());
+  _set("dash_revTotal",   revM.total.toLocaleString());
+  _set("dash_revIH",      revM.inHouse.toLocaleString());
+  _set("dash_revVD",      revM.vendor.toLocaleString());
 
   /* Progress Tracker card */
   var activeProj    = at.activeProjects    || 0;
