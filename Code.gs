@@ -233,6 +233,26 @@ function getDashboardData(params) {
     const allRevisions = rawRevisions.map(_fmtRow);
     const allProjects  = _sheetRows(SH_PROJECTS).map(_fmtRow);
 
+    /* Build project → total pages map for active/in-progress page counts */
+    const rawTasksForProj     = rawTasks;
+    const rawRevisionsForProj = rawRevisions;
+    const projPageMap = {};
+    rawTasksForProj.forEach(function(t) {
+      const pid = String(t[TC.PROJECT_ID] || "").trim();
+      if (!pid) return;
+      projPageMap[pid] = (projPageMap[pid] || 0) + (Number(t[TC.FINAL_PAGES]) || 0);
+    });
+    rawRevisionsForProj.forEach(function(r) {
+      const pid = String(r[RC.PROJECT_ID] || "").trim();
+      if (!pid) return;
+      projPageMap[pid] = (projPageMap[pid] || 0) + (Number(r[RC.REV_PAGES]) || 0);
+    });
+
+    const activeProjectsList     = allProjects.filter(r => r[PC.STATUS] === "Active");
+    const inProgressProjectsList = allProjects.filter(r => r[PC.STATUS] === "In Progress");
+    const activeProjectPages     = activeProjectsList.reduce((s,r) => s + (projPageMap[String(r[PC.ID]).trim()] || 0), 0);
+    const inProgressProjectPages = inProgressProjectsList.reduce((s,r) => s + (projPageMap[String(r[PC.ID]).trim()] || 0), 0);
+
     const summary = getMonthlySummary({
       year: year, month: month + 1,
       _tasks: rawTasks, _revisions: rawRevisions
@@ -248,8 +268,11 @@ function getDashboardData(params) {
       summary,
       allTimeTotals: {
         totalProjects:     allProjects.length,
-        activeProjects:    allProjects.filter(r => r[PC.STATUS] === "Active").length,
+        activeProjects:    activeProjectsList.length,
+        inProgressProjects: inProgressProjectsList.length,
         completedProjects: allProjects.filter(r => r[PC.STATUS] === "Completed").length,
+        activeProjectPages,
+        inProgressProjectPages,
         totalTasks:        allTasks.length,
         pendingTasks:      allTasks.filter(r => r[TC.STATUS] === "Pending").length,
         inProgressTasks:   allTasks.filter(r => r[TC.STATUS] === "In Progress").length,

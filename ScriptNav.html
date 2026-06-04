@@ -23,6 +23,34 @@ var PAGE_MAP = {
 var _isLoading      = false;
 var _loadingTimer   = null;
 var _activePage     = "dashboard";
+var _activeCtx      = null;
+var _navHistory     = [];   /* in-app back-navigation stack [{page, ctx}] */
+
+/* ── Back-button interception ── */
+(function() {
+  /* Push a dummy state so the browser has somewhere to go "back" to,
+     which we intercept and replace with our own in-app navigation. */
+  if (window.history && window.history.pushState) {
+    window.history.pushState({ inApp: true }, "");
+    window.addEventListener("popstate", function(e) {
+      /* Always re-push so the browser never actually leaves the app */
+      window.history.pushState({ inApp: true }, "");
+      goBack();
+    });
+  }
+})();
+
+/* Navigate back one step in the in-app history stack */
+function goBack() {
+  if (_navHistory.length > 0) {
+    var prev = _navHistory.pop();
+    /* Load the previous page without pushing to history again */
+    _loadPageInternal(prev.page, prev.ctx);
+  } else {
+    /* Nothing in stack — go to dashboard */
+    _loadPageInternal("dashboard", null);
+  }
+}
 
 /* Called by <body onload="initApp()"> — guaranteed google.script is ready */
 function initApp() {
@@ -58,9 +86,21 @@ function _setLoading(on) {
 }
 
 function loadPage(page, ctx) {
+  /* Push current page to history before navigating away (skip dashboard→dashboard) */
+  if (_activePage && !(_activePage === page && JSON.stringify(ctx) === JSON.stringify(undefined))) {
+    _navHistory.push({ page: _activePage, ctx: _activeCtx || null });
+    /* Cap stack depth */
+    if (_navHistory.length > 30) _navHistory.shift();
+  }
+  _activeCtx = ctx || null;
+  _loadPageInternal(page, ctx);
+}
+
+function _loadPageInternal(page, ctx) {
   if (_isLoading) { _setLoading(false); }
   _setLoading(true);
   _activePage = page;
+  _activeCtx  = ctx || null;
 
   showLoader("Loading...");
   _setActiveNav(page);
@@ -89,7 +129,7 @@ function _initPage(page, ctx) {
       else hideLoader();
       break;
     case "projects":
-      if (typeof loadProjects === "function") loadProjects();
+      if (typeof loadProjects === "function") loadProjects(ctx);
       else hideLoader();
       break;
     case "addProject":

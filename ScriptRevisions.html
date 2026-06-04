@@ -13,6 +13,7 @@ function loadRevisions() {
     .withFailureHandler(function(e){ hideLoader(); showToast("Could not load revisions: "+e.message,"error"); })
     .withSuccessHandler(function(data){
       ALL_REVISIONS = data||[];
+      _revInitYearFilter(ALL_REVISIONS);
       _renderRevStats(ALL_REVISIONS);
       _revFiltered = ALL_REVISIONS;
       _revPage = 1;
@@ -22,12 +23,49 @@ function loadRevisions() {
     .getRevisions();
 }
 
+/* ── Year dropdown built from actual data ── */
+function _revInitYearFilter(data) {
+  var yearEl = document.getElementById('rev_yearFilter');
+  if (!yearEl) return;
+  var years = [];
+  data.forEach(function(r) {
+    var y = _revParseYear(r[12]);
+    if (y && years.indexOf(y) === -1) years.push(y);
+  });
+  years.sort(function(a,b){ return b-a; });
+  var now = new Date().getFullYear();
+  yearEl.innerHTML = '<option value="">All Years</option>' +
+    years.map(function(y){
+      return '<option value="'+y+'"'+(y===now?' selected':'')+'>'+y+'</option>';
+    }).join('');
+}
+
+function _revParseYear(v) {
+  if (!v || v === '\u2014') return null;
+  var dmy = String(v).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (dmy) return Number(dmy[3]);
+  var d = new Date(v);
+  return isNaN(d) ? null : d.getFullYear();
+}
+
+function _revParseMonth(v) {
+  if (!v || v === '\u2014') return null;
+  var dmy = String(v).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (dmy) return Number(dmy[2]);
+  var d = new Date(v);
+  return isNaN(d) ? null : d.getMonth() + 1;
+}
+
 function _renderRevStats(data) {
   var pages  = data.reduce(function(s,r){ return s+(Number(r[7])||0); },0);
+  var ih     = data.filter(function(r){ return r[8]==="In-House"; }).reduce(function(s,r){ return s+(Number(r[7])||0); },0);
+  var vd     = data.filter(function(r){ return r[8]==="Vendor"; }).reduce(function(s,r){ return s+(Number(r[7])||0); },0);
   var pending= data.filter(function(r){ return r[11]==="Pending"; }).length;
   var done   = data.filter(function(r){ return r[11]==="Completed"; }).length;
   _set("rev_stat_total",  data.length);
   _set("rev_stat_pages",  pages.toLocaleString());
+  _set("rev_stat_ih",     ih.toLocaleString());
+  _set("rev_stat_vd",     vd.toLocaleString());
   _set("rev_stat_pending",pending);
   _set("rev_stat_done",   done);
 }
@@ -140,14 +178,19 @@ function filterRevisions() {
   var st = _val("rev_statusFilter")||"";
   var rt = _val("rev_typeFilter")||"";
   var wt = _val("rev_workFilter")||"";
+  var mo = Number(_val("rev_monthFilter")) || 0;  /* 1-12, 0 = all */
+  var yr = Number(_val("rev_yearFilter"))  || 0;  /* 4-digit, 0 = all */
   _revFiltered = ALL_REVISIONS.filter(function(r){
     var mq = !q  || [r[0],r[1],r[2],r[3],r[6]].some(function(v){ return String(v).toLowerCase().includes(q); });
     var ms = !st || r[11]===st;
     var mr = !rt || r[5]===rt;
     var mw = !wt || r[8]===wt;
-    return mq&&ms&&mr&&mw;
+    var mm = !mo || _revParseMonth(r[12]) === mo;
+    var my = !yr || _revParseYear(r[12])  === yr;
+    return mq&&ms&&mr&&mw&&mm&&my;
   });
   _revPage = 1;
+  _renderRevStats(_revFiltered);
   _renderRevisionsPage();
 }
 
@@ -156,8 +199,11 @@ function _resetRevFilters() {
   var st = document.getElementById('rev_statusFilter'); if (st) st.value = '';
   var rt = document.getElementById('rev_typeFilter');   if (rt) rt.value = '';
   var wt = document.getElementById('rev_workFilter');   if (wt) wt.value = '';
+  var mo = document.getElementById('rev_monthFilter');  if (mo) mo.value = '';
+  var yr = document.getElementById('rev_yearFilter');   if (yr) yr.value = '';
   _revFiltered = ALL_REVISIONS;
   _revPage = 1;
+  _renderRevStats(_revFiltered);
   _renderRevisionsPage();
 }
 

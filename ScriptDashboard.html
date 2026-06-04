@@ -69,9 +69,9 @@ function _renderDashboard(d) {
   _set("dash_totalTasks",       (at.totalTasks       || 0));
   _set("dash_pendingTasks",     (at.pendingTasks     || 0) + " pending");
   _set("dash_inProgressTasks",  (at.inProgressTasks  || 0) + " in progress");
-  _set("dash_totalRevisions",   (at.totalRevisions   || 0));
+  _set("dash_totalRevisions",   (at.totalRevPages    || 0).toLocaleString());
   _set("dash_pendingRevisions", (at.pendingRevisions || 0) + " pending");
-  _set("dash_totalRevPages",    (at.totalRevPages    || 0).toLocaleString() + " pages");
+  _set("dash_totalRevPages",    (at.totalRevisions   || 0).toLocaleString() + " rounds");
 
   /* ROW 2 — THIS MONTH VOLUME */
   _set("dash_grandTotal", (m.grandTotal || 0).toLocaleString());
@@ -105,8 +105,23 @@ function _renderDashboard(d) {
   _set("dash_revIH",    revM.inHouse.toLocaleString());
   _set("dash_revVD",    revM.vendor.toLocaleString());
 
-  _set("dash_inProgress",      (at.inProgressTasks || 0));
-  _set("dash_inProgressPages", (at.inProgressPages || 0).toLocaleString() + " pages active");
+  /* Progress Tracker card */
+  var activeProj    = at.activeProjects    || 0;
+  var inProgProj    = at.inProgressProjects || 0;
+  var inProgTasks   = at.inProgressTasks   || 0;
+  var inProgPages   = at.inProgressPages   || 0;
+  var totalTasks    = at.totalTasks        || 1;  /* avoid div/0 */
+
+  _set("dash_activeProjectsTracker",   activeProj);
+  _set("dash_activeProjectsPages",     (at.activeProjectPages   || 0).toLocaleString() + " pages");
+  _set("dash_inProgressProjectsTracker", inProgProj);
+  _set("dash_inProgressProjectsPages", (at.inProgressProjectPages || 0).toLocaleString() + " pages");
+  _set("dash_inProgress",      inProgTasks);
+  _set("dash_inProgressPages", (inProgPages || 0).toLocaleString());
+
+  /* Animate progress bar proportional to in-progress tasks vs total */
+  var bar = document.getElementById("dash_inProgressBar");
+  if (bar) bar.style.width = Math.round(Math.min((inProgTasks / (at.totalTasks || 1)) * 100, 100)) + "%";
 }
 
 

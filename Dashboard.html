@@ -85,13 +85,13 @@
       <div onclick="loadPage('revisions')" class="dash-summary-card group cursor-pointer">
         <div class="dash-summary-icon bg-purple-50 group-hover:bg-purple-100 text-purple-600">🔁</div>
         <div class="flex-1 min-w-0">
-          <p class="dash-card-label text-slate-400">Total Revisions</p>
+          <p class="dash-card-label text-slate-400">Total Revision Pages</p>
           <h3 id="dash_totalRevisions" class="dash-card-number text-purple-600">—</h3>
-          <p class="dash-card-hint">Correction rounds</p>
+          <p class="dash-card-hint">Total revision pages</p>
         </div>
         <div class="flex flex-col gap-1.5 items-end shrink-0">
           <span id="dash_pendingRevisions" class="dash-pill bg-yellow-50 text-yellow-700 border-yellow-100">— pending</span>
-          <span id="dash_totalRevPages"    class="dash-pill bg-purple-50 text-purple-700 border-purple-100">— pages</span>
+          <span id="dash_totalRevPages"    class="dash-pill bg-purple-50 text-purple-700 border-purple-100">— rounds</span>
         </div>
       </div>
 
@@ -167,28 +167,53 @@
           </div>
         </div>
 
-        <!-- In Progress -->
-        <div class="dash-month-card border-l-amber-500">
-          <div class="flex items-start justify-between mb-3">
+        <!-- Progress Tracker -->
+        <div class="dash-month-card border-l-amber-500 flex flex-col gap-3">
+          <div class="flex items-start justify-between">
             <div>
-              <p class="dash-card-label text-slate-400">In Progress Now</p>
-              <p class="text-[11px] text-slate-400 mt-0.5">Currently active tasks</p>
+              <p class="dash-card-label text-slate-400">Progress Tracker</p>
+              <p class="text-[11px] text-slate-400 mt-0.5">Projects &amp; tasks at a glance</p>
             </div>
-            <div class="h-10 w-10 rounded-xl bg-amber-50 flex items-center justify-center text-xl shrink-0">⏳</div>
+            <div class="h-10 w-10 rounded-xl bg-amber-50 flex items-center justify-center text-xl shrink-0">📊</div>
           </div>
-          <h3 id="dash_inProgress" class="text-4xl font-black text-amber-500 tabular-nums">—</h3>
-          <p class="text-[11px] text-slate-400 mt-1 font-medium">active tasks</p>
-          <!-- Pages split tile -->
-          <div class="mt-4 rounded-xl bg-amber-50 border border-amber-100 p-3">
+
+          <!-- Projects row -->
+          <div class="grid grid-cols-2 gap-2">
+            <div onclick="loadPage('projects', {statusFilter:'Active'})" class="rounded-xl bg-emerald-50 border border-emerald-100 p-2.5 cursor-pointer hover:bg-emerald-100 transition-colors group">
+              <div class="flex items-center justify-between">
+                <p class="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Active Proj</p>
+                <span class="text-base group-hover:scale-110 transition-transform">🟢</span>
+              </div>
+              <p id="dash_activeProjectsTracker" class="text-xl font-black text-emerald-700 tabular-nums mt-1">—</p>
+              <p id="dash_activeProjectsPages" class="text-[10px] text-emerald-500 mt-0.5 font-medium">— pages</p>
+            </div>
+            <div onclick="loadPage('projects', {statusFilter:'In Progress'})" class="rounded-xl bg-blue-50 border border-blue-100 p-2.5 cursor-pointer hover:bg-blue-100 transition-colors group">
+              <div class="flex items-center justify-between">
+                <p class="text-[10px] font-bold text-blue-600 uppercase tracking-widest">In-Progress</p>
+                <span class="text-base group-hover:scale-110 transition-transform">⏳</span>
+              </div>
+              <p id="dash_inProgressProjectsTracker" class="text-xl font-black text-blue-700 tabular-nums mt-1">—</p>
+              <p id="dash_inProgressProjectsPages" class="text-[10px] text-blue-500 mt-0.5 font-medium">— pages</p>
+            </div>
+          </div>
+
+          <!-- Tasks row -->
+          <div onclick="loadPage('tasks')" class="rounded-xl bg-amber-50 border border-amber-100 p-3 cursor-pointer hover:bg-amber-100 transition-colors group">
             <div class="flex items-center justify-between">
               <div>
-                <p class="text-[10px] font-bold text-amber-500 uppercase tracking-widest">Pages Active</p>
-                <p id="dash_inProgressPages" class="text-xl font-black text-amber-600 tabular-nums mt-0.5">—</p>
+                <p class="text-[10px] font-bold text-amber-500 uppercase tracking-widest">Tasks In Progress</p>
+                <p id="dash_inProgress" class="text-xl font-black text-amber-600 tabular-nums mt-0.5">—</p>
+                <p class="text-[10px] text-amber-400 mt-0.5">active tasks</p>
               </div>
-              <div class="h-9 w-9 rounded-xl bg-amber-100 flex items-center justify-center text-base">📄</div>
+              <div>
+                <p class="text-[10px] font-bold text-orange-500 uppercase tracking-widest text-right">Active Pages</p>
+                <p id="dash_inProgressPages" class="text-xl font-black text-orange-600 tabular-nums mt-0.5 text-right">—</p>
+                <p class="text-[10px] text-orange-400 mt-0.5 text-right">pages</p>
+              </div>
+              <div class="h-9 w-9 rounded-xl bg-amber-100 flex items-center justify-center text-base ml-2 group-hover:bg-amber-200 transition-colors">📄</div>
             </div>
             <div class="mt-2.5 h-1.5 bg-amber-100 rounded-full overflow-hidden">
-              <div class="h-1.5 bg-gradient-to-r from-amber-400 to-orange-400 rounded-full w-2/3 animate-pulse"></div>
+              <div class="h-1.5 bg-gradient-to-r from-amber-400 to-orange-400 rounded-full animate-pulse" id="dash_inProgressBar" style="width:0%"></div>
             </div>
           </div>
         </div>

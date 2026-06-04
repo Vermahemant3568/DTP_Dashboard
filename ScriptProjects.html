@@ -7,7 +7,7 @@ var _projFiltered   = [];   /* current filtered set */
 var _projPage       = 1;
 var _projPageSize   = 10;
 
-function loadProjects() {
+function loadProjects(ctx) {
   showLoader("Loading projects...");
   google.script.run
     .withFailureHandler(function(e) { hideLoader(); showToast("Could not load projects: " + e.message, "error"); })
@@ -15,7 +15,13 @@ function loadProjects() {
       ALL_PROJECTS = data || [];
       _renderProjStats(ALL_PROJECTS);
       _populateCoordinatorFilter(ALL_PROJECTS);
-      _projFiltered = ALL_PROJECTS;
+      /* Pre-apply status filter if passed via navigation context */
+      var statusPreset = ctx && ctx.statusFilter ? ctx.statusFilter : "";
+      var stEl = document.getElementById('proj_statusFilter');
+      if (stEl && statusPreset) stEl.value = statusPreset;
+      _projFiltered = statusPreset
+        ? ALL_PROJECTS.filter(function(r){ return r[9] === statusPreset; })
+        : ALL_PROJECTS;
       _projPage = 1;
       _renderProjectsPage();
       hideLoader();
