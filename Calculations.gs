@@ -122,6 +122,8 @@ function _calcPaymentStats(tasks, revs, defaultCurrency) {
  * Apply date/project/language/status filters to tasks and revisions.
  */
 function applyFilters(tasks, revs, filters) {
+  tasks   = tasks || [];
+  revs    = revs  || [];
   filters = filters || {};
   var month     = filters.month     ? Number(filters.month) - 1 : null;
   var year      = filters.year      ? Number(filters.year)      : null;
