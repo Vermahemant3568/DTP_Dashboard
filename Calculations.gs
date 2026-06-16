@@ -20,6 +20,8 @@
  * @returns {Object} stats
  */
 function _calcPaymentStats(tasks, revs, defaultCurrency) {
+  tasks = tasks || [];
+  revs  = revs  || [];
   var cur = defaultCurrency || "";
 
   // Task totals
@@ -222,6 +224,8 @@ function calculateTeamMemberStats(memberName, filters, preloaded) {
  * Returns separate task and revision breakdowns.
  */
 function calculateProjectPaymentSummary(tasks, revisions) {
+  tasks     = tasks     || [];
+  revisions = revisions || [];
   var taskPaid = 0, taskUnpaid = 0, taskPartial = 0;
   var revPaid  = 0, revUnpaid  = 0, revPartial  = 0;
 
@@ -260,6 +264,8 @@ function calculateProjectPaymentSummary(tasks, revisions) {
  * Unpaid items are tracked but NOT included in totalAmount.
  */
 function calculateDashboardPaymentTotals(allTasks, allRevisions) {
+  allTasks     = allTasks     || [];
+  allRevisions = allRevisions || [];
   var totalPaidAmt    = 0;
   var totalUnpaidAmt  = 0;
   var totalPartialAmt = 0;
