@@ -61,7 +61,7 @@ function initApp() {
     if (window.innerWidth < 1280) {
       sidebar.style.width = "4rem";
       sidebar.dataset.collapsed = "true";
-      document.querySelectorAll(".nav-label").forEach(function(l) { l.classList.add("hidden"); });
+      Array.prototype.forEach.call(document.querySelectorAll(".nav-label"), function(l) { l.classList.add("hidden"); });
       var brand = document.getElementById("sidebarBrand");
       if (brand) brand.style.display = "none";
       if (main) main.style.marginLeft = "4rem";
@@ -230,7 +230,7 @@ function _initAddRevisionForm(ctx) {
 }
 
 function _wireWorkTypeRadios(radioName, inhouseBtnId, vendorBtnId) {
-  document.querySelectorAll('input[name="' + radioName + '"]').forEach(function(r) {
+  Array.prototype.forEach.call(document.querySelectorAll('input[name="' + radioName + '"]'), function(r) {
     r.addEventListener("change", function() {
       _updateWorkTypeBtns(radioName, inhouseBtnId, vendorBtnId);
       /* Sync assignment field visibility on change */
@@ -252,7 +252,7 @@ function _updateWorkTypeBtns(radioName, inhouseBtnId, vendorBtnId) {
 }
 
 function _setActiveNav(page) {
-  document.querySelectorAll("[data-nav]").forEach(function(el) {
+  Array.prototype.forEach.call(document.querySelectorAll("[data-nav]"), function(el) {
     var active = el.dataset.nav === page;
     el.classList.toggle("bg-sky-500/15",  active);
     el.classList.toggle("text-sky-300",   active);
@@ -269,13 +269,13 @@ function toggleSidebar() {
   if (collapsed) {
     sidebar.style.width = "16rem";
     if (main) main.style.marginLeft = "16rem";
-    labels.forEach(function(l) { l.classList.remove("hidden"); });
+    Array.prototype.forEach.call(labels, function(l) { l.classList.remove("hidden"); });
     if (brand) brand.style.display = "";
     sidebar.dataset.collapsed = "false";
   } else {
     sidebar.style.width = "4rem";
     if (main) main.style.marginLeft = "4rem";
-    labels.forEach(function(l) { l.classList.add("hidden"); });
+    Array.prototype.forEach.call(labels, function(l) { l.classList.add("hidden"); });
     if (brand) brand.style.display = "none";
     sidebar.dataset.collapsed = "true";
   }
