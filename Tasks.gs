@@ -13,7 +13,11 @@
 
 function getTasks() {
   try {
-    return _sheetRows(SH_TASKS).map(_fmtRow);
+    return _sheetRows(SH_TASKS).map(function(row) {
+      var r = _fmtRow(row);
+      if (r[TC.TASK_TYPE] === "QC") r[TC.TASK_TYPE] = "Key Insertion of PDFs";
+      return r;
+    });
   } catch (e) {
     console.error("getTasks:", e);
     return [];
@@ -24,7 +28,10 @@ function getTaskById(id) {
   try {
     const sh    = _sh(SH_TASKS);
     const found = _findRow(sh, id);
-    return found ? { task: _fmtRow(found.row) } : null;
+    if (!found) return null;
+    var r = _fmtRow(found.row);
+    if (r[TC.TASK_TYPE] === "QC") r[TC.TASK_TYPE] = "Key Insertion of PDFs";
+    return { task: r };
   } catch (e) {
     console.error("getTaskById:", e);
     return null;
@@ -37,6 +44,7 @@ function getTaskWithRevisions(taskId) {
     var found = _findRow(sh, taskId);
     if (!found) return null;
     var task = _fmtRow(found.row);
+    if (task[TC.TASK_TYPE] === "QC") task[TC.TASK_TYPE] = "Key Insertion of PDFs";
     var revisions = _sheetRows(SH_REVISIONS)
       .filter(function(r) { return String(r[RC.TASK_ID]).trim() === String(taskId).trim(); })
       .map(_fmtRow);
@@ -84,7 +92,9 @@ function addTask(d) {
     var srcPages  = Number(d.sourcePages) || 0;
     var langCount = Number(d.langCount)   || 0;
     var finalPgs  = Number(d.finalPages)  || 0;
-    /* For DTP/Extraction/QC/Bilingual: if langCount > 0 and finalPages not manually set, auto-calc */
+    /* Migrate legacy QC task type to new name */
+    if (d.taskType === "QC") d.taskType = "Key Insertion of PDFs";
+    /* For all task types: if langCount > 0 and finalPages not manually set, auto-calc */
     if (langCount > 0 && (!d.finalPages || Number(d.finalPages) === 0)) {
       finalPgs = srcPages * langCount;
     }
@@ -141,6 +151,8 @@ function updateTask(id, d) {
     if (!found) throw new Error("Task not found: " + id);
     const now = new Date();
     const r   = found.row;
+    /* Migrate legacy QC task type to new name */
+    if (d.taskType === "QC") d.taskType = "Key Insertion of PDFs";
 
     /* Only recalculate finalPages if sourcePages or langCount was explicitly sent */
     var srcPages  = ("sourcePages" in d) ? (Number(d.sourcePages) || 0) : (Number(r[TC.SOURCE_PAGES]) || 0);

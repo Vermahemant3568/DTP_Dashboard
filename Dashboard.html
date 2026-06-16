@@ -187,13 +187,13 @@
         </div>
 
         <!-- Progress Tracker -->
-        <div class="dash-month-card border-l-amber-500 flex flex-col gap-3">
+        <div onclick="loadPage('projects')" class="dash-month-card border-l-amber-500 flex flex-col gap-3 cursor-pointer group">
           <div class="flex items-start justify-between">
             <div>
               <p class="dash-card-label text-slate-400">Progress Tracker</p>
               <p class="text-[11px] text-slate-400 mt-0.5">Projects &amp; tasks at a glance</p>
             </div>
-            <div class="h-10 w-10 rounded-xl bg-amber-50 flex items-center justify-center text-xl shrink-0">📊</div>
+            <div class="h-10 w-10 rounded-xl bg-amber-50 group-hover:bg-amber-100 flex items-center justify-center text-xl shrink-0 transition-colors">📊</div>
           </div>
 
           <!-- Projects row -->
@@ -312,24 +312,24 @@
         </div>
       </div>
 
-      <!-- QC -->
+      <!-- Key Insertion of PDFs -->
       <div class="dash-type-card">
         <div class="dash-type-dot bg-green-500"></div>
-        <p class="dash-type-label">QC</p>
-        <h3 id="dash_qcTotal" class="dash-type-number text-green-600">—</h3>
+        <p class="dash-type-label">Key Insertion of PDFs</p>
+        <h3 id="dash_keyInsertionTotal" class="dash-type-number text-green-600">—</h3>
         <p class="dash-type-unit">pages this month</p>
         <div class="dash-type-split">
           <div class="dash-type-split-row">
             <span class="dash-type-split-label">🏢 In-House</span>
-            <span id="dash_qcIH" class="dash-type-split-val text-sky-700">—</span>
+            <span id="dash_keyInsertionIH" class="dash-type-split-val text-sky-700">—</span>
           </div>
           <div class="dash-type-split-row">
             <span class="dash-type-split-label">🤝 Vendor</span>
-            <span id="dash_qcVD" class="dash-type-split-val text-amber-600">—</span>
+            <span id="dash_keyInsertionVD" class="dash-type-split-val text-amber-600">—</span>
           </div>
         </div>
         <div class="dash-type-bar-track">
-          <div id="dash_qcBarFill" class="dash-type-bar-fill bg-gradient-to-r from-green-400 to-green-600" style="width:0%"></div>
+          <div id="dash_keyInsertionBarFill" class="dash-type-bar-fill bg-gradient-to-r from-green-400 to-green-600" style="width:0%"></div>
         </div>
       </div>
 

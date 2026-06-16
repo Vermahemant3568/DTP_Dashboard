@@ -82,7 +82,7 @@ function _renderDashboard(d) {
     (bt.mainDTP  || {total:0}).total,
     (bt.preEng   || {total:0}).total,
     (bt.bilingual|| {total:0}).total,
-    (bt.qc       || {total:0}).total,
+    (bt.keyInsertion || {total:0}).total,
     (bt.others   || {total:0}).total
   ) || 1;
 
@@ -97,7 +97,7 @@ function _renderDashboard(d) {
   _typeCard("mainDTP",   "dash_dtpTotal",    "dash_dtpIH",    "dash_dtpVD",    "dash_dtpBarFill");
   _typeCard("preEng",    "dash_preEngTotal", "dash_preEngIH", "dash_preEngVD", "dash_preEngBarFill");
   _typeCard("bilingual", "dash_bilingTotal", "dash_bilingIH", "dash_bilingVD", "dash_bilingBarFill");
-  _typeCard("qc",        "dash_qcTotal",     "dash_qcIH",     "dash_qcVD",     "dash_qcBarFill");
+  _typeCard("keyInsertion", "dash_keyInsertionTotal", "dash_keyInsertionIH", "dash_keyInsertionVD", "dash_keyInsertionBarFill");
   _typeCard("others",    "dash_othersTotal", "dash_othersIH", "dash_othersVD", "dash_othersBarFill");
 
   var revM = bt.revisions || {total:0, inHouse:0, vendor:0, count:0, inHouseCount:0, vendorCount:0};
