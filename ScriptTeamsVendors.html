@@ -6,7 +6,7 @@
 
 var _tvActiveTab       = 'team';
 var _tvAnalyticsLoaded = { team: false, vendor: false };
-var _tvAnalyticsCache  = null;   /* single cached response for both tabs */
+var _tvAnalyticsCache  = null;
 
 function loadTeamsVendors() {
   _tvAnalyticsLoaded = { team: false, vendor: false };
@@ -23,8 +23,8 @@ function tvSwitchTab(tab) {
   var vendorTab   = document.getElementById('tv_tab_vendor');
   if (!teamPanel) return;
 
-  var ON  = 'px-5 py-2 text-sm font-bold rounded-lg transition-all bg-white shadow-sm';
-  var OFF = 'px-5 py-2 text-sm font-bold rounded-lg transition-all text-slate-500 hover:text-slate-700';
+  var ON  = 'flex items-center gap-2 px-5 py-2.5 text-sm font-bold rounded-xl transition-all bg-white shadow-sm';
+  var OFF = 'flex items-center gap-2 px-5 py-2.5 text-sm font-bold rounded-xl transition-all text-slate-500 hover:text-slate-700';
 
   if (tab === 'team') {
     teamPanel.classList.remove('hidden');
@@ -49,19 +49,16 @@ function tvSwitchTab(tab) {
   }
 }
 
-/* ── Single analytics fetch with cache — avoids duplicate server calls ── */
+/* ── Single fetch with cache ── */
 function _tvFetchAnalytics(callback) {
   if (_tvAnalyticsCache) { callback(_tvAnalyticsCache); return; }
   google.script.run
     .withFailureHandler(function(e){ console.error('Analytics error:', e.message); })
-    .withSuccessHandler(function(data){
-      _tvAnalyticsCache = data;
-      callback(data);
-    })
+    .withSuccessHandler(function(data){ _tvAnalyticsCache = data; callback(data); })
     .getTeamsVendorsAnalytics();
 }
 
-/* ── Team Analytics Render ── */
+/* ── Team render ── */
 function _tvRenderTeamAnalytics(data) {
   if (!data) return;
   var t = data.team || {};
@@ -72,11 +69,11 @@ function _tvRenderTeamAnalytics(data) {
   _s('tv_tm_revPages',       (t.revPages        || 0).toLocaleString());
   _s('tv_tm_activeTasks',    (t.activeTasks     || 0).toLocaleString());
   _s('tv_tm_completedTasks', (t.completedTasks  || 0).toLocaleString());
-  _tvRenderMonthlyChart('tv_tm_monthlyChart', data.teamMonthly   || [], 'bg-sky-500');
-  _tvRenderDistributionBars('tv_tm_memberBars', data.teamMembers || [], 'bg-sky-500');
+  _tvRenderMonthlyChart('tv_tm_monthlyChart', data.teamMonthly   || [], '#3b82f6', '#0ea5e9');
+  _tvRenderDistBars('tv_tm_memberBars',       data.teamMembers   || [], '#3b82f6', '#0ea5e9');
 }
 
-/* ── Vendor Analytics Render ── */
+/* ── Vendor render ── */
 function _tvRenderVendorAnalytics(data) {
   if (!data) return;
   var v = data.vendor || {};
@@ -87,47 +84,91 @@ function _tvRenderVendorAnalytics(data) {
   _s('tv_vnd_revPages',       (v.revPages        || 0).toLocaleString());
   _s('tv_vnd_activeTasks',    (v.activeTasks     || 0).toLocaleString());
   _s('tv_vnd_completedTasks', (v.completedTasks  || 0).toLocaleString());
-  _tvRenderMonthlyChart('tv_vnd_monthlyChart', data.vendorMonthly   || [], 'bg-emerald-500');
-  _tvRenderDistributionBars('tv_vnd_vendorBars', data.vendorMembers || [], 'bg-emerald-500');
+  _tvRenderMonthlyChart('tv_vnd_monthlyChart', data.vendorMonthly   || [], '#10b981', '#0ea5e9');
+  _tvRenderDistBars('tv_vnd_vendorBars',       data.vendorMembers   || [], '#10b981', '#0d9488');
 }
 
-/* ── Shared: monthly bar chart ── */
-function _tvRenderMonthlyChart(elId, monthly, colorClass) {
+/* ── Monthly bar chart — rich horizontal bars ── */
+function _tvRenderMonthlyChart(elId, monthly, color1, color2) {
   var el = document.getElementById(elId);
   if (!el) return;
-  if (!monthly.length) { el.innerHTML = '<p class="text-sm text-slate-400 text-center py-4">No data available.</p>'; return; }
-  var max = Math.max.apply(null, monthly.map(function(m){ return m.pages; })) || 1;
-  el.innerHTML = monthly.map(function(m) {
-    var pct = Math.round(m.pages / max * 100);
-    return '<div class="flex items-center gap-3">' +
-      '<span class="text-[11px] text-slate-500 w-20 shrink-0 text-right">' + m.label + '</span>' +
-      '<div class="flex-1 bg-slate-100 rounded-full h-4 overflow-hidden">' +
-        '<div class="h-4 rounded-full flex items-center justify-end pr-2 transition-all duration-700 ' + colorClass + '" style="width:' + Math.max(pct, 2) + '%">' +
-          (pct > 10 ? '<span class="text-[9px] font-black text-white">' + m.pages.toLocaleString() + '</span>' : '') +
+  if (!monthly.length) {
+    el.innerHTML = '<p class="text-sm text-slate-400 text-center py-6">No data available yet.</p>';
+    return;
+  }
+  var max     = Math.max.apply(null, monthly.map(function(m){ return m.pages; })) || 1;
+  var nonZero = monthly.filter(function(m){ return m.pages > 0; }).length;
+  el.innerHTML = monthly.map(function(m, idx) {
+    var pct     = Math.round(m.pages / max * 100);
+    var isMax   = pct === 100;
+    var isEmpty = m.pages === 0;
+    var barStyle = isEmpty
+      ? 'background:#f1f5f9;width:100%'
+      : (isMax
+          ? 'background:linear-gradient(90deg,' + color1 + ',' + color2 + ');width:' + Math.max(pct, 3) + '%'
+          : 'background:' + color1 + ';opacity:0.75;width:' + Math.max(pct, 3) + '%');
+    return '<div class="flex items-center gap-3 group">' +
+      '<span class="text-[11px] text-slate-500 w-14 shrink-0 text-right font-medium">' + m.label + '</span>' +
+      '<div class="flex-1 bg-slate-100 rounded-full h-5 overflow-hidden">' +
+        '<div class="h-5 rounded-full flex items-center justify-end pr-2.5 transition-all duration-700" style="' + barStyle + '">' +
+          (!isEmpty && pct > 12 ? '<span class="text-[10px] font-black text-white leading-none">' + m.pages.toLocaleString() + '</span>' : '') +
         '</div>' +
       '</div>' +
-      (pct <= 10 ? '<span class="text-[11px] font-bold text-slate-600 shrink-0 w-10 text-right">' + m.pages.toLocaleString() + '</span>' : '<span class="w-10"></span>') +
+      (!isEmpty && pct <= 12
+        ? '<span class="text-[11px] font-bold text-slate-600 shrink-0 w-8 text-right">' + m.pages.toLocaleString() + '</span>'
+        : (isEmpty ? '<span class="text-[10px] text-slate-300 shrink-0 w-8 text-right">0</span>' : '<span class="w-8"></span>')) +
     '</div>';
   }).join('');
 }
 
-/* ── Shared: member/vendor distribution bars ── */
-function _tvRenderDistributionBars(elId, items, colorClass) {
+/* ── Distribution bars — fix: only show task count, NOT pages again ── */
+function _tvRenderDistBars(elId, items, color1, color2) {
   var el = document.getElementById(elId);
   if (!el) return;
-  if (!items.length) { el.innerHTML = '<p class="text-sm text-slate-400 text-center py-4">No data available.</p>'; return; }
+  if (!items.length) {
+    el.innerHTML = '<p class="text-sm text-slate-400 text-center py-6">No data available yet.</p>';
+    return;
+  }
   var max = Math.max.apply(null, items.map(function(i){ return i.pages; })) || 1;
-  el.innerHTML = items.map(function(i) {
-    var sub = (i.pages || 0).toLocaleString() + ' pages \u00b7 ' + (i.tasks || 0) + ' task' + (i.tasks !== 1 ? 's' : '');
-    return buildBar(i.name, i.pages, max, colorClass, sub);
-  }).join('<div class="mt-2"></div>');
+  /* Colour palette cycles through for visual variety */
+  var palette = [
+    ['#3b82f6','#0ea5e9'], ['#10b981','#0d9488'], ['#8b5cf6','#6366f1'],
+    ['#f59e0b','#f97316'], ['#ec4899','#d946ef'], ['#06b6d4','#0ea5e9'],
+    ['#84cc16','#10b981'], ['#f43f5e','#e11d48']
+  ];
+  el.innerHTML = items.map(function(i, idx) {
+    var pct   = max > 0 ? Math.round((i.pages / max) * 100) : 0;
+    var cols  = palette[idx % palette.length];
+    var isTop = pct === 100;
+    var barStyle = isTop
+      ? 'background:linear-gradient(90deg,' + cols[0] + ',' + cols[1] + ')'
+      : 'background:' + cols[0];
+    /* Task count label — clean, no page duplication */
+    var taskLabel = (i.tasks || 0) + ' task' + (i.tasks !== 1 ? 's' : '');
+    return '<div>' +
+      '<div class="flex items-center justify-between mb-1.5">' +
+        '<div class="flex items-center gap-2 min-w-0">' +
+          '<div class="h-6 w-6 rounded-lg flex items-center justify-center text-[10px] font-black text-white shrink-0" style="background:' + cols[0] + '">' +
+            (i.name || '?').charAt(0).toUpperCase() +
+          '</div>' +
+          '<span class="text-xs font-semibold text-slate-700 truncate">' + (i.name || '—') + '</span>' +
+        '</div>' +
+        '<div class="flex items-center gap-3 shrink-0 ml-3">' +
+          '<span class="text-[10px] text-slate-400">' + taskLabel + '</span>' +
+          '<span class="text-sm font-black tabular-nums" style="color:' + cols[0] + '">' + (i.pages || 0).toLocaleString() + ' <span class="text-[10px] font-normal text-slate-400">pages</span></span>' +
+        '</div>' +
+      '</div>' +
+      '<div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">' +
+        '<div class="h-2.5 rounded-full transition-all duration-700" style="width:' + Math.max(pct,1) + '%;' + barStyle + '"></div>' +
+      '</div>' +
+    '</div>';
+  }).join('<div class="my-1"></div>');
 }
 
-/* ── Profile navigation (called from table action buttons) ── */
+/* ── Profile navigation ── */
 function viewMemberPerformance(memberName) {
   loadPage('memberView', { memberName: memberName });
 }
-
 function viewVendorPerformance(vendorName) {
   loadPage('vendorView', { vendorName: vendorName });
 }

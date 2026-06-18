@@ -1,16 +1,16 @@
 <div class="space-y-5 page-enter" id="vendorViewRoot">
 
-  <!-- ── BACK + HEADER ── -->
+  <!-- BACK + HEADER -->
   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
     <div class="flex items-center gap-3">
       <button onclick="loadPage('teamsVendors')"
-        class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-500 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-lg transition-all">
+        class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-500 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all">
         ← Back to Teams &amp; Vendors
       </button>
       <div class="h-4 w-px bg-slate-200"></div>
       <div>
         <h2 id="vv_title" class="text-xl font-black text-slate-800 tracking-tight">Vendor Performance</h2>
-        <p id="vv_subtitle" class="text-xs text-slate-400 mt-0.5 font-medium">Loading…</p>
+        <p id="vv_subtitle" class="text-xs text-slate-400 mt-0.5">Loading…</p>
       </div>
     </div>
     <!-- Filters -->
@@ -29,24 +29,20 @@
         <option value="">All Projects</option>
       </select>
       <button onclick="_vvResetFilters()"
-        class="flex items-center gap-1 px-3 py-2 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg transition-all">
+        class="flex items-center gap-1 px-3 py-2 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition-all">
         ↺ Reset
       </button>
     </div>
   </div>
 
-  <!-- ── VENDOR PROFILE CARD ── -->
+  <!-- VENDOR PROFILE CARD -->
   <div class="relative bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-    <!-- Decorative gradient strip -->
     <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 via-teal-400 to-sky-400"></div>
-    <div class="p-5 flex flex-wrap gap-6 items-center">
-      <!-- Avatar -->
+    <div class="p-5 flex flex-wrap gap-5 items-center">
       <div class="flex items-center gap-4">
         <div class="relative shrink-0">
           <div id="vv_avatar"
-            class="h-16 w-16 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-2xl font-black text-white shadow-md shadow-emerald-200">
-            ?
-          </div>
+            class="h-16 w-16 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-2xl font-black text-white shadow-md shadow-emerald-200">?</div>
           <div class="absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-white border-2 border-white flex items-center justify-center">
             <div id="vv_onlineDot" class="h-2.5 w-2.5 rounded-full bg-emerald-400"></div>
           </div>
@@ -56,11 +52,10 @@
           <p id="vv_contact" class="text-xs text-slate-500 mt-0.5 font-medium">—</p>
           <div class="flex items-center gap-2 mt-2">
             <span id="vv_statusBadge" class="badge bg-emerald-100 text-emerald-700">Active</span>
-            <span id="vv_specBadge" class="badge bg-slate-100 text-slate-500">—</span>
+            <span id="vv_specBadge" class="badge bg-teal-100 text-teal-600">—</span>
           </div>
         </div>
       </div>
-      <!-- Details grid -->
       <div class="flex flex-wrap gap-x-8 gap-y-3 ml-auto">
         <div class="flex items-start gap-2">
           <span class="text-base mt-0.5">✉️</span>
@@ -94,139 +89,117 @@
     </div>
   </div>
 
-  <!-- ── STAT CARDS ── -->
+  <!-- STAT CARDS -->
   <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-
-    <div class="stat-card border-l-4 border-l-sky-500 group hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
-      <div class="flex items-start justify-between">
-        <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Completed Pages</p>
-        <span class="text-lg opacity-60">✅</span>
-      </div>
-      <h3 id="vv_completedPages" class="text-3xl font-black text-sky-600 mt-1 tabular-nums">—</h3>
-      <p class="text-xs text-slate-400 mt-1">work status = completed</p>
+    <div class="relative bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-4 text-white overflow-hidden shadow-lg shadow-emerald-100">
+      <div class="absolute -top-3 -right-3 h-14 w-14 bg-white/10 rounded-full"></div>
+      <p class="text-[10px] font-bold uppercase tracking-widest opacity-80">Completed Pages</p>
+      <h3 id="vv_completedPages" class="text-3xl font-black mt-1 tabular-nums">—</h3>
+      <p class="text-[10px] opacity-70 mt-1">status = completed</p>
     </div>
-
-    <div class="stat-card border-l-4 border-l-emerald-500 group hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
-      <div class="flex items-start justify-between">
-        <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Total Assigned</p>
-        <span class="text-lg opacity-60">📋</span>
-      </div>
-      <h3 id="vv_totalAssigned" class="text-3xl font-black text-emerald-600 mt-1 tabular-nums">—</h3>
-      <p class="text-xs text-slate-400 mt-1">tasks + revisions</p>
+    <div class="relative bg-gradient-to-br from-sky-500 to-cyan-600 rounded-2xl p-4 text-white overflow-hidden shadow-lg shadow-sky-100">
+      <div class="absolute -top-3 -right-3 h-14 w-14 bg-white/10 rounded-full"></div>
+      <p class="text-[10px] font-bold uppercase tracking-widest opacity-80">Total Assigned</p>
+      <h3 id="vv_totalAssigned" class="text-3xl font-black mt-1 tabular-nums">—</h3>
+      <p class="text-[10px] opacity-70 mt-1">tasks + revisions</p>
     </div>
-
-    <div class="stat-card border-l-4 border-l-amber-500 group hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
-      <div class="flex items-start justify-between">
-        <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Pending Pages</p>
-        <span class="text-lg opacity-60">⏳</span>
-      </div>
-      <h3 id="vv_pendingPages" class="text-3xl font-black text-amber-500 mt-1 tabular-nums">—</h3>
-      <p class="text-xs text-slate-400 mt-1">not yet completed</p>
+    <div class="relative bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl p-4 text-white overflow-hidden shadow-lg shadow-amber-100">
+      <div class="absolute -top-3 -right-3 h-14 w-14 bg-white/10 rounded-full"></div>
+      <p class="text-[10px] font-bold uppercase tracking-widest opacity-80">Pending Pages</p>
+      <h3 id="vv_pendingPages" class="text-3xl font-black mt-1 tabular-nums">—</h3>
+      <p class="text-[10px] opacity-70 mt-1">not yet completed</p>
     </div>
-
-    <div class="stat-card border-l-4 border-l-violet-500 group hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
-      <div class="flex items-start justify-between">
-        <p class="text-[10px] font-bold uppercase tracking-widest text-violet-500">Est. Amount</p>
-        <span class="text-lg opacity-60">💳</span>
-      </div>
-      <h3 id="vv_estAmount" class="text-3xl font-black text-violet-700 mt-1 tabular-nums">—</h3>
-      <p class="text-xs text-slate-400 mt-1">paid + partial</p>
+    <div class="relative bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl p-4 text-white overflow-hidden shadow-lg shadow-violet-100">
+      <div class="absolute -top-3 -right-3 h-14 w-14 bg-white/10 rounded-full"></div>
+      <p class="text-[10px] font-bold uppercase tracking-widest opacity-80">Est. Amount</p>
+      <h3 id="vv_estAmount" class="text-3xl font-black mt-1 tabular-nums">—</h3>
+      <p class="text-[10px] opacity-70 mt-1">paid + partial</p>
     </div>
-
   </div>
 
-  <!-- ── MONTHLY CHART + PAYMENT SUMMARY ── -->
+  <!-- MONTHLY CHART + PAYMENT SUMMARY -->
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
-    <!-- Monthly Chart -->
     <div class="lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-      <div class="px-5 py-3.5 border-b border-gray-50 flex items-center justify-between">
+      <div class="px-5 py-4 bg-gradient-to-r from-emerald-50 to-teal-50 border-b border-emerald-100 flex items-center gap-3">
+        <div class="h-8 w-8 rounded-xl bg-emerald-100 flex items-center justify-center text-base">📈</div>
         <div>
-          <h3 class="text-sm font-bold text-slate-700">Monthly Completed Pages</h3>
-          <p class="text-xs text-slate-400 mt-0.5">Last 12 months (unfiltered)</p>
+          <h3 class="text-sm font-bold text-emerald-800">Monthly Completed Pages</h3>
+          <p class="text-[11px] text-emerald-400">Last 12 months — unfiltered</p>
         </div>
-        <span class="text-lg">📈</span>
       </div>
-      <div id="vv_monthlyChart" class="p-5 space-y-2.5">
-        <div class="h-4 bg-slate-100 rounded-full animate-pulse"></div>
-        <div class="h-4 bg-slate-100 rounded-full animate-pulse w-4/5"></div>
-        <div class="h-4 bg-slate-100 rounded-full animate-pulse w-3/5"></div>
+      <div id="vv_monthlyChart" class="p-5 space-y-2">
+        <div class="h-5 bg-slate-100 rounded-full animate-pulse"></div>
+        <div class="h-5 bg-slate-100 rounded-full animate-pulse w-4/5"></div>
+        <div class="h-5 bg-slate-100 rounded-full animate-pulse w-3/5"></div>
       </div>
     </div>
 
-    <!-- Payment Summary -->
     <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-      <div class="px-5 py-3.5 border-b border-gray-50 flex items-center justify-between">
+      <div class="px-5 py-4 bg-gradient-to-r from-slate-50 to-gray-50 border-b border-gray-100 flex items-center justify-between">
         <h3 class="text-sm font-bold text-slate-700">Payment Summary</h3>
         <span class="text-lg">🧾</span>
       </div>
       <div class="p-4 space-y-3">
-
-        <div class="rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 p-3.5 flex items-center justify-between">
+        <div class="rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 p-3.5 flex items-center justify-between">
           <div>
             <p class="text-[10px] font-bold uppercase tracking-widest text-emerald-500">Paid</p>
             <p id="vv_paidAmt" class="text-xl font-black text-emerald-700 mt-0.5 tabular-nums">—</p>
           </div>
-          <div class="h-9 w-9 rounded-xl bg-emerald-100 flex items-center justify-center text-base">✅</div>
+          <div class="h-10 w-10 rounded-xl bg-emerald-100 flex items-center justify-center text-lg shrink-0">✅</div>
         </div>
-
-        <div class="rounded-xl bg-gradient-to-br from-yellow-50 to-amber-50 border border-yellow-100 p-3.5 flex items-center justify-between">
+        <div class="rounded-2xl bg-gradient-to-br from-yellow-50 to-amber-50 border border-yellow-100 p-3.5 flex items-center justify-between">
           <div>
             <p class="text-[10px] font-bold uppercase tracking-widest text-yellow-500">Partial</p>
             <p id="vv_partialAmt" class="text-xl font-black text-yellow-700 mt-0.5 tabular-nums">—</p>
           </div>
-          <div class="h-9 w-9 rounded-xl bg-yellow-100 flex items-center justify-center text-base">⚡</div>
+          <div class="h-10 w-10 rounded-xl bg-yellow-100 flex items-center justify-center text-lg shrink-0">⚡</div>
         </div>
-
-        <div class="rounded-xl bg-gradient-to-br from-red-50 to-rose-50 border border-red-100 p-3.5 flex items-center justify-between">
+        <div class="rounded-2xl bg-gradient-to-br from-red-50 to-rose-50 border border-red-100 p-3.5 flex items-center justify-between">
           <div>
             <p class="text-[10px] font-bold uppercase tracking-widest text-red-400">Unpaid</p>
             <p id="vv_unpaidCount" class="text-xl font-black text-red-600 mt-0.5 tabular-nums">—</p>
             <p id="vv_unpaidBreakdown" class="text-xs text-red-400 mt-0.5"></p>
           </div>
-          <div class="h-9 w-9 rounded-xl bg-red-100 flex items-center justify-center text-base">🔴</div>
+          <div class="h-10 w-10 rounded-xl bg-red-100 flex items-center justify-center text-lg shrink-0">🔴</div>
         </div>
-
       </div>
     </div>
   </div>
 
-  <!-- ── BREAKDOWN: Project + Task Type ── -->
+  <!-- PROJECT + TASK TYPE BREAKDOWN -->
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-
     <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-      <div class="px-5 py-3.5 border-b border-gray-50 flex items-center justify-between">
+      <div class="px-5 py-4 bg-gradient-to-r from-emerald-50 to-teal-50 border-b border-emerald-100 flex items-center gap-3">
+        <div class="h-8 w-8 rounded-xl bg-emerald-100 flex items-center justify-center text-base">🗂️</div>
         <div>
-          <h3 class="text-sm font-bold text-slate-700">Project Contribution</h3>
-          <p class="text-xs text-slate-400 mt-0.5">Pages per project</p>
+          <h3 class="text-sm font-bold text-emerald-800">Project Contribution</h3>
+          <p class="text-[11px] text-emerald-400">Pages per project</p>
         </div>
-        <span class="text-lg">🗂️</span>
       </div>
       <div id="vv_byProject" class="p-5 space-y-3">
         <div class="h-4 bg-slate-100 rounded-full animate-pulse"></div>
         <div class="h-4 bg-slate-100 rounded-full animate-pulse w-3/4"></div>
       </div>
     </div>
-
     <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-      <div class="px-5 py-3.5 border-b border-gray-50 flex items-center justify-between">
+      <div class="px-5 py-4 bg-gradient-to-r from-violet-50 to-purple-50 border-b border-violet-100 flex items-center gap-3">
+        <div class="h-8 w-8 rounded-xl bg-violet-100 flex items-center justify-center text-base">🔖</div>
         <div>
-          <h3 class="text-sm font-bold text-slate-700">Task Type Breakdown</h3>
-          <p class="text-xs text-slate-400 mt-0.5">Pages by task type</p>
+          <h3 class="text-sm font-bold text-violet-800">Task Type Breakdown</h3>
+          <p class="text-[11px] text-violet-400">Pages by work type</p>
         </div>
-        <span class="text-lg">🔖</span>
       </div>
       <div id="vv_byTaskType" class="p-5 space-y-3">
         <div class="h-4 bg-slate-100 rounded-full animate-pulse"></div>
         <div class="h-4 bg-slate-100 rounded-full animate-pulse w-3/4"></div>
       </div>
     </div>
-
   </div>
 
-  <!-- ── WORK HISTORY TABLE ── -->
+  <!-- WORK HISTORY -->
   <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-    <div class="px-5 py-3.5 border-b border-gray-50 flex items-center justify-between">
+    <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
       <div>
         <h3 class="text-sm font-bold text-slate-700">Work History</h3>
         <p id="vv_tableCount" class="text-xs text-slate-400 mt-0.5">All tasks and revisions</p>
@@ -242,9 +215,9 @@
             <th>Type</th>
             <th>Language</th>
             <th class="text-center">Pages</th>
-            <th class="text-center">Rate/Page</th>
+            <th class="text-center">Rate/Pg</th>
             <th class="text-center">Amount</th>
-            <th class="text-center">Work Status</th>
+            <th class="text-center">Status</th>
             <th class="text-center">Payment</th>
             <th>Completed</th>
           </tr>

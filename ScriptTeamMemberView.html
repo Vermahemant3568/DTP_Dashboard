@@ -151,7 +151,8 @@ function _mvRenderBars(id, items, labelKey, valueKey, colorClass) {
   if (!items.length) { el.innerHTML = '<p class="text-sm text-slate-400 text-center py-4">No data.</p>'; return; }
   var max = Math.max.apply(null, items.map(function(i){ return i[valueKey]; })) || 1;
   el.innerHTML = items.slice(0,8).map(function(i) {
-    var sub = i[valueKey].toLocaleString() + ' pages' + (i.count !== undefined ? ' \u00b7 ' + i.count + ' task' + (i.count !== 1 ? 's' : '') : '');
+    /* sub shows only task count — pages are shown by buildBar's value display already */
+    var sub = i.count !== undefined ? i.count + ' task' + (i.count !== 1 ? 's' : '') : '';
     return buildBar(i[labelKey], i[valueKey], max, colorClass, sub);
   }).join('<div class="mt-2"></div>');
 }

@@ -4,16 +4,16 @@
   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
     <div class="flex items-center gap-3">
       <button onclick="loadPage('teamsVendors')"
-        class="flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-slate-800 transition-colors">
-        ← Back
+        class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-500 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all">
+        ← Back to Teams &amp; Vendors
       </button>
       <div class="h-4 w-px bg-slate-200"></div>
       <div>
-        <h2 id="mv_title" class="text-xl font-bold text-slate-800">Team Member Performance</h2>
+        <h2 id="mv_title" class="text-xl font-black text-slate-800 tracking-tight">Member Performance</h2>
         <p id="mv_subtitle" class="text-xs text-slate-400 mt-0.5">Loading…</p>
       </div>
     </div>
-    <!-- FILTERS: Month + Year + Project only -->
+    <!-- Filters -->
     <div class="flex flex-wrap items-center gap-2">
       <select id="mv_fMonth" onchange="mvApplyFilter()" class="input w-32 text-xs py-2">
         <option value="">All Months</option>
@@ -28,115 +28,170 @@
       <select id="mv_fProject" onchange="mvApplyFilter()" class="input w-44 text-xs py-2">
         <option value="">All Projects</option>
       </select>
-      <button onclick="_mvResetFilters()" class="px-3 py-2 text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-all">Reset</button>
+      <button onclick="_mvResetFilters()" class="px-3 py-2 text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl transition-all">↺ Reset</button>
     </div>
   </div>
 
-  <!-- MEMBER INFO CARD -->
-  <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex flex-wrap gap-6 items-center">
-    <div class="flex items-center gap-4">
-      <div id="mv_avatar" class="h-14 w-14 rounded-2xl bg-sky-100 flex items-center justify-center text-xl font-black text-sky-700 shrink-0">?</div>
-      <div>
-        <h3 id="mv_name" class="text-lg font-bold text-slate-800">—</h3>
-        <p id="mv_role" class="text-xs text-slate-500 mt-0.5">—</p>
-        <div class="flex items-center gap-2 mt-1.5">
-          <span id="mv_statusBadge" class="badge bg-emerald-100 text-emerald-700">Active</span>
-          <span id="mv_specBadge" class="badge bg-slate-100 text-slate-500">—</span>
+  <!-- PROFILE CARD -->
+  <div class="relative bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+    <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-sky-400 via-blue-500 to-indigo-500"></div>
+    <div class="p-5 flex flex-wrap gap-5 items-center">
+      <div class="flex items-center gap-4">
+        <div id="mv_avatar"
+          class="h-16 w-16 rounded-2xl bg-gradient-to-br from-sky-400 to-blue-600 flex items-center justify-center text-2xl font-black text-white shadow-md shadow-sky-200 shrink-0">?</div>
+        <div>
+          <h3 id="mv_name" class="text-lg font-black text-slate-800 tracking-tight">—</h3>
+          <p id="mv_role" class="text-xs text-slate-500 mt-0.5 font-medium">—</p>
+          <div class="flex items-center gap-2 mt-2">
+            <span id="mv_statusBadge" class="badge bg-emerald-100 text-emerald-700">Active</span>
+            <span id="mv_specBadge" class="badge bg-sky-100 text-sky-600">—</span>
+          </div>
         </div>
       </div>
-    </div>
-    <div class="flex flex-wrap gap-6 text-sm ml-auto">
-      <div><p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Email</p><p id="mv_email" class="font-semibold text-slate-700 mt-0.5 text-xs">—</p></div>
-      <div><p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Phone</p><p id="mv_phone" class="font-semibold text-slate-700 mt-0.5 text-xs">—</p></div>
-      <div><p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Rate / Page</p><p id="mv_rate" class="font-semibold text-emerald-700 mt-0.5 text-xs">—</p></div>
-      <div><p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Avg Pages/Task</p><p id="mv_avgPages" class="font-semibold text-sky-700 mt-0.5 text-xs">—</p></div>
+      <div class="flex flex-wrap gap-x-8 gap-y-3 ml-auto">
+        <div class="flex items-start gap-2">
+          <span class="text-base mt-0.5">✉️</span>
+          <div>
+            <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Email</p>
+            <p id="mv_email" class="font-semibold text-slate-700 mt-0.5 text-xs">—</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-2">
+          <span class="text-base mt-0.5">📞</span>
+          <div>
+            <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Phone</p>
+            <p id="mv_phone" class="font-semibold text-slate-700 mt-0.5 text-xs">—</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-2">
+          <span class="text-base mt-0.5">💰</span>
+          <div>
+            <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Rate / Page</p>
+            <p id="mv_rate" class="font-bold text-emerald-600 mt-0.5 text-xs">—</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-2">
+          <span class="text-base mt-0.5">📄</span>
+          <div>
+            <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Avg Pages / Task</p>
+            <p id="mv_avgPages" class="font-bold text-sky-600 mt-0.5 text-xs">—</p>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
   <!-- STAT CARDS -->
   <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-    <div class="stat-card border-l-4 border-l-sky-500">
-      <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Total Assigned</p>
-      <h3 id="mv_totalAssigned" class="text-3xl font-black text-sky-600 mt-1">—</h3>
-      <p class="text-xs text-slate-400 mt-1">tasks + revisions</p>
+    <div class="relative bg-gradient-to-br from-sky-500 to-blue-600 rounded-2xl p-4 text-white overflow-hidden shadow-lg shadow-sky-100">
+      <div class="absolute -top-3 -right-3 h-14 w-14 bg-white/10 rounded-full"></div>
+      <p class="text-[10px] font-bold uppercase tracking-widest opacity-80">Total Assigned</p>
+      <h3 id="mv_totalAssigned" class="text-3xl font-black mt-1 tabular-nums">—</h3>
+      <p class="text-[10px] opacity-70 mt-1">tasks + revisions</p>
     </div>
-    <div class="stat-card border-l-4 border-l-emerald-500">
-      <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Completed Pages</p>
-      <h3 id="mv_completedPages" class="text-3xl font-black text-emerald-600 mt-1">—</h3>
-      <p class="text-xs text-slate-400 mt-1">work status = completed</p>
+    <div class="relative bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-4 text-white overflow-hidden shadow-lg shadow-emerald-100">
+      <div class="absolute -top-3 -right-3 h-14 w-14 bg-white/10 rounded-full"></div>
+      <p class="text-[10px] font-bold uppercase tracking-widest opacity-80">Completed Pages</p>
+      <h3 id="mv_completedPages" class="text-3xl font-black mt-1 tabular-nums">—</h3>
+      <p class="text-[10px] opacity-70 mt-1">status = completed</p>
     </div>
-    <div class="stat-card border-l-4 border-l-amber-400">
-      <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Pending Pages</p>
-      <h3 id="mv_inProgressPages" class="text-3xl font-black text-amber-500 mt-1">—</h3>
-      <p class="text-xs text-slate-400 mt-1">in-progress + pending</p>
+    <div class="relative bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl p-4 text-white overflow-hidden shadow-lg shadow-amber-100">
+      <div class="absolute -top-3 -right-3 h-14 w-14 bg-white/10 rounded-full"></div>
+      <p class="text-[10px] font-bold uppercase tracking-widest opacity-80">Pending Pages</p>
+      <h3 id="mv_inProgressPages" class="text-3xl font-black mt-1 tabular-nums">—</h3>
+      <p class="text-[10px] opacity-70 mt-1">in-progress + pending</p>
     </div>
-    <div class="stat-card border-l-4 border-l-violet-500">
-      <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Total Pages</p>
-      <h3 id="mv_totalPages" class="text-3xl font-black text-violet-600 mt-1">—</h3>
-      <p class="text-xs text-slate-400 mt-1">all tasks + revisions</p>
-    </div>
-  </div>
-
-  <!-- PAYMENT SUMMARY — 3 cards -->
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
-    <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-4">
-      <p class="text-[10px] font-bold uppercase tracking-widest text-emerald-600">Paid</p>
-      <h3 id="mv_paidCount" class="text-2xl font-black text-emerald-700 mt-1">—</h3>
-      <p id="mv_paidBreakdown" class="text-xs text-emerald-600 mt-1">—</p>
-    </div>
-    <div class="bg-red-50 border border-red-100 rounded-xl p-4">
-      <p class="text-[10px] font-bold uppercase tracking-widest text-red-500">Unpaid</p>
-      <h3 id="mv_unpaidCount" class="text-2xl font-black text-red-600 mt-1">—</h3>
-      <p id="mv_unpaidBreakdown" class="text-xs text-red-400 mt-1">—</p>
-    </div>
-    <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
-      <p class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Total Paid Amount</p>
-      <h3 id="mv_totalAmt" class="text-2xl font-black text-slate-700 mt-1">—</h3>
-      <p class="text-xs text-slate-400 mt-1">Paid + Partial amounts</p>
+    <div class="relative bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl p-4 text-white overflow-hidden shadow-lg shadow-violet-100">
+      <div class="absolute -top-3 -right-3 h-14 w-14 bg-white/10 rounded-full"></div>
+      <p class="text-[10px] font-bold uppercase tracking-widest opacity-80">Total Pages</p>
+      <h3 id="mv_totalPages" class="text-3xl font-black mt-1 tabular-nums">—</h3>
+      <p class="text-[10px] opacity-70 mt-1">all tasks + revisions</p>
     </div>
   </div>
 
-  <!-- MONTHLY CHART -->
-  <div class="bg-white rounded-xl border border-gray-100 shadow-sm">
-    <div class="px-5 py-3 border-b border-gray-50">
-      <h3 class="text-sm font-bold text-slate-700">Monthly Productivity</h3>
-      <p class="text-xs text-slate-400 mt-0.5">Pages per month (last 12 months, unfiltered)</p>
+  <!-- PAYMENT SUMMARY -->
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+    <div class="rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 p-4 flex items-center justify-between">
+      <div>
+        <p class="text-[10px] font-bold uppercase tracking-widest text-emerald-500">Paid</p>
+        <h3 id="mv_paidCount" class="text-2xl font-black text-emerald-700 mt-1 tabular-nums">—</h3>
+        <p id="mv_paidBreakdown" class="text-xs text-emerald-500 mt-1">—</p>
+      </div>
+      <div class="h-11 w-11 rounded-2xl bg-emerald-100 flex items-center justify-center text-xl shrink-0">✅</div>
     </div>
-    <div id="mv_monthlyChart" class="p-5 space-y-2.5">
+    <div class="rounded-2xl bg-gradient-to-br from-red-50 to-rose-50 border border-red-100 p-4 flex items-center justify-between">
+      <div>
+        <p class="text-[10px] font-bold uppercase tracking-widest text-red-400">Unpaid</p>
+        <h3 id="mv_unpaidCount" class="text-2xl font-black text-red-600 mt-1 tabular-nums">—</h3>
+        <p id="mv_unpaidBreakdown" class="text-xs text-red-400 mt-1">—</p>
+      </div>
+      <div class="h-11 w-11 rounded-2xl bg-red-100 flex items-center justify-center text-xl shrink-0">🔴</div>
+    </div>
+    <div class="rounded-2xl bg-gradient-to-br from-sky-50 to-blue-50 border border-sky-100 p-4 flex items-center justify-between">
+      <div>
+        <p class="text-[10px] font-bold uppercase tracking-widest text-sky-500">Total Paid Amount</p>
+        <h3 id="mv_totalAmt" class="text-2xl font-black text-sky-700 mt-1 tabular-nums">—</h3>
+        <p class="text-xs text-sky-400 mt-1">Paid + Partial</p>
+      </div>
+      <div class="h-11 w-11 rounded-2xl bg-sky-100 flex items-center justify-center text-xl shrink-0">💳</div>
+    </div>
+  </div>
+
+  <!-- MONTHLY + BREAKDOWN -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <!-- Monthly Chart -->
+    <div class="lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <div class="px-5 py-4 bg-gradient-to-r from-sky-50 to-indigo-50 border-b border-sky-100 flex items-center gap-3">
+        <div class="h-8 w-8 rounded-xl bg-sky-100 flex items-center justify-center text-base">📈</div>
+        <div>
+          <h3 class="text-sm font-bold text-sky-800">Monthly Productivity</h3>
+          <p class="text-[11px] text-sky-400">Pages per month — last 12 months</p>
+        </div>
+      </div>
+      <div id="mv_monthlyChart" class="p-5 space-y-2">
+        <div class="h-5 bg-slate-100 rounded-full animate-pulse"></div>
+        <div class="h-5 bg-slate-100 rounded-full animate-pulse w-3/4"></div>
+      </div>
+    </div>
+    <!-- Task Type -->
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <div class="px-5 py-4 bg-gradient-to-r from-violet-50 to-purple-50 border-b border-violet-100 flex items-center gap-3">
+        <div class="h-8 w-8 rounded-xl bg-violet-100 flex items-center justify-center text-base">🔖</div>
+        <div>
+          <h3 class="text-sm font-bold text-violet-800">Task Type Breakdown</h3>
+          <p class="text-[11px] text-violet-400">Pages by work type</p>
+        </div>
+      </div>
+      <div id="mv_byTaskType" class="p-5 space-y-3">
+        <div class="h-4 bg-slate-100 rounded-full animate-pulse"></div>
+        <div class="h-4 bg-slate-100 rounded-full animate-pulse w-3/4"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROJECT CONTRIBUTION -->
+  <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+    <div class="px-5 py-4 bg-gradient-to-r from-sky-50 to-blue-50 border-b border-sky-100 flex items-center gap-3">
+      <div class="h-8 w-8 rounded-xl bg-sky-100 flex items-center justify-center text-base">🗂️</div>
+      <div>
+        <h3 class="text-sm font-bold text-sky-800">Project Contribution</h3>
+        <p class="text-[11px] text-sky-400">Pages completed per project</p>
+      </div>
+    </div>
+    <div id="mv_byProject" class="p-5 space-y-3">
       <div class="h-4 bg-slate-100 rounded-full animate-pulse"></div>
       <div class="h-4 bg-slate-100 rounded-full animate-pulse w-3/4"></div>
     </div>
   </div>
 
-  <!-- BREAKDOWN: Project + Task Type (2 cols, no Language) -->
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-    <div class="bg-white rounded-xl border border-gray-100 shadow-sm">
-      <div class="px-5 py-3 border-b border-gray-50">
-        <h3 class="text-sm font-bold text-slate-700">Project Contribution</h3>
-        <p class="text-xs text-slate-400 mt-0.5">Pages per project</p>
-      </div>
-      <div id="mv_byProject" class="p-5 space-y-3">
-        <div class="h-4 bg-slate-100 rounded-full animate-pulse"></div>
-      </div>
-    </div>
-    <div class="bg-white rounded-xl border border-gray-100 shadow-sm">
-      <div class="px-5 py-3 border-b border-gray-50">
-        <h3 class="text-sm font-bold text-slate-700">Task Type Breakdown</h3>
-        <p class="text-xs text-slate-400 mt-0.5">Pages by task type</p>
-      </div>
-      <div id="mv_byTaskType" class="p-5 space-y-3">
-        <div class="h-4 bg-slate-100 rounded-full animate-pulse"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- WORK HISTORY TABLE -->
-  <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-    <div class="px-5 py-3 border-b border-gray-50 flex items-center justify-between">
+  <!-- WORK HISTORY -->
+  <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+    <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
       <div>
         <h3 class="text-sm font-bold text-slate-700">Work History</h3>
         <p id="mv_tableCount" class="text-xs text-slate-400 mt-0.5">All tasks and revisions</p>
       </div>
+      <span class="text-lg">📄</span>
     </div>
     <div class="overflow-x-auto">
       <table class="data-table">
@@ -149,7 +204,7 @@
             <th class="text-center">Pages</th>
             <th class="text-center">Rate/Pg</th>
             <th class="text-center">Amount</th>
-            <th class="text-center">Work Status</th>
+            <th class="text-center">Status</th>
             <th class="text-center">Payment</th>
             <th>Completed</th>
           </tr>
