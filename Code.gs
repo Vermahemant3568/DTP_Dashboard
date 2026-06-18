@@ -429,3 +429,104 @@ function getDropdownData() {
     return { vendors:[], team:[] };
   }
 }
+
+/* ================================================================
+   TEAMS & VENDORS ANALYTICS
+   Returns aggregated stats + monthly trends for the unified module.
+================================================================ */
+function getTeamsVendorsAnalytics() {
+  try {
+    var allTasks = _sheetRows(SH_TASKS).map(_fmtRow);
+    var allRevs  = _sheetRows(SH_REVISIONS).map(_fmtRow);
+    var now      = new Date();
+
+    /* ── Team stats ── */
+    var ihTasks = allTasks.filter(function(r){ return r[TC.WORK_TYPE] === 'In-House'; });
+    var ihRevs  = allRevs.filter(function(r){  return r[RC.WORK_TYPE] === 'In-House'; });
+
+    var ihTotalPages     = ihTasks.reduce(function(s,r){ return s+(Number(r[TC.FINAL_PAGES])||0); }, 0);
+    var ihCompletedPages = ihTasks.filter(function(r){ return r[TC.STATUS]==='Completed'; })
+                                  .reduce(function(s,r){ return s+(Number(r[TC.FINAL_PAGES])||0); }, 0);
+    var ihPendingPages   = ihTotalPages - ihCompletedPages;
+    var ihRevPages       = ihRevs.reduce(function(s,r){ return s+(Number(r[RC.REV_PAGES])||0); }, 0);
+    var ihActiveTasks    = ihTasks.filter(function(r){ return r[TC.STATUS]==='In Progress'||r[TC.STATUS]==='Pending'; }).length;
+    var ihCompletedTasks = ihTasks.filter(function(r){ return r[TC.STATUS]==='Completed'; }).length;
+
+    /* Monthly team production — last 12 months */
+    var teamMonthly = _buildMonthlyTrend(ihTasks, ihRevs, now, function(t){ return t[TC.FINAL_PAGES]; }, function(r){ return r[RC.REV_PAGES]; }, function(t){ return t[TC.START_DATE]||t[TC.CREATED_AT]; }, function(r){ return r[RC.REV_DATE]||r[RC.CREATED_AT]; });
+
+    /* Per-member page distribution */
+    var memberMap = {};
+    ihTasks.forEach(function(r){
+      var n = String(r[TC.ASSIGNED_TO]||'').trim(); if (!n) return;
+      if (!memberMap[n]) memberMap[n] = { name:n, pages:0, tasks:0 };
+      memberMap[n].pages += Number(r[TC.FINAL_PAGES])||0;
+      memberMap[n].tasks++;
+    });
+    ihRevs.forEach(function(r){
+      var n = String(r[RC.ASSIGNED_TO]||'').trim(); if (!n) return;
+      if (!memberMap[n]) memberMap[n] = { name:n, pages:0, tasks:0 };
+      memberMap[n].pages += Number(r[RC.REV_PAGES])||0;
+      memberMap[n].tasks++;
+    });
+    var teamMembers = Object.values(memberMap).sort(function(a,b){ return b.pages-a.pages; });
+
+    /* ── Vendor stats ── */
+    var vdTasks = allTasks.filter(function(r){ return r[TC.WORK_TYPE] === 'Vendor'; });
+    var vdRevs  = allRevs.filter(function(r){  return r[RC.WORK_TYPE] === 'Vendor'; });
+
+    var vdTotalPages     = vdTasks.reduce(function(s,r){ return s+(Number(r[TC.FINAL_PAGES])||0); }, 0);
+    var vdCompletedPages = vdTasks.filter(function(r){ return r[TC.STATUS]==='Completed'; })
+                                  .reduce(function(s,r){ return s+(Number(r[TC.FINAL_PAGES])||0); }, 0);
+    var vdPendingPages   = vdTotalPages - vdCompletedPages;
+    var vdRevPages       = vdRevs.reduce(function(s,r){ return s+(Number(r[RC.REV_PAGES])||0); }, 0);
+    var vdActiveTasks    = vdTasks.filter(function(r){ return r[TC.STATUS]==='In Progress'||r[TC.STATUS]==='Pending'; }).length;
+    var vdCompletedTasks = vdTasks.filter(function(r){ return r[TC.STATUS]==='Completed'; }).length;
+
+    /* Monthly vendor production — last 12 months */
+    var vendorMonthly = _buildMonthlyTrend(vdTasks, vdRevs, now, function(t){ return t[TC.FINAL_PAGES]; }, function(r){ return r[RC.REV_PAGES]; }, function(t){ return t[TC.START_DATE]||t[TC.CREATED_AT]; }, function(r){ return r[RC.REV_DATE]||r[RC.CREATED_AT]; });
+
+    /* Per-vendor page distribution */
+    var vendorMap = {};
+    vdTasks.forEach(function(r){
+      var n = String(r[TC.VENDOR_NAME]||'').trim(); if (!n) return;
+      if (!vendorMap[n]) vendorMap[n] = { name:n, pages:0, tasks:0 };
+      vendorMap[n].pages += Number(r[TC.FINAL_PAGES])||0;
+      vendorMap[n].tasks++;
+    });
+    vdRevs.forEach(function(r){
+      var n = String(r[RC.VENDOR_NAME]||'').trim(); if (!n) return;
+      if (!vendorMap[n]) vendorMap[n] = { name:n, pages:0, tasks:0 };
+      vendorMap[n].pages += Number(r[RC.REV_PAGES])||0;
+      vendorMap[n].tasks++;
+    });
+    var vendorMembers = Object.values(vendorMap).sort(function(a,b){ return b.pages-a.pages; });
+
+    return {
+      team:          { totalPages:ihTotalPages, completedPages:ihCompletedPages, pendingPages:ihPendingPages, revPages:ihRevPages, activeTasks:ihActiveTasks, completedTasks:ihCompletedTasks },
+      vendor:        { totalPages:vdTotalPages, completedPages:vdCompletedPages, pendingPages:vdPendingPages, revPages:vdRevPages, activeTasks:vdActiveTasks, completedTasks:vdCompletedTasks },
+      teamMonthly:   teamMonthly,
+      vendorMonthly: vendorMonthly,
+      teamMembers:   teamMembers,
+      vendorMembers: vendorMembers
+    };
+  } catch(e) {
+    console.error('getTeamsVendorsAnalytics:', e);
+    return { team:{}, vendor:{}, teamMonthly:[], vendorMonthly:[], teamMembers:[], vendorMembers:[] };
+  }
+}
+
+/* Build last-12-months trend array */
+function _buildMonthlyTrend(tasks, revs, now, taskPages, revPages, taskDate, revDate) {
+  var months = [];
+  for (var i = 11; i >= 0; i--) {
+    var d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    var m = d.getMonth(); var y = d.getFullYear();
+    var tp = tasks.filter(function(r){ return _inMonth(taskDate(r), m, y); })
+                  .reduce(function(s,r){ return s+(Number(taskPages(r))||0); }, 0);
+    var rp = revs.filter(function(r){ return _inMonth(revDate(r), m, y); })
+                 .reduce(function(s,r){ return s+(Number(revPages(r))||0); }, 0);
+    months.push({ label: Utilities.formatDate(d, Session.getScriptTimeZone(), 'MMM yy'), pages: tp+rp });
+  }
+  return months;
+}

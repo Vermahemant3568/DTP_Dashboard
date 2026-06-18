@@ -14,8 +14,7 @@ var PAGE_MAP = {
   viewTask:    "ViewTask",
   revisions:   "Revisions",
   addRevision: "AddRevision",
-  vendors:     "Vendors",
-  team:        "Team",
+  teamsVendors:"TeamsVendors",
   vendorView:  "VendorView",
   memberView:  "TeamMemberView"
 };
@@ -157,12 +156,8 @@ function _initPage(page, ctx) {
     case "addRevision":
       _initAddRevisionForm(ctx);
       break;
-    case "vendors":
-      if (typeof loadVendors === "function") loadVendors();
-      else hideLoader();
-      break;
-    case "team":
-      if (typeof loadTeam === "function") loadTeam();
+    case "teamsVendors":
+      if (typeof loadTeamsVendors === "function") loadTeamsVendors();
       else hideLoader();
       break;
     case "vendorView":
@@ -351,8 +346,7 @@ function handleRefresh() {
     projects:   function() { if (typeof loadProjects  === "function") loadProjects(); },
     tasks:      function() { if (typeof loadTasks     === "function") loadTasks(); },
     revisions:  function() { if (typeof loadRevisions === "function") loadRevisions(); },
-    vendors:    function() { if (typeof loadVendors   === "function") loadVendors(); },
-    team:       function() { if (typeof loadTeam      === "function") loadTeam(); },
+    teamsVendors: function() { if (typeof loadTeamsVendors === "function") loadTeamsVendors(); },
     viewTask:   function() { if (typeof loadTaskView === "function" && _vtCurrentTaskId) loadTaskView(_vtCurrentTaskId); },
     vendorView: function() { if (typeof _vvFetch      === "function") _vvFetch(); },
     memberView: function() { if (typeof _mvFetch      === "function") _mvFetch(); }

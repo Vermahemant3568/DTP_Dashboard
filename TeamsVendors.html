@@ -1,0 +1,318 @@
+<div class="space-y-4 page-enter" id="teamsVendorsRoot">
+
+  <!-- PAGE HEADER -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+    <div>
+      <h2 class="text-xl font-bold text-slate-800">Teams &amp; Vendors</h2>
+      <p class="text-xs text-slate-400 mt-0.5">Unified analysis — in-house team and outsourcing vendors</p>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="flex gap-1 bg-slate-100 rounded-xl p-1 w-fit">
+    <button id="tv_tab_team" onclick="tvSwitchTab('team')"
+      class="px-5 py-2 text-sm font-bold rounded-lg transition-all bg-white text-sky-700 shadow-sm">
+      👥 Team Analysis
+    </button>
+    <button id="tv_tab_vendor" onclick="tvSwitchTab('vendor')"
+      class="px-5 py-2 text-sm font-bold rounded-lg transition-all text-slate-500 hover:text-slate-700">
+      🤝 Vendor Analysis
+    </button>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       TEAM ANALYSIS TAB
+  ══════════════════════════════════════ -->
+  <div id="tv_panel_team" class="space-y-4">
+
+    <!-- Team Action -->
+    <div class="flex justify-end">
+      <button onclick="openTeamModal()"
+        class="inline-flex items-center gap-1.5 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold px-4 py-2 rounded-lg shadow-sm active:scale-95 transition-all">
+        ➕ Add Member
+      </button>
+    </div>
+
+    <!-- Team Stats -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div class="bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-3">
+        <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Total Members</p>
+        <p id="tm_stat_total" class="text-2xl font-black text-slate-800 mt-0.5">—</p>
+      </div>
+      <div class="bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-3">
+        <p class="text-[10px] font-bold uppercase tracking-wider text-emerald-500">Active</p>
+        <p id="tm_stat_active" class="text-2xl font-black text-emerald-600 mt-0.5">—</p>
+      </div>
+      <div class="bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-3">
+        <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Inactive</p>
+        <p id="tm_stat_inactive" class="text-2xl font-black text-gray-400 mt-0.5">—</p>
+      </div>
+      <div class="bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-3">
+        <p class="text-[10px] font-bold uppercase tracking-wider text-sky-500">Roles</p>
+        <p id="tm_stat_roles" class="text-2xl font-black text-sky-600 mt-0.5">—</p>
+      </div>
+    </div>
+
+    <!-- Team Analytics Row -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+      <!-- Total Pages by Team -->
+      <div class="bg-white rounded-xl border border-gray-100 shadow-sm">
+        <div class="px-5 py-3 border-b border-gray-50 flex items-center justify-between">
+          <div>
+            <h3 class="text-sm font-bold text-slate-700">Team Page Production</h3>
+            <p class="text-xs text-slate-400 mt-0.5">Completed &amp; total pages</p>
+          </div>
+          <span class="text-lg">📊</span>
+        </div>
+        <div class="p-5 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-slate-500">Total Pages Assigned</span>
+            <span id="tv_tm_totalPages" class="text-sm font-black text-sky-700">—</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-slate-500">Completed Pages</span>
+            <span id="tv_tm_completedPages" class="text-sm font-black text-emerald-600">—</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-slate-500">Pending Pages</span>
+            <span id="tv_tm_pendingPages" class="text-sm font-black text-amber-500">—</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-slate-500">Revision Pages</span>
+            <span id="tv_tm_revPages" class="text-sm font-black text-violet-600">—</span>
+          </div>
+          <div class="pt-2 border-t border-gray-50 flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-500">Active Tasks</span>
+            <span id="tv_tm_activeTasks" class="text-sm font-black text-sky-600">—</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-500">Completed Tasks</span>
+            <span id="tv_tm_completedTasks" class="text-sm font-black text-emerald-600">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Monthly Team Pages -->
+      <div class="lg:col-span-2 bg-white rounded-xl border border-gray-100 shadow-sm">
+        <div class="px-5 py-3 border-b border-gray-50 flex items-center justify-between">
+          <div>
+            <h3 class="text-sm font-bold text-slate-700">Monthly Team Production</h3>
+            <p class="text-xs text-slate-400 mt-0.5">Last 12 months</p>
+          </div>
+          <span class="text-lg">📈</span>
+        </div>
+        <div id="tv_tm_monthlyChart" class="p-5 space-y-2.5">
+          <div class="h-4 bg-slate-100 rounded-full animate-pulse"></div>
+          <div class="h-4 bg-slate-100 rounded-full animate-pulse w-4/5"></div>
+          <div class="h-4 bg-slate-100 rounded-full animate-pulse w-3/5"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Member Distribution -->
+    <div class="bg-white rounded-xl border border-gray-100 shadow-sm">
+      <div class="px-5 py-3 border-b border-gray-50 flex items-center justify-between">
+        <div>
+          <h3 class="text-sm font-bold text-slate-700">Member-wise Page Distribution</h3>
+          <p class="text-xs text-slate-400 mt-0.5">Total pages completed per team member</p>
+        </div>
+        <span class="text-lg">👤</span>
+      </div>
+      <div id="tv_tm_memberBars" class="p-5 space-y-3">
+        <div class="h-4 bg-slate-100 rounded-full animate-pulse"></div>
+        <div class="h-4 bg-slate-100 rounded-full animate-pulse w-3/4"></div>
+      </div>
+    </div>
+
+    <!-- Team Filter + Table -->
+    <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+      <div class="flex flex-col sm:flex-row gap-2 p-3 border-b border-gray-50">
+        <div class="relative flex-1">
+          <span class="absolute inset-y-0 left-3 flex items-center text-gray-400">
+            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          </span>
+          <input type="text" id="tm_search" oninput="filterTeam()" placeholder="Search name, role, specialization…" class="input pl-8 py-2 text-xs">
+        </div>
+        <select id="tm_statusFilter" onchange="filterTeam()" class="input sm:w-32 py-2 text-xs">
+          <option value="">All Status</option>
+          <option>Active</option>
+          <option>Inactive</option>
+        </select>
+        <button onclick="_resetTeamFilters()" class="shrink-0 px-3 py-2 text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-all">Reset</button>
+      </div>
+      <div class="flex items-center px-4 py-2 border-b border-gray-50">
+        <p id="tm_countLabel" class="text-xs text-gray-400 font-medium">Loading…</p>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Name &amp; Role</th>
+              <th>Email</th>
+              <th>Specialization</th>
+              <th class="text-center">Rate / Page</th>
+              <th class="text-center">Status</th>
+              <th class="text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="teamTable">
+            <tr><td colspan="7" class="py-16 text-center text-slate-400 text-sm">Loading team members…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- end team panel -->
+
+  <!-- ══════════════════════════════════════
+       VENDOR ANALYSIS TAB
+  ══════════════════════════════════════ -->
+  <div id="tv_panel_vendor" class="space-y-4 hidden">
+
+    <!-- Vendor Action -->
+    <div class="flex justify-end">
+      <button onclick="openVendorModal()"
+        class="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2 rounded-lg shadow-sm active:scale-95 transition-all">
+        ➕ Add Vendor
+      </button>
+    </div>
+
+    <!-- Vendor Stats -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div class="bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-3">
+        <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Total Vendors</p>
+        <p id="vnd_stat_total" class="text-2xl font-black text-slate-800 mt-0.5">—</p>
+      </div>
+      <div class="bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-3">
+        <p class="text-[10px] font-bold uppercase tracking-wider text-emerald-500">Active</p>
+        <p id="vnd_stat_active" class="text-2xl font-black text-emerald-600 mt-0.5">—</p>
+      </div>
+      <div class="bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-3">
+        <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Inactive</p>
+        <p id="vnd_stat_inactive" class="text-2xl font-black text-gray-400 mt-0.5">—</p>
+      </div>
+      <div class="bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-3">
+        <p class="text-[10px] font-bold uppercase tracking-wider text-sky-500">Specializations</p>
+        <p id="vnd_stat_specs" class="text-2xl font-black text-sky-600 mt-0.5">—</p>
+      </div>
+    </div>
+
+    <!-- Vendor Analytics Row -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+      <!-- Total Pages by Vendors -->
+      <div class="bg-white rounded-xl border border-gray-100 shadow-sm">
+        <div class="px-5 py-3 border-b border-gray-50 flex items-center justify-between">
+          <div>
+            <h3 class="text-sm font-bold text-slate-700">Vendor Page Production</h3>
+            <p class="text-xs text-slate-400 mt-0.5">Completed &amp; total pages</p>
+          </div>
+          <span class="text-lg">📦</span>
+        </div>
+        <div class="p-5 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-slate-500">Total Pages Assigned</span>
+            <span id="tv_vnd_totalPages" class="text-sm font-black text-sky-700">—</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-slate-500">Completed Pages</span>
+            <span id="tv_vnd_completedPages" class="text-sm font-black text-emerald-600">—</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-slate-500">Pending Pages</span>
+            <span id="tv_vnd_pendingPages" class="text-sm font-black text-amber-500">—</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-slate-500">Revision Pages</span>
+            <span id="tv_vnd_revPages" class="text-sm font-black text-violet-600">—</span>
+          </div>
+          <div class="pt-2 border-t border-gray-50 flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-500">Active Tasks</span>
+            <span id="tv_vnd_activeTasks" class="text-sm font-black text-sky-600">—</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-500">Completed Tasks</span>
+            <span id="tv_vnd_completedTasks" class="text-sm font-black text-emerald-600">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Monthly Vendor Pages -->
+      <div class="lg:col-span-2 bg-white rounded-xl border border-gray-100 shadow-sm">
+        <div class="px-5 py-3 border-b border-gray-50 flex items-center justify-between">
+          <div>
+            <h3 class="text-sm font-bold text-slate-700">Monthly Vendor Production</h3>
+            <p class="text-xs text-slate-400 mt-0.5">Last 12 months</p>
+          </div>
+          <span class="text-lg">📈</span>
+        </div>
+        <div id="tv_vnd_monthlyChart" class="p-5 space-y-2.5">
+          <div class="h-4 bg-slate-100 rounded-full animate-pulse"></div>
+          <div class="h-4 bg-slate-100 rounded-full animate-pulse w-4/5"></div>
+          <div class="h-4 bg-slate-100 rounded-full animate-pulse w-3/5"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Vendor Distribution -->
+    <div class="bg-white rounded-xl border border-gray-100 shadow-sm">
+      <div class="px-5 py-3 border-b border-gray-50 flex items-center justify-between">
+        <div>
+          <h3 class="text-sm font-bold text-slate-700">Vendor-wise Page Distribution</h3>
+          <p class="text-xs text-slate-400 mt-0.5">Total pages completed per vendor</p>
+        </div>
+        <span class="text-lg">🤝</span>
+      </div>
+      <div id="tv_vnd_vendorBars" class="p-5 space-y-3">
+        <div class="h-4 bg-slate-100 rounded-full animate-pulse"></div>
+        <div class="h-4 bg-slate-100 rounded-full animate-pulse w-3/4"></div>
+      </div>
+    </div>
+
+    <!-- Vendor Filter + Table -->
+    <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+      <div class="flex flex-col sm:flex-row gap-2 p-3 border-b border-gray-50">
+        <div class="relative flex-1">
+          <span class="absolute inset-y-0 left-3 flex items-center text-gray-400">
+            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          </span>
+          <input type="text" id="vnd_search" oninput="filterVendors()" placeholder="Search name, specialization, language…" class="input pl-8 py-2 text-xs">
+        </div>
+        <select id="vnd_statusFilter" onchange="filterVendors()" class="input sm:w-32 py-2 text-xs">
+          <option value="">All Status</option>
+          <option>Active</option>
+          <option>Inactive</option>
+        </select>
+        <button onclick="_resetVendorFilters()" class="shrink-0 px-3 py-2 text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-all">Reset</button>
+      </div>
+      <div class="flex items-center justify-between px-4 py-2 border-b border-gray-50">
+        <p id="vnd_countLabel" class="text-xs text-gray-400 font-medium">Loading…</p>
+        <div id="vnd_pagination" class="flex items-center gap-1"></div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Vendor &amp; Contact</th>
+              <th>Specialization</th>
+              <th>Languages</th>
+              <th class="text-center">Rate / Page</th>
+              <th class="text-center">Status</th>
+              <th class="text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="vendorsTable">
+            <tr><td colspan="7" class="py-16 text-center text-slate-400 text-sm">Loading vendors…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- end vendor panel -->
+
+</div>

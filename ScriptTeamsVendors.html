@@ -1,0 +1,134 @@
+<script>
+/* ================================================================
+   ScriptTeamsVendors.html
+   Unified Teams & Vendors module — tab switching + analytics
+================================================================ */
+
+var _tvActiveTab       = 'team';
+var _tvAnalyticsLoaded = { team: false, vendor: false };
+var _tvAnalyticsCache  = null;   /* single cached response for both tabs */
+
+function loadTeamsVendors() {
+  _tvAnalyticsLoaded = { team: false, vendor: false };
+  _tvAnalyticsCache  = null;
+  tvSwitchTab(_tvActiveTab);
+}
+
+/* ── Tab Switching ── */
+function tvSwitchTab(tab) {
+  _tvActiveTab = tab;
+  var teamPanel   = document.getElementById('tv_panel_team');
+  var vendorPanel = document.getElementById('tv_panel_vendor');
+  var teamTab     = document.getElementById('tv_tab_team');
+  var vendorTab   = document.getElementById('tv_tab_vendor');
+  if (!teamPanel) return;
+
+  var ON  = 'px-5 py-2 text-sm font-bold rounded-lg transition-all bg-white shadow-sm';
+  var OFF = 'px-5 py-2 text-sm font-bold rounded-lg transition-all text-slate-500 hover:text-slate-700';
+
+  if (tab === 'team') {
+    teamPanel.classList.remove('hidden');
+    vendorPanel.classList.add('hidden');
+    teamTab.className   = ON + ' text-sky-700';
+    vendorTab.className = OFF;
+    if (!_tvAnalyticsLoaded.team) {
+      _tvAnalyticsLoaded.team = true;
+      loadTeam();
+      _tvFetchAnalytics(function(data){ _tvRenderTeamAnalytics(data); });
+    }
+  } else {
+    vendorPanel.classList.remove('hidden');
+    teamPanel.classList.add('hidden');
+    vendorTab.className = ON + ' text-emerald-700';
+    teamTab.className   = OFF;
+    if (!_tvAnalyticsLoaded.vendor) {
+      _tvAnalyticsLoaded.vendor = true;
+      loadVendors();
+      _tvFetchAnalytics(function(data){ _tvRenderVendorAnalytics(data); });
+    }
+  }
+}
+
+/* ── Single analytics fetch with cache — avoids duplicate server calls ── */
+function _tvFetchAnalytics(callback) {
+  if (_tvAnalyticsCache) { callback(_tvAnalyticsCache); return; }
+  google.script.run
+    .withFailureHandler(function(e){ console.error('Analytics error:', e.message); })
+    .withSuccessHandler(function(data){
+      _tvAnalyticsCache = data;
+      callback(data);
+    })
+    .getTeamsVendorsAnalytics();
+}
+
+/* ── Team Analytics Render ── */
+function _tvRenderTeamAnalytics(data) {
+  if (!data) return;
+  var t = data.team || {};
+  function _s(id, v) { var el = document.getElementById(id); if (el) el.textContent = v; }
+  _s('tv_tm_totalPages',     (t.totalPages     || 0).toLocaleString());
+  _s('tv_tm_completedPages', (t.completedPages  || 0).toLocaleString());
+  _s('tv_tm_pendingPages',   (t.pendingPages    || 0).toLocaleString());
+  _s('tv_tm_revPages',       (t.revPages        || 0).toLocaleString());
+  _s('tv_tm_activeTasks',    (t.activeTasks     || 0).toLocaleString());
+  _s('tv_tm_completedTasks', (t.completedTasks  || 0).toLocaleString());
+  _tvRenderMonthlyChart('tv_tm_monthlyChart', data.teamMonthly   || [], 'bg-sky-500');
+  _tvRenderDistributionBars('tv_tm_memberBars', data.teamMembers || [], 'bg-sky-500');
+}
+
+/* ── Vendor Analytics Render ── */
+function _tvRenderVendorAnalytics(data) {
+  if (!data) return;
+  var v = data.vendor || {};
+  function _s(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; }
+  _s('tv_vnd_totalPages',     (v.totalPages     || 0).toLocaleString());
+  _s('tv_vnd_completedPages', (v.completedPages  || 0).toLocaleString());
+  _s('tv_vnd_pendingPages',   (v.pendingPages    || 0).toLocaleString());
+  _s('tv_vnd_revPages',       (v.revPages        || 0).toLocaleString());
+  _s('tv_vnd_activeTasks',    (v.activeTasks     || 0).toLocaleString());
+  _s('tv_vnd_completedTasks', (v.completedTasks  || 0).toLocaleString());
+  _tvRenderMonthlyChart('tv_vnd_monthlyChart', data.vendorMonthly   || [], 'bg-emerald-500');
+  _tvRenderDistributionBars('tv_vnd_vendorBars', data.vendorMembers || [], 'bg-emerald-500');
+}
+
+/* ── Shared: monthly bar chart ── */
+function _tvRenderMonthlyChart(elId, monthly, colorClass) {
+  var el = document.getElementById(elId);
+  if (!el) return;
+  if (!monthly.length) { el.innerHTML = '<p class="text-sm text-slate-400 text-center py-4">No data available.</p>'; return; }
+  var max = Math.max.apply(null, monthly.map(function(m){ return m.pages; })) || 1;
+  el.innerHTML = monthly.map(function(m) {
+    var pct = Math.round(m.pages / max * 100);
+    return '<div class="flex items-center gap-3">' +
+      '<span class="text-[11px] text-slate-500 w-20 shrink-0 text-right">' + m.label + '</span>' +
+      '<div class="flex-1 bg-slate-100 rounded-full h-4 overflow-hidden">' +
+        '<div class="h-4 rounded-full flex items-center justify-end pr-2 transition-all duration-700 ' + colorClass + '" style="width:' + Math.max(pct, 2) + '%">' +
+          (pct > 10 ? '<span class="text-[9px] font-black text-white">' + m.pages.toLocaleString() + '</span>' : '') +
+        '</div>' +
+      '</div>' +
+      (pct <= 10 ? '<span class="text-[11px] font-bold text-slate-600 shrink-0 w-10 text-right">' + m.pages.toLocaleString() + '</span>' : '<span class="w-10"></span>') +
+    '</div>';
+  }).join('');
+}
+
+/* ── Shared: member/vendor distribution bars ── */
+function _tvRenderDistributionBars(elId, items, colorClass) {
+  var el = document.getElementById(elId);
+  if (!el) return;
+  if (!items.length) { el.innerHTML = '<p class="text-sm text-slate-400 text-center py-4">No data available.</p>'; return; }
+  var max = Math.max.apply(null, items.map(function(i){ return i.pages; })) || 1;
+  el.innerHTML = items.map(function(i) {
+    var sub = (i.pages || 0).toLocaleString() + ' pages \u00b7 ' + (i.tasks || 0) + ' task' + (i.tasks !== 1 ? 's' : '');
+    return buildBar(i.name, i.pages, max, colorClass, sub);
+  }).join('<div class="mt-2"></div>');
+}
+
+/* ── Profile navigation (called from table action buttons) ── */
+function viewMemberPerformance(memberName) {
+  loadPage('memberView', { memberName: memberName });
+}
+
+function viewVendorPerformance(vendorName) {
+  loadPage('vendorView', { vendorName: vendorName });
+}
+</script>

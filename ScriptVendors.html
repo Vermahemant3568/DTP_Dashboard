@@ -1,6 +1,7 @@
 <script>
 /* ================================================================
-   ScriptVendors.html
+   ScriptVendors.html — Vendor CRUD, table render, modal logic
+   Used by: TeamsVendors.html (Vendor Analysis tab)
 ================================================================ */
 var ALL_VENDORS   = [];
 var _editVendorId = '';
@@ -35,10 +36,10 @@ function _renderVendorStats(data) {
 }
 
 function filterVendors() {
-  var q  = (_val('vnd_search')       || '').toLowerCase();
-  var st = _val('vnd_statusFilter')  || '';
+  var q  = (_val('vnd_search')      || '').toLowerCase();
+  var st = _val('vnd_statusFilter') || '';
   _vndFiltered = ALL_VENDORS.filter(function(r) {
-    var mq = !q  || [r[1],r[5],r[6]].some(function(v){ return String(v||'').toLowerCase().includes(q); });
+    var mq = !q  || [r[1], r[5], r[6]].some(function(v){ return String(v || '').toLowerCase().includes(q); });
     var ms = !st || r[9] === st;
     return mq && ms;
   });
@@ -58,12 +59,12 @@ function _renderVendorsTable(data) {
   var tbody = document.getElementById('vendorsTable');
   var label = document.getElementById('vnd_countLabel');
   if (!tbody) return;
-  var total     = data.length;
-  var totalPages= Math.ceil(total / _VND_PER_PAGE) || 1;
+  var total      = data.length;
+  var totalPages = Math.ceil(total / _VND_PER_PAGE) || 1;
   if (_vndPage > totalPages) _vndPage = totalPages;
-  var start     = (_vndPage - 1) * _VND_PER_PAGE;
-  var pageData  = data.slice(start, start + _VND_PER_PAGE);
-  if (label) label.textContent = 'Showing ' + (total ? start + 1 : 0) + '–' + Math.min(start + _VND_PER_PAGE, total) + ' of ' + total + ' vendor' + (total !== 1 ? 's' : '');
+  var start    = (_vndPage - 1) * _VND_PER_PAGE;
+  var pageData = data.slice(start, start + _VND_PER_PAGE);
+  if (label) label.textContent = 'Showing ' + (total ? start + 1 : 0) + '\u2013' + Math.min(start + _VND_PER_PAGE, total) + ' of ' + total + ' vendor' + (total !== 1 ? 's' : '');
   _renderVndPagination(totalPages);
   if (!total) {
     tbody.innerHTML = '<tr><td colspan="7" class="py-16 text-center text-slate-400 text-sm">No vendors found.</td></tr>';
@@ -75,11 +76,10 @@ function _renderVendorsTable(data) {
     var rate     = Number(r[7]) || 0;
     var currency = String(r[8] || '').trim();
     var rateStr  = rate > 0 ? (currency ? currency + '\u00a0' : '') + rate.toLocaleString() : '\u2014';
-    var initials = (r[1] || '?').split(' ').map(function(w){ return w[0]; }).slice(0,2).join('').toUpperCase();
+    var initials = (r[1] || '?').split(' ').map(function(w){ return w[0]; }).slice(0, 2).join('').toUpperCase();
     var avatarBg = active ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-400';
-    /* Languages — show max 2 then +N */
     var langs    = (r[6] || '').split(',').map(function(l){ return l.trim(); }).filter(Boolean);
-    var langStr  = langs.slice(0,2).join(', ') + (langs.length > 2 ? ' <span class="text-gray-400">+' + (langs.length-2) + '</span>' : '');
+    var langStr  = langs.slice(0, 2).join(', ') + (langs.length > 2 ? ' <span class="text-gray-400">+' + (langs.length - 2) + '</span>' : '');
     return '<tr data-id="' + r[0] + '">' +
       '<td class="font-mono text-[10px] text-gray-400">' + r[0] + '</td>' +
       '<td>' +
@@ -119,9 +119,7 @@ function _renderVndPagination(totalPages) {
                   'text-gray-500 hover:bg-gray-100') + '">' + label + '</button>';
   };
   var html = btn('&laquo;', _vndPage - 1, false, _vndPage === 1);
-  for (var i = 1; i <= totalPages; i++) {
-    html += btn(i, i, i === _vndPage, false);
-  }
+  for (var i = 1; i <= totalPages; i++) html += btn(i, i, i === _vndPage, false);
   html += btn('&raquo;', _vndPage + 1, false, _vndPage === totalPages);
   el.innerHTML = html;
 }
@@ -151,7 +149,7 @@ function openVendorModal(id) {
       _setVal('vm_notes',   v[10]);
     }
   } else {
-    ['vm_name','vm_contact','vm_email','vm_phone','vm_spec','vm_langs','vm_notes'].forEach(function(i){ _setVal(i,''); });
+    ['vm_name', 'vm_contact', 'vm_email', 'vm_phone', 'vm_spec', 'vm_langs', 'vm_notes'].forEach(function(i){ _setVal(i, ''); });
     document.getElementById('vm_rate').value     = '';
     document.getElementById('vm_currency').value = 'INR';
     document.getElementById('vm_status').value   = 'Active';
@@ -171,16 +169,16 @@ function saveVendor() {
   var btn = document.querySelector('#vendorModal button[onclick="saveVendor()"]');
   if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
   var d = {
-    vendorName:    name,
-    contactPerson: _val('vm_contact'),
-    email:         _val('vm_email'),
-    phone:         _val('vm_phone'),
-    specialization:_val('vm_spec'),
-    languages:     _val('vm_langs'),
-    ratePerPage:   _val('vm_rate'),
-    currency:      _val('vm_currency'),
-    status:        _val('vm_status') || 'Active',
-    notes:         _val('vm_notes')
+    vendorName:     name,
+    contactPerson:  _val('vm_contact'),
+    email:          _val('vm_email'),
+    phone:          _val('vm_phone'),
+    specialization: _val('vm_spec'),
+    languages:      _val('vm_langs'),
+    ratePerPage:    _val('vm_rate'),
+    currency:       _val('vm_currency'),
+    status:         _val('vm_status') || 'Active',
+    notes:          _val('vm_notes')
   };
   function _done(msg, type) {
     hideLoader();
@@ -209,9 +207,5 @@ function deleteVendorById(id) {
       .withSuccessHandler(function(){ hideLoader(); showToast('Vendor deleted.', 'warning'); loadVendors(); })
       .deleteVendor(id);
   }, true);
-}
-
-function viewVendorPerformance(vendorName) {
-  loadPage('vendorView', { vendorName: vendorName });
 }
 </script>
