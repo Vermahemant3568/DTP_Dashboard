@@ -183,9 +183,10 @@ function getMonthlySummary(params) {
     const monthTasks = tasks.filter(r => _inMonth(r[TC.START_DATE] || r[TC.CREATED_AT], month, year));
     const monthRevs  = revisions.filter(r => _inMonth(r[RC.REV_DATE] || r[RC.CREATED_AT], month, year));
 
-    const TASK_TYPES = ["Main DTP", "Pre-Engineering", "Bilingual Creation", "Key Insertion of PDFs", "Others"];
+    const TASK_TYPES = ["Main DTP", "Pre-Engineering", "Bilingual Creation", "Key Insertion of PDFs", "Formatting", "Others"];
     const TASK_KEYS  = { "Main DTP":"mainDTP", "Pre-Engineering":"preEng",
-                         "Bilingual Creation":"bilingual", "Key Insertion of PDFs":"keyInsertion", "Others":"others" };
+                         "Bilingual Creation":"bilingual", "Key Insertion of PDFs":"keyInsertion",
+                         "Formatting":"formatting", "Others":"others" };
 
     const byTaskType = {};
     TASK_TYPES.forEach(function(t) {
